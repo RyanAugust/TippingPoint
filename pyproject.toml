@@ -1,0 +1,89 @@
+[project]
+name = "tippingpoint"
+description = "Given impression and KPI data, determine the tipping points associated with maximizing success rate of marketing"
+version = "0.0.1"
+readme = "README.md"
+keywords = [
+    "tipping point",
+    "marketing",
+    "utility",
+    "cli" 
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "Development Status :: 3 - Alpha", 
+]
+authors = [
+    { name = "Ryan Duecker", email = "ryanduecker@gmail.com" },
+]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "tinygrad"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "ruff",
+    "pre-commit",
+    "hatch",
+]
+docs = [
+    "sphinx>=6.0",
+]
+
+[project.scripts]
+tipp = "tippingpoint.cli:main"
+
+[tool.hatch.metadata]
+vcs = true
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/.github",
+    "/tests",
+]
+
+[tool.hatch.build.targets.wheel]
+exclude = [
+    "/.github",
+    "/tests",
+    "/.vscode",
+]
+
+pre-install-commands = ["pip install --upgrade pip",]
+
+[tool.hatch.envs.default.scripts]
+# Run tests with pytest
+test = "pytest {args}"
+# Run tests with coverage
+cov = "pytest --cov={package} --no-cov-on-fail {args}"
+# Run ruff linter/formatter
+lint = "ruff check {package} {args}"
+format = "ruff format {package} {args}"
+# Build the package
+build = "hatch build"
+# Clean build artifacts
+clean = "hatch clean"
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.ruff.mccabe]
+max-complexity = 10
+
+[tool.coverage.run]
+branch = true
+source = ["tippingpoint"]
+
