@@ -49,7 +49,6 @@ class MarketingReturnCurve:
     print(f"[{channel_name}] Curve fit complete. Loss: {final_loss:.4f}")
     return cls(log_beta.exp().numpy().item(), log_alpha.exp().numpy().item(), log_k.exp().numpy().item(), channel_name)
 
-  # --- Phase 2: Calculus Engine ---
   def predict_incremental_return(self, spend):
     """f(x): The baseline Hill Function calculation."""
     spend = np.array(spend, dtype=float) + 1e-5
@@ -90,7 +89,6 @@ class MarketingReturnCurve:
     except ValueError:
       return None
 
-  # --- Phase 3: Marketing Intelligence Module ---
   def evaluate_current_budget(self, current_spend, target_mroas=1.0):
     """Translates mathematical points into strategic marketing intelligence."""
     min_spend = self.get_minimal_marginal_cost_point()
@@ -102,7 +100,6 @@ class MarketingReturnCurve:
     elif max_spend is not None and current_spend > max_spend: print("Status: OVER-SATURATED (Unprofitable Marginal Growth)\n Recommendation: Scale back spend to ${max_spend:,.2f} to maintain target unit economics.")
     else: print("Status: OPTIMAL SCALING ZONE.\nRecommendation: You are operating within the highly efficient growth window.")
 
-  # --- Phase 4: Visualization ---
   def plot_response_curve(self, target_mroas=1.0, current_spend=None):
     """Generates an executive-friendly dual-axis chart mapping the optimal scaling zone."""
     min_spend = self.get_minimal_marginal_cost_point()
