@@ -55,6 +55,7 @@ exclude = [
 ]
 
 [tool.hatch.build.targets.wheel]
+packages = ["src/tippingpoint"]
 exclude = [
     "/.github",
     "/tests",
