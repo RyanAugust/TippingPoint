@@ -1,5 +1,5 @@
 # Tipping Point
-Author: Ryan Duecker (ryanduecker@google.com)
+**Author:** Ryan Duecker (ryanduecker@google.com)
 
 A lightweight, high-performance marketing intelligence module that uses machine learning and calculus to determine the exact inflection points of a media response curve. 
 
@@ -30,7 +30,6 @@ This module uses **tinygrad** for ultra-lightweight GPU-accelerated gradient des
 ```bash
 pip install tinygrad numpy scipy matplotlib
 ```
-*(Note: The tinygrad implementation natively supports Apple Silicon/Metal GPUs using `float32` tensors).*
 
 ## 💻 Usage
 
