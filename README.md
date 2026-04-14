@@ -38,7 +38,7 @@ You can pass raw `Spend` and `Return` (Revenue, Conversions, etc.) arrays direct
 
 ```python
 import numpy as np
-from marketing_curve import MarketingReturnCurve
+from tippingpoint import MarketingReturnCurve
 
 # 1. Provide your historical marketing data (Spend vs. Revenue/Conversions)
 spends = np.array([1200, 5000, 15000, 25000, 40000])
