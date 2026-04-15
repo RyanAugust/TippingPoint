@@ -3,7 +3,7 @@ from tinygrad.tensor import Tensor
 from tinygrad.nn.optim import Adam
 from tinygrad import dtypes
 import matplotlib.pyplot as plt
-from scipy.optimize import root_scalar
+
 import warnings
 
 class MarketingReturnCurve:
@@ -68,26 +68,30 @@ class MarketingReturnCurve:
     inflection_point = self.K * (((self.alpha - 1) / (self.alpha + 1)) ** (1 / self.alpha)) # Closed-form solution for the inflection point of a Hill function)
     return inflection_point
 
-  def get_diminishing_returns_point(self, target_mroas=1.0):
+  def get_diminishing_returns_point(self, target_mroas=1.0, tol=1e-5, max_iter=100):
     """Solves for x where f'(x) = target_mroas, specifically after the inflection point.
-    This establishes the hard budget cap based on unit economics. """
+    This establishes the hard budget cap based on unit economics.
+    (Uses a native bisection method, removing the need for SciPy). """
     inflection = max(self.get_minimal_marginal_cost_point(), 1e-5)
     max_mroas = self.predict_marginal_return(inflection)
     if target_mroas >= max_mroas:
-      warnings.warn(f"Target mROAS ({target_mroas}) is mathematically unreachable. Max possible mROAS is {max_mroas:.2f}.")
+      warnings.warn(f"Target mROAS ({target_mroas}) is mathematically unreachable.\nMax possible mROAS is {max_mroas:.2f}.")
       return None
-
-    def root_func(x): return self.predict_marginal_return(x) - target_mroas
-
-    upper_bound = inflection + self.K # Find a suitable upper bracket for the root finding algorithm
+    lower_bound = inflection
+    upper_bound = inflection + self.K
     while self.predict_marginal_return(upper_bound) > target_mroas:
       upper_bound += self.K
-      if upper_bound > self.K * 1000: break # Safety break
-    try:
-      res = root_scalar(root_func, bracket=[inflection, upper_bound], method='brentq')
-      return res.root
-    except ValueError:
-      return None
+      if upper_bound > self.K * 1000: # Safety break
+        warnings.warn("Could not find an upper bound for the target mROAS.")
+        return None
+    for _ in range(max_iter): # Native Bisection Search
+      midpoint = (lower_bound + upper_bound) / 2.0
+      mroas_at_mid = self.predict_marginal_return(midpoint)
+      if abs(mroas_at_mid - target_mroas) < tol: return midpoint # If we are within the acceptable tolerance, return the spend amount
+      # Because mROAS is strictly decreasing after the inflection point:
+      if mroas_at_mid > target_mroas: lower_bound = midpoint # mROAS is too high, we need to spend MORE to drive it down to the target
+      else: upper_bound = midpoint # mROAS is too low, we need to spend LESS to bring it back up to the target
+    return (lower_bound + upper_bound) / 2.0 # Return the best approximation if max iterations are reached
 
   def evaluate_current_budget(self, current_spend, target_mroas=1.0):
     """Translates mathematical points into strategic marketing intelligence."""
