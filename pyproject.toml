@@ -1,5 +1,5 @@
 [project]
-name = "ryangroves"
+name = "tippingpt"
 description = "Given impression and KPI data, determine the tipping points associated with maximizing success rate of marketing"
 version = "0.0.1"
 readme = "README.md"
