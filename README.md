@@ -1,5 +1,8 @@
 # Tipping Point
-**Author:** Ryan Duecker (ryanduecker@google.com)
+**Author:** [Ryan Duecker](ryanduecker@google.com)
+
+[![PyPI Downloads](https://img.shields.io/pypi/dm/tippingpt.svg?label=PyPI%20downloads)](
+https://pypi.org/project/tippingpt/)
 
 A lightweight, high-performance marketing intelligence module that uses machine learning and calculus to determine the exact inflection points of a media response curve. 
 
@@ -28,7 +31,7 @@ Once the Hill Curve parameters are found, the module uses exact calculus to prov
 This module uses **tinygrad** for ultra-lightweight GPU-accelerated gradient descent, alongside standard scientific libraries.
 
 ```bash
-pip install tinygrad numpy scipy matplotlib
+pip install tippingpt
 ```
 
 ## 💻 Usage
