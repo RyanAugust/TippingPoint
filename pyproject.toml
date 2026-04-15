@@ -1,5 +1,5 @@
 [project]
-name = "tippingpoint"
+name = "ryangroves"
 description = "Given impression and KPI data, determine the tipping points associated with maximizing success rate of marketing"
 version = "0.0.1"
 readme = "README.md"
@@ -24,7 +24,8 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "numpy",
-    "tinygrad"
+    "tinygrad",
+    "matplotlib"
 ]
 
 [build-system]
@@ -38,6 +39,8 @@ dev = [
     "pre-commit",
     "hatch",
 ]
+lint = ["ruff","pylint"]
+test = ["pytest"]
 docs = [
     "sphinx>=6.0",
 ]
@@ -78,11 +81,48 @@ build = "hatch build"
 clean = "hatch clean"
 
 [tool.ruff]
-line-length = 100
-target-version = "py38"
+preview = true
+target-version = "py311"
+line-length = 250
+indent-width = 2
+exclude = [
+  ".git/",
+  "docs/",
+]
 
-[tool.ruff.mccabe]
-max-complexity = 10
+[tool.ruff.lint]
+select = [
+  "F",  # Pyflakes
+  "W6",
+  "E71",
+  "E72",
+  "E112",   # no-indented-block
+  "E113",   # unexpected-indentation
+  # "E124",
+  "E203",   # whitespace-before-punctuation
+  "E272",   # multiple-spaces-before-keyword
+  "E275",   # missing-whitespace-after-keyword
+  "E303",   # too-many-blank-lines
+  "E304",   # blank-line-after-decorator
+  "E501",   # line-too-long
+  # "E502",
+  "E702",   # multiple-statements-on-one-line-semicolon
+  "E703",   # useless-semicolon
+  "E731",   # lambda-assignment
+  "W191",   # tab-indentation
+  "W291",   # trailing-whitespace
+  "W293",   # blank-line-with-whitespace
+  "UP039",  # unnecessary-class-parentheses
+  "C416",   # unnecessary-comprehension
+  "RET506", # superfluous-else-raise
+  "RET507", # superfluous-else-continue
+  "A",      # builtin-variable-shadowing, builtin-argument-shadowing, builtin-attribute-shadowing
+  "FURB110",# if-exp-instead-of-or-operator
+  "RUF018", # assignment-in-assert
+]
+
+[tool.ruff.format]
+exclude = ["*"]
 
 [tool.coverage.run]
 branch = true

@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 import warnings
 
 class MarketingReturnCurve:
-  """A marketing intelligence tool to determine the inflection points of a media 
+  """A marketing intelligence tool to determine the inflection points of a media
   response curve based on the Hill Function (Google Meridian methodology). """
-  
+
   def __init__(self, beta, alpha, half_saturation_k, channel_name="Generic"):
     self.beta = float(beta)
     self.alpha = float(alpha)
@@ -31,7 +31,7 @@ class MarketingReturnCurve:
     log_k = Tensor([np.log(median_x + 1e-5)], dtype=dtypes.float32, requires_grad=True)
     log_alpha = Tensor([0.5], dtype=dtypes.float32, requires_grad=True)
     optimizer = Adam([log_beta, log_k, log_alpha], lr=lr)
-    
+
     Tensor.traning = True
     with Tensor.train():
       for _ in range(epochs):
@@ -108,10 +108,10 @@ class MarketingReturnCurve:
     """Generates an executive-friendly dual-axis chart mapping the optimal scaling zone."""
     min_spend = self.get_minimal_marginal_cost_point()
     max_spend = self.get_diminishing_returns_point(target_mroas)
-    
+
     plot_limit = max_spend * 1.5 if max_spend else min_spend * 4
     plot_limit = max(plot_limit, current_spend * 1.2 if current_spend else 0)
-    
+
     x_vals = np.linspace(0, plot_limit, 500)
     y_return = self.predict_incremental_return(x_vals)
     y_mroas = self.predict_marginal_return(x_vals)
