@@ -1,7 +1,7 @@
 [project]
 name = "tippingpt"
 description = "Given impression and KPI data, determine the tipping points associated with maximizing success rate of marketing"
-version = "0.0.1"
+version = "0.0.2"
 readme = "README.md"
 keywords = [
     "tipping point",
