@@ -65,7 +65,7 @@ class MarketingReturnCurve:
         np.std(y) * 0.1
       ])
       current_log_post = log_posterior(current_params)
-      
+
       samples = []
       # Adaptive step size (simplified)
       step_size = current_params * 0.05
@@ -73,14 +73,14 @@ class MarketingReturnCurve:
       for i in range(n_samples + burn_in):
         proposal = current_params + np.random.normal(0, step_size)
         proposal_log_post = log_posterior(proposal)
-        
+
         if proposal_log_post > current_log_post or np.random.rand() < np.exp(proposal_log_post - current_log_post):
           current_params = proposal
           current_log_post = proposal_log_post
-        
+
         if i >= burn_in:
           samples.append(current_params.copy())
-          
+
         # Small adaptation during burn-in
         if i < burn_in and i % 100 == 0 and i > 0:
           # This is a very crude adaptation
@@ -95,12 +95,12 @@ class MarketingReturnCurve:
       'K': posterior[:, 2],
       'sigma': posterior[:, 3]
     }
-    
+
     # Point estimates (posterior mean)
     beta_mean = np.mean(samples_dict['beta'])
     alpha_mean = np.mean(samples_dict['alpha'])
     K_mean = np.mean(samples_dict['K'])
-    
+
     print(f"[{channel_name}] Bayesian fit complete. Samples: {len(posterior)}")
     return cls(beta_mean, alpha_mean, K_mean, channel_name, posterior_samples=samples_dict)
 
@@ -218,13 +218,13 @@ class MarketingReturnCurve:
     plot_limit = max(plot_limit, current_spend * 1.2 if current_spend else 0)
 
     x_vals = np.linspace(0, plot_limit, 500)
-    
+
     if show_intervals and self.posterior_samples:
       y_returns_dist = self.predict_incremental_return(x_vals, use_samples=True)
       y_return = np.mean(y_returns_dist, axis=0)
       y_return_low = np.percentile(y_returns_dist, 5, axis=0)
       y_return_high = np.percentile(y_returns_dist, 95, axis=0)
-      
+
       y_mroas_dist = self.predict_marginal_return(x_vals, use_samples=True)
       y_mroas = np.mean(y_mroas_dist, axis=0)
       y_mroas_low = np.percentile(y_mroas_dist, 5, axis=0)
@@ -238,18 +238,18 @@ class MarketingReturnCurve:
     ax1.plot(x_vals, y_return, color='#2CA02C', linewidth=3, label="Incremental Return")
     if show_intervals and self.posterior_samples:
       ax1.fill_between(x_vals, y_return_low, y_return_high, color='#2CA02C', alpha=0.2, label="90% Credible Interval")
-    
+
     ax1.set_xlabel('Spend ($)', fontsize=12, fontweight='bold')
     ax1.set_ylabel('Incremental Return', color='#2CA02C', fontsize=12, fontweight='bold')
     ax1.tick_params(axis='y', labelcolor='#2CA02C')
     ax1.grid(True, linestyle='--', alpha=0.5)
-    
+
     # Secondary Axis: Marginal Return
     ax2 = ax1.twinx()
     ax2.plot(x_vals, y_mroas, color='#1F77B4', linestyle='--', linewidth=2, label="Marginal ROAS")
     if show_intervals and self.posterior_samples:
       ax2.fill_between(x_vals, y_mroas_low, y_mroas_high, color='#1F77B4', alpha=0.1)
-    
+
     ax2.set_ylabel('Marginal ROAS (mROAS)', color='#1F77B4', fontsize=12, fontweight='bold')
     ax2.tick_params(axis='y', labelcolor='#1F77B4')
     ax2.axhline(target_mroas, color='gray', linestyle=':', label="Target mROAS Floor")

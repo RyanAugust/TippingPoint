@@ -12,7 +12,7 @@ class TestMarketingReturnCurve:
     """Setup a baseline S-Curve for use in multiple tests."""
     # Parameters: Max Return=10000, Shape=2.0 (S-Curve), Half-Saturation=500
     self.s_curve = MarketingReturnCurve(beta=10000.0, alpha=2.0, half_saturation_k=500.0, channel_name="Test_S_Curve")
-    
+
     # Parameters: Shape=0.8 (C-Curve, no warm-up phase)
     self.c_curve = MarketingReturnCurve(beta=10000.0, alpha=0.8, half_saturation_k=500.0, channel_name="Test_C_Curve")
 
@@ -45,7 +45,7 @@ class TestMarketingReturnCurve:
     """Test f''(x) = 0 for an S-Curve (alpha > 1)."""
     expected_inflection = 500.0 * np.sqrt(1.0 / 3.0) # For alpha = 2.0, inflection = K * sqrt((2-1)/(2+1)) = 500 * sqrt(1/3) ≈ 288.675
     actual_inflection = self.s_curve.get_minimal_marginal_cost_point()
-    
+
     assert actual_inflection == pytest.approx(expected_inflection, rel=1e-3)
 
   def test_minimal_marginal_cost_point_c_curve(self):
@@ -56,7 +56,7 @@ class TestMarketingReturnCurve:
     """Test finding the target spend level for a reachable mROAS."""
     target_mroas = 5.0
     spend_cap = self.s_curve.get_diminishing_returns_point(target_mroas)
-    
+
     assert spend_cap is not None
     actual_mroas_at_cap = self.s_curve.predict_marginal_return(spend_cap)
     assert actual_mroas_at_cap == pytest.approx(target_mroas, rel=1e-3)
@@ -75,7 +75,7 @@ class TestMarketingReturnCurve:
     returns = (50000 * spends**1.5) / (4000**1.5 + spends**1.5) # Fake responses following roughly an S curve
     # Run with very few epochs just to verify the math/graph builds and executes properly
     model = MarketingReturnCurve.from_historical_data( spend_array=spends, return_array=returns, epochs=10, lr=0.1)# Fast execution for test suite
-    
+
     assert isinstance(model, MarketingReturnCurve)
     assert model.beta > 0
     assert model.alpha > 0
