@@ -7,10 +7,30 @@ import matplotlib.pyplot as plt
 import warnings
 
 class MarketingReturnCurve:
-  """A marketing intelligence tool to determine the inflection points of a media
-  response curve based on the Hill Function (Google Meridian methodology). """
+  """A marketing intelligence tool to determine inflection points of a media response curve.
+
+  Based on the Hill Function (Google Meridian methodology), this tool identifies
+  the Minimal Marginal Cost Point (peak efficiency) and the Point of Diminishing
+  Returns (profitability floor).
+
+  Attributes:
+    beta (float): The asymptote (maximum possible return/capacity).
+    alpha (float): The shape parameter (>1 for S-shape, <=1 for C-shape).
+    K (float): The half-saturation point (spend where half of beta is reached).
+    channel_name (str): Name of the media channel.
+    posterior_samples (dict, optional): MCMC samples for alpha, beta, K, and sigma.
+  """
 
   def __init__(self, beta, alpha, half_saturation_k, channel_name="Generic", posterior_samples=None):
+    """Initializes the MarketingReturnCurve with specific parameters.
+
+    Args:
+      beta (float): Maximum possible capacity.
+      alpha (float): Shape parameter.
+      half_saturation_k (float): Half-saturation spend amount.
+      channel_name (str): Label for the channel. Defaults to "Generic".
+      posterior_samples (dict, optional): Dictionary of parameter samples.
+    """
     self.beta = float(beta)
     self.alpha = float(alpha)
     self.K = float(half_saturation_k)
@@ -20,8 +40,20 @@ class MarketingReturnCurve:
   @classmethod
   def fit_bayesian(cls, spend_array, return_array, channel_name="Generic", priors=None, n_samples=2000, chains=4, burn_in=1000):
     """Fits a Hill Curve using Bayesian MCMC (Metropolis-Hastings).
-    Priors should be a dict: {'beta': (mu, sigma), 'alpha': (mu, sigma), 'K': (mu, sigma)}
-    where mu and sigma are parameters of a LogNormal distribution. """
+
+    Args:
+      spend_array (array-like): Historical spend data.
+      return_array (array-like): Historical return/KPI data.
+      channel_name (str): Label for the channel. Defaults to "Generic".
+      priors (dict, optional): LogNormal priors for 'beta', 'alpha', 'K'.
+        Format: {'param': (mu, sigma)}.
+      n_samples (int): Number of samples per chain. Defaults to 2000.
+      chains (int): Number of MCMC chains. Defaults to 4.
+      burn_in (int): Number of initial samples to discard. Defaults to 1000.
+
+    Returns:
+      MarketingReturnCurve: An instance of the curve fitted with posterior means.
+    """
     x = np.array(spend_array, dtype=float) + 1e-5
     y = np.array(return_array, dtype=float)
 
@@ -106,8 +138,18 @@ class MarketingReturnCurve:
 
   @classmethod
   def from_historical_data(cls, spend_array, return_array, channel_name="Generic", epochs=5000, lr=0.05):
-    """Phase 1: PyTorch Optimization Engine.
-    Fits a Hill Curve to historical data using Adam optimizer. """
+    """Fits a Hill Curve to historical data using MLE (Adam optimizer).
+
+    Args:
+      spend_array (array-like): Historical spend data.
+      return_array (array-like): Historical return/KPI data.
+      channel_name (str): Label for the channel. Defaults to "Generic".
+      epochs (int): Number of optimization epochs. Defaults to 5000.
+      lr (float): Learning rate for the optimizer. Defaults to 0.05.
+
+    Returns:
+      MarketingReturnCurve: An instance of the curve fitted with optimized parameters.
+    """
     max_y = np.max(return_array)
     median_x = np.median(spend_array[spend_array > 0]) if np.any(spend_array > 0) else 1.0
 
@@ -143,7 +185,16 @@ class MarketingReturnCurve:
     return cls(log_beta.exp().numpy().item(), log_alpha.exp().numpy().item(), log_k.exp().numpy().item(), channel_name)
 
   def predict_incremental_return(self, spend, use_samples=False):
-    """f(x): The baseline Hill Function calculation."""
+    """Calculates the total incremental return for a given spend.
+
+    Args:
+      spend (float or array-like): The spend amount(s) to evaluate.
+      use_samples (bool): If True, returns a distribution using posterior samples.
+        Defaults to False.
+
+    Returns:
+      float or numpy.ndarray: The predicted incremental return(s).
+    """
     spend = np.array(spend, dtype=float) + 1e-5
     if use_samples and self.posterior_samples:
       beta = self.posterior_samples['beta'][:, np.newaxis]
@@ -153,7 +204,16 @@ class MarketingReturnCurve:
     return (self.beta * (spend ** self.alpha)) / (self.K ** self.alpha + spend ** self.alpha)
 
   def predict_marginal_return(self, spend, use_samples=False):
-    """f'(x): The first derivative (Marginal ROAS / mCPA inverse)."""
+    """Calculates the first derivative (Marginal ROAS) at a given spend.
+
+    Args:
+      spend (float or array-like): The spend amount(s) to evaluate.
+      use_samples (bool): If True, returns a distribution using posterior samples.
+        Defaults to False.
+
+    Returns:
+      float or numpy.ndarray: The predicted marginal return(s).
+    """
     spend = np.array(spend, dtype=float) + 1e-5
     if use_samples and self.posterior_samples:
       beta = self.posterior_samples['beta'][:, np.newaxis]
@@ -167,16 +227,28 @@ class MarketingReturnCurve:
     return numerator / denominator
 
   def get_minimal_marginal_cost_point(self):
-    """Solves for f''(x) = 0.
-    The inflection point where marginal return peaks (acquisition cost is at its lowest). """
+    """Identifies the inflection point where marginal return peaks.
+
+    This corresponds to the spend level where efficiency is maximized (f''(x) = 0).
+
+    Returns:
+      float: The spend amount at the inflection point.
+    """
     if self.alpha <= 1: return 0.0 # If alpha <= 1, it's a C-Curve. Diminishing returns occur instantly at Spend = 0.
     inflection_point = self.K * (((self.alpha - 1) / (self.alpha + 1)) ** (1 / self.alpha)) # Closed-form solution for the inflection point of a Hill function)
     return inflection_point
 
   def get_diminishing_returns_point(self, target_mroas=1.0, tol=1e-5, max_iter=100):
-    """Solves for x where f'(x) = target_mroas, specifically after the inflection point.
-    This establishes the hard budget cap based on unit economics.
-    (Uses a native bisection method, removing the need for SciPy). """
+    """Solves for the spend level where Marginal ROAS hits a specific target.
+
+    Args:
+      target_mroas (float): The minimum acceptable marginal return. Defaults to 1.0.
+      tol (float): Convergence tolerance for the bisection search. Defaults to 1e-5.
+      max_iter (int): Maximum iterations for the search. Defaults to 100.
+
+    Returns:
+      float or None: The spend amount at the diminishing returns point, or None if unreachable.
+    """
     inflection = max(self.get_minimal_marginal_cost_point(), 1e-5)
     max_mroas = self.predict_marginal_return(inflection)
     if target_mroas >= max_mroas:
@@ -199,7 +271,15 @@ class MarketingReturnCurve:
     return (lower_bound + upper_bound) / 2.0 # Return the best approximation if max iterations are reached
 
   def evaluate_current_budget(self, current_spend, target_mroas=1.0):
-    """Translates mathematical points into strategic marketing intelligence."""
+    """Provides a strategic evaluation of the current budget allocation.
+
+    Prints recommendations based on the relationship between current spend,
+    the peak efficiency point, and the diminishing returns point.
+
+    Args:
+      current_spend (float): The current amount being spent.
+      target_mroas (float): The target marginal return floor. Defaults to 1.0.
+    """
     min_spend = self.get_minimal_marginal_cost_point()
     max_spend = self.get_diminishing_returns_point(target_mroas)
     mroas = self.predict_marginal_return(current_spend)
@@ -210,7 +290,14 @@ class MarketingReturnCurve:
     else: print("Status: OPTIMAL SCALING ZONE.\nRecommendation: You are operating within the highly efficient growth window.")
 
   def plot_response_curve(self, target_mroas=1.0, current_spend=None, show_intervals=True):
-    """Generates an executive-friendly dual-axis chart mapping the optimal scaling zone."""
+    """Generates a visualization of the media response and marginal return curves.
+
+    Args:
+      target_mroas (float): The target marginal return floor. Defaults to 1.0.
+      current_spend (float, optional): The current spend to mark on the chart.
+      show_intervals (bool): If True and posterior samples exist, plots
+        the 90% credible interval. Defaults to True.
+    """
     min_spend = self.get_minimal_marginal_cost_point()
     max_spend = self.get_diminishing_returns_point(target_mroas)
 
