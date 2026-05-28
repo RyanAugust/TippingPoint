@@ -47,13 +47,23 @@ from tippingpoint import MarketingReturnCurve
 spends = np.array([1200, 5000, 15000, 25000, 40000])
 returns = np.array([200, 1500, 12000, 22000, 28000])
 
-# 2. Fit the Curve
+# 2. Fit the Curve (MLE)
 model = MarketingReturnCurve.from_historical_data(
     spend_array=spends,
     return_array=returns,
-    channel_name="Paid Social",
+    channel_name="YouTube",
     epochs=3000,
     lr=0.05
+)
+
+# 3. Fit the Curve (Bayesian MCMC)
+# This provides posterior distributions and uncertainty intervals
+model_bayesian = MarketingReturnCurve.fit_bayesian(
+    spend_array=spends,
+    return_array=returns,
+    channel_name="YouTube (Bayesian)",
+    n_samples=2000,
+    chains=4
 )
 ```
 
@@ -71,6 +81,12 @@ spend_cap = model.get_diminishing_returns_point(target_mroas)
 print(f"Start Scaling At: ${optimal_floor:,.2f}")
 print(f"Stop Scaling At: ${spend_cap:,.2f}")
 
+# Access Posterior Samples (if fitted via Bayesian method)
+if hasattr(model_bayesian, 'posterior_samples') and model_bayesian.posterior_samples:
+    print(f"Mean Alpha: {np.mean(model_bayesian.posterior_samples['alpha'])}")
+    # Access full distribution
+    beta_samples = model_bayesian.posterior_samples['beta']
+
 # Get a text-based evaluation of your current strategy
 model.evaluate_current_budget(current_spend, target_mroas)
 ```
@@ -82,11 +98,11 @@ Status: OPTIMAL SCALING ZONE
 Recommendation: You are operating within the highly efficient growth window.
 ```
 
-### 3. Visualization
-Generate an executive-ready, dual-axis chart mapping the Incremental Return curve against the Marginal ROAS curve, explicitly highlighting the Optimal Scaling Zone.
+### 4. Visualization
+Generate an executive-ready, dual-axis chart mapping the Incremental Return curve against the Marginal ROAS curve. If fitted via Bayesian methods, it automatically includes **90% Credible Intervals**.
 
 ```python
-model.plot_response_curve(target_mroas=1.5, current_spend=12000)
+model_bayesian.plot_response_curve(target_mroas=1.5, current_spend=12000)
 ```
 
 ## 🛠 Integrating with existing MMMs (Meridian)
