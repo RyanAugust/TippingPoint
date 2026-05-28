@@ -17,7 +17,7 @@ def synthetic_data():
 def test_fit_bayesian_basic(synthetic_data):
     x, y = synthetic_data
     model = MarketingReturnCurve.fit_bayesian(x, y, n_samples=500, burn_in=100, chains=2)
-    
+
     assert model.beta > 0
     assert model.alpha > 0
     assert model.K > 0
@@ -33,7 +33,7 @@ def test_fit_bayesian_with_priors(synthetic_data):
         'K': (np.log(20000), 0.1)
     }
     model = MarketingReturnCurve.fit_bayesian(x, y, priors=priors, n_samples=200, burn_in=50, chains=1)
-    
+
     # Check if results are close to true values due to tight priors
     assert 90000 < model.beta < 110000
     assert 1.3 < model.alpha < 1.7
@@ -42,11 +42,11 @@ def test_fit_bayesian_with_priors(synthetic_data):
 def test_predict_with_samples(synthetic_data):
     x, y = synthetic_data
     model = MarketingReturnCurve.fit_bayesian(x, y, n_samples=100, burn_in=50, chains=1)
-    
+
     # Incremental return
     preds = model.predict_incremental_return([1000, 2000], use_samples=True)
     assert preds.shape == (100, 2)
-    
+
     # Marginal return
     m_preds = model.predict_marginal_return([1000, 2000], use_samples=True)
     assert m_preds.shape == (100, 2)

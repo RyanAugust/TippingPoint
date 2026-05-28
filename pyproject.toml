@@ -7,7 +7,7 @@ keywords = [
     "tipping point",
     "marketing",
     "utility",
-    "cli" 
+    "cli"
 ]
 
 classifiers = [
@@ -16,7 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
-    "Development Status :: 3 - Alpha", 
+    "Development Status :: 3 - Alpha",
 ]
 authors = [
     { name = "Ryan Duecker", email = "ryanduecker@gmail.com" },
