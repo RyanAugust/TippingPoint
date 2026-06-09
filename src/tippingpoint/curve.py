@@ -180,8 +180,8 @@ class MarketingReturnCurve:
         loss.backward()
         optimizer.step()
     Tensor.traning = False
-    final_loss = loss.numpy().item()
-    print(f"[{channel_name}] Curve fit complete. Loss: {final_loss:.4f}")
+    self.final_loss = loss.numpy().item()
+    print(f"[{channel_name}] Curve fit complete. Loss: {self.final_loss:.4f}")
     return cls(log_beta.exp().numpy().item(), log_alpha.exp().numpy().item(), log_k.exp().numpy().item(), channel_name)
 
   def predict_incremental_return(self, spend, use_samples=False):
