@@ -402,7 +402,7 @@ class MarketingReturnCurve:
     # Legends
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left', bbox_to_anchor=(1.1, 1), frameon=False, fontsize=10)
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc='lower right', frameon=True, facecolor='white', framealpha=0.8, fontsize=10)
 
     # Title
     plt.title(f'Media Response Analysis: {self.channel_name}', loc='left', fontsize=16, fontweight='bold', pad=25, color='#202124')
@@ -411,8 +411,7 @@ class MarketingReturnCurve:
     fig.text(0.125, 0.91, f'Hill Curve Parameters: α={self.alpha:.2f}, K={self.K:,.0f}, β={self.beta:,.0f}',
              fontsize=10, color=G_GRAY)
 
-    plt.tight_layout(rect=[0, 0, 0.85, 1])
+    plt.tight_layout()
     plt.show()
-
 
 def format_currency_k(x, pos): return f'${x/1000:g}k'
