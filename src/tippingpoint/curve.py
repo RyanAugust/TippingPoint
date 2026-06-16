@@ -322,8 +322,12 @@ class MarketingReturnCurve:
     if current_spend: max_x = max(max_x, current_spend * 1.2)
     if scatter is not None: max_x = max(max_x, np.max(scatter[0]) * 1.1)
 
-    x_vals = np.linspace(0, max_x, 500)
+    # Crop x-axis if it extends too far beyond the stop-scaling point (max_spend)
+    # to maintain fidelity of the scaling region.
+    if max_spend and max_x > 100 * max_spend:
+      max_x = max_spend * 3.0
 
+    x_vals = np.linspace(0, max_x, 500)
     if show_intervals and self.posterior_samples:
       y_returns_dist = self.predict_incremental_return(x_vals, use_samples=True)
       y_return = np.mean(y_returns_dist, axis=0)
@@ -402,7 +406,7 @@ class MarketingReturnCurve:
     # Legends
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2, loc='lower right', frameon=True, facecolor='white', framealpha=0.8, fontsize=10)
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc='center right', frameon=True, facecolor='white', framealpha=1.0, fontsize=10)
 
     # Title
     plt.title(f'Media Response Analysis: {self.channel_name}', loc='left', fontsize=16, fontweight='bold', pad=25, color='#202124')
