@@ -3,6 +3,7 @@ from tinygrad.tensor import Tensor
 from tinygrad.nn.optim import Adam
 from tinygrad import dtypes
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 import warnings
 
@@ -36,6 +37,7 @@ class MarketingReturnCurve:
     self.K = float(half_saturation_k)
     self.channel_name = channel_name
     self.posterior_samples = posterior_samples
+    self.loss = 0
 
   @classmethod
   def fit_bayesian(cls, spend_array, return_array, channel_name="Generic", priors=None, n_samples=2000, chains=4, burn_in=1000):
@@ -182,7 +184,12 @@ class MarketingReturnCurve:
     Tensor.traning = False
     final_loss = loss.numpy().item()
     print(f"[{channel_name}] Curve fit complete. Loss: {final_loss:.4f}")
-    return cls(log_beta.exp().numpy().item(), log_alpha.exp().numpy().item(), log_k.exp().numpy().item(), channel_name)
+    model = cls(log_beta.exp().numpy().item(), log_alpha.exp().numpy().item(), log_k.exp().numpy().item(), channel_name)
+    model.update_loss(final_loss)
+    return model
+
+  def update_loss(self, loss: float) -> None:
+    self.loss = loss
 
   def predict_incremental_return(self, spend, use_samples=False):
     """Calculates the total incremental return for a given spend.
@@ -289,7 +296,7 @@ class MarketingReturnCurve:
     elif max_spend is not None and current_spend > max_spend: print("Status: OVER-SATURATED (Unprofitable Marginal Growth)\n Recommendation: Scale back spend to ${max_spend:,.2f} to maintain target unit economics.")
     else: print("Status: OPTIMAL SCALING ZONE.\nRecommendation: You are operating within the highly efficient growth window.")
 
-  def plot_response_curve(self, target_mroas=1.0, current_spend=None, show_intervals=True):
+  def plot_response_curve(self, target_mroas=1.0, current_spend=None, show_intervals=True, scatter=None):
     """Generates a visualization of the media response and marginal return curves.
 
     Args:
@@ -320,7 +327,7 @@ class MarketingReturnCurve:
       y_return = self.predict_incremental_return(x_vals)
       y_mroas = self.predict_marginal_return(x_vals)
 
-    fig, ax1 = plt.subplots(figsize=(12, 6))
+    fig, ax1 = plt.subplots(figsize=(16, 6))
     # Primary Axis: Response Curve
     ax1.plot(x_vals, y_return, color='#2CA02C', linewidth=3, label="Incremental Return")
     if show_intervals and self.posterior_samples:
@@ -331,7 +338,11 @@ class MarketingReturnCurve:
     ax1.tick_params(axis='y', labelcolor='#2CA02C')
     ax1.grid(True, linestyle='--', alpha=0.5)
 
+    if scatter is not None:
+      ax1.scatter(scatter[0], scatter[1], label="data", c='tab:blue', alpha=0.2, edgecolors='blue', linewidths=1.5) 
+
     # Secondary Axis: Marginal Return
+    """
     ax2 = ax1.twinx()
     ax2.plot(x_vals, y_mroas, color='#1F77B4', linestyle='--', linewidth=2, label="Marginal ROAS")
     if show_intervals and self.posterior_samples:
@@ -342,14 +353,23 @@ class MarketingReturnCurve:
     ax2.axhline(target_mroas, color='gray', linestyle=':', label="Target mROAS Floor")
     # Mark Inflection Points
     ax2.plot(min_spend, self.predict_marginal_return(min_spend), marker='*', color='gold', markersize=15, markeredgecolor='black', label="Minimal Marginal Cost (Peak Efficiency)")
+    """
     if max_spend:
-      ax2.plot(max_spend, target_mroas, marker='X', color='red', markersize=12, label="Point of Diminishing Returns")
+      #ax2.plot(max_spend, target_mroas, marker='X', color='red', markersize=12, label="Point of Diminishing Returns")
       ax1.axvspan(min_spend, max_spend, color='green', alpha=0.1, label='Optimal Scaling Zone') # Shade the "Optimal Scaling Zone"
     if current_spend: ax1.axvline(current_spend, color='purple', linestyle='-.', label="Current Spend")
     # Combine Legends
     lines_1, labels_1 = ax1.get_legend_handles_labels()
-    lines_2, labels_2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc='upper left', bbox_to_anchor=(1.05, 1))
+    #lines_2, labels_2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines_1 
+               #+ lines_2
+               , labels_1 
+               #+ labels_2
+               , loc='upper left', bbox_to_anchor=(1.05, 1))
+    ax1.xaxis.set_major_formatter(ticker.FuncFormatter(format_currency_k))
     plt.title(f'Response Curve Analysis: {self.channel_name}\n$\\alpha={self.alpha:.2f}, K={self.K:,.0f}, \\beta={self.beta:,.0f}$', fontsize=14)
     plt.tight_layout()
     plt.show()
+
+
+def format_currency_k(x, pos): return f'${x/1000:g}k'
