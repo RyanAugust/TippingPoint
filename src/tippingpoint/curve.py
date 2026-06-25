@@ -3,6 +3,7 @@ from tinygrad.tensor import Tensor
 from tinygrad.nn.optim import Adam
 from tinygrad import dtypes
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 import warnings
 
@@ -36,6 +37,7 @@ class MarketingReturnCurve:
     self.K = float(half_saturation_k)
     self.channel_name = channel_name
     self.posterior_samples = posterior_samples
+    self.loss = 0
 
   @classmethod
   def fit_bayesian(cls, spend_array, return_array, channel_name="Generic", priors=None, n_samples=2000, chains=4, burn_in=1000):
@@ -180,9 +182,14 @@ class MarketingReturnCurve:
         loss.backward()
         optimizer.step()
     Tensor.traning = False
-    self.final_loss = loss.numpy().item()
-    print(f"[{channel_name}] Curve fit complete. Loss: {self.final_loss:.4f}")
-    return cls(log_beta.exp().numpy().item(), log_alpha.exp().numpy().item(), log_k.exp().numpy().item(), channel_name)
+    final_loss = loss.numpy().item()
+    print(f"[{channel_name}] Curve fit complete. Loss: {final_loss:.4f}")
+    model = cls(log_beta.exp().numpy().item(), log_alpha.exp().numpy().item(), log_k.exp().numpy().item(), channel_name)
+    model.update_loss(final_loss)
+    return model
+
+  def update_loss(self, loss: float) -> None:
+    self.loss = loss
 
   def predict_incremental_return(self, spend, use_samples=False):
     """Calculates the total incremental return for a given spend.
@@ -289,7 +296,7 @@ class MarketingReturnCurve:
     elif max_spend is not None and current_spend > max_spend: print("Status: OVER-SATURATED (Unprofitable Marginal Growth)\n Recommendation: Scale back spend to ${max_spend:,.2f} to maintain target unit economics.")
     else: print("Status: OPTIMAL SCALING ZONE.\nRecommendation: You are operating within the highly efficient growth window.")
 
-  def plot_response_curve(self, target_mroas=1.0, current_spend=None, show_intervals=True):
+  def plot_response_curve(self, target_mroas=1.0, current_spend=None, show_intervals=True, scatter=None):
     """Generates a visualization of the media response and marginal return curves.
 
     Args:
@@ -297,15 +304,30 @@ class MarketingReturnCurve:
       current_spend (float, optional): The current spend to mark on the chart.
       show_intervals (bool): If True and posterior samples exist, plots
         the 90% credible interval. Defaults to True.
+      scatter (tuple, optional): A tuple of (spend, return) arrays to scatter plot.
     """
+    # Google Brand Colors
+    G_BLUE = '#4285F4'
+    G_RED = '#EA4335'
+    G_YELLOW = '#FBBC04'
+    G_GREEN = '#34A853'
+    G_GRAY = '#5F6368'
+    G_LIGHT_GRAY = '#F8F9FA'
+
     min_spend = self.get_minimal_marginal_cost_point()
     max_spend = self.get_diminishing_returns_point(target_mroas)
 
-    plot_limit = max_spend * 1.5 if max_spend else min_spend * 4
-    plot_limit = max(plot_limit, current_spend * 1.2 if current_spend else 0)
+    # Determine plot limits
+    max_x = max_spend * 1.5 if max_spend else min_spend * 4
+    if current_spend: max_x = max(max_x, current_spend * 1.2)
+    if scatter is not None: max_x = max(max_x, np.max(scatter[0]) * 1.1)
 
-    x_vals = np.linspace(0, plot_limit, 500)
+    # Crop x-axis if it extends too far beyond the stop-scaling point (max_spend)
+    # to maintain fidelity of the scaling region.
+    if max_spend and max_x > 100 * max_spend:
+      max_x = max_spend * 3.0
 
+    x_vals = np.linspace(0, max_x, 500)
     if show_intervals and self.posterior_samples:
       y_returns_dist = self.predict_incremental_return(x_vals, use_samples=True)
       y_return = np.mean(y_returns_dist, axis=0)
@@ -320,36 +342,80 @@ class MarketingReturnCurve:
       y_return = self.predict_incremental_return(x_vals)
       y_mroas = self.predict_marginal_return(x_vals)
 
-    fig, ax1 = plt.subplots(figsize=(12, 6))
-    # Primary Axis: Response Curve
-    ax1.plot(x_vals, y_return, color='#2CA02C', linewidth=3, label="Incremental Return")
-    if show_intervals and self.posterior_samples:
-      ax1.fill_between(x_vals, y_return_low, y_return_high, color='#2CA02C', alpha=0.2, label="90% Credible Interval")
+    # Set modern style
+    plt.rcParams['font.family'] = 'sans-serif'
+    plt.rcParams['font.sans-serif'] = ['Roboto', 'Open Sans', 'Arial', 'DejaVu Sans']
 
-    ax1.set_xlabel('Spend ($)', fontsize=12, fontweight='bold')
-    ax1.set_ylabel('Incremental Return', color='#2CA02C', fontsize=12, fontweight='bold')
-    ax1.tick_params(axis='y', labelcolor='#2CA02C')
-    ax1.grid(True, linestyle='--', alpha=0.5)
+    fig, ax1 = plt.subplots(figsize=(12, 7), facecolor='white')
+    ax1.set_facecolor('white')
+
+    # Primary Axis: Response Curve
+    ax1.plot(x_vals, y_return, color=G_BLUE, linewidth=3.5, label="Incremental Return", zorder=3)
+    if show_intervals and self.posterior_samples:
+      ax1.fill_between(x_vals, y_return_low, y_return_high, color=G_BLUE, alpha=0.15, label="90% Credible Interval", zorder=2)
+
+    ax1.set_xlabel('Spend', fontsize=11, color=G_GRAY, fontweight='500', labelpad=10)
+    ax1.set_ylabel('Incremental Return', color=G_BLUE, fontsize=11, fontweight='500', labelpad=10)
+    ax1.tick_params(axis='both', which='major', labelsize=10, colors=G_GRAY)
 
     # Secondary Axis: Marginal Return
     ax2 = ax1.twinx()
-    ax2.plot(x_vals, y_mroas, color='#1F77B4', linestyle='--', linewidth=2, label="Marginal ROAS")
+    ax2.plot(x_vals, y_mroas, color=G_GRAY, linestyle=(0, (5, 2)), linewidth=1.5, label="Marginal ROAS", alpha=0.6, zorder=1)
     if show_intervals and self.posterior_samples:
-      ax2.fill_between(x_vals, y_mroas_low, y_mroas_high, color='#1F77B4', alpha=0.1)
+      ax2.fill_between(x_vals, y_mroas_low, y_mroas_high, color=G_GRAY, alpha=0.05, zorder=0)
 
-    ax2.set_ylabel('Marginal ROAS (mROAS)', color='#1F77B4', fontsize=12, fontweight='bold')
-    ax2.tick_params(axis='y', labelcolor='#1F77B4')
-    ax2.axhline(target_mroas, color='gray', linestyle=':', label="Target mROAS Floor")
-    # Mark Inflection Points
-    ax2.plot(min_spend, self.predict_marginal_return(min_spend), marker='*', color='gold', markersize=15, markeredgecolor='black', label="Minimal Marginal Cost (Peak Efficiency)")
-    if max_spend:
-      ax2.plot(max_spend, target_mroas, marker='X', color='red', markersize=12, label="Point of Diminishing Returns")
-      ax1.axvspan(min_spend, max_spend, color='green', alpha=0.1, label='Optimal Scaling Zone') # Shade the "Optimal Scaling Zone"
-    if current_spend: ax1.axvline(current_spend, color='purple', linestyle='-.', label="Current Spend")
-    # Combine Legends
-    lines_1, labels_1 = ax1.get_legend_handles_labels()
-    lines_2, labels_2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc='upper left', bbox_to_anchor=(1.05, 1))
-    plt.title(f'Response Curve Analysis: {self.channel_name}\n$\\alpha={self.alpha:.2f}, K={self.K:,.0f}, \\beta={self.beta:,.0f}$', fontsize=14)
+    ax2.set_ylabel('Marginal ROAS (mROAS)', color=G_GRAY, fontsize=11, fontweight='500', labelpad=10)
+    ax2.tick_params(axis='y', labelcolor=G_GRAY, labelsize=10)
+    ax2.axhline(target_mroas, color=G_RED, linestyle=':', linewidth=1, alpha=0.5, label=f"Target mROAS ({target_mroas})")
+
+    # Optimal Scaling Zone
+    if max_spend and max_spend > min_spend:
+      ax1.axvspan(min_spend, max_spend, color=G_GREEN, alpha=0.08, label='Optimal Scaling Zone', zorder=0)
+      ax1.text((min_spend + max_spend)/2, plt.ylim()[1]*0.02, 'OPTIMAL ZONE',
+               horizontalalignment='center', fontsize=9, color=G_GREEN, fontweight='bold', alpha=0.6)
+
+    # Current Spend marker
+    if current_spend:
+      ax1.axvline(current_spend, color=G_RED, linestyle='--', linewidth=1.5, alpha=0.8, label=f"Current Spend (${current_spend:,.0f})", zorder=4)
+      ax1.scatter(current_spend, self.predict_incremental_return(current_spend), color=G_RED, s=60, edgecolors='white', linewidth=1.5, zorder=5)
+
+    # Scatter data
+    if scatter is not None:
+      ax1.scatter(scatter[0], scatter[1], color=G_BLUE, alpha=0.3, s=40, edgecolors='white', linewidth=0.8, label="Historical Data", zorder=1)
+
+    # Markers for key points
+    if min_spend > 0:
+      ax2.scatter(min_spend, self.predict_marginal_return(min_spend), marker='o', color=G_YELLOW, s=100, edgecolors=G_GRAY, linewidth=1, label="Peak Efficiency", zorder=6)
+
+    # Formatting
+    ax1.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'${x/1000:g}k' if x >= 1000 else f'${x:g}'))
+    ax1.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'{x/1000:g}k' if x >= 1000 else f'{x:g}'))
+
+    # Hide top and right spines for ax1, and top for ax2
+    ax1.spines['top'].set_visible(False)
+    ax1.spines['right'].set_visible(False)
+    ax1.spines['left'].set_color(G_LIGHT_GRAY)
+    ax1.spines['bottom'].set_color(G_LIGHT_GRAY)
+
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['right'].set_visible(False)
+    ax2.spines['left'].set_visible(False)
+
+    ax1.grid(True, linestyle='-', alpha=0.1, color=G_GRAY)
+
+    # Legends
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc='center right', frameon=True, facecolor='white', framealpha=1.0, fontsize=10)
+
+    # Title
+    plt.title(f'Media Response Analysis: {self.channel_name}', loc='left', fontsize=16, fontweight='bold', pad=25, color='#202124')
+
+    # Subtitle with parameters
+    fig.text(0.125, 0.91, f'Hill Curve Parameters: α={self.alpha:.2f}, K={self.K:,.0f}, β={self.beta:,.0f}',
+             fontsize=10, color=G_GRAY)
+
     plt.tight_layout()
     plt.show()
+
+def format_currency_k(x, pos): return f'${x/1000:g}k'
