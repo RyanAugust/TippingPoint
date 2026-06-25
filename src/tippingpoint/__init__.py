@@ -3,5 +3,5 @@ __author__ = "Ryan Duecker"
 __version__ = "0.0.3"
 
 from .curve import MarketingReturnCurve as MarketingReturnCurve
-from .curve import MaximalFrontierCurve as MaximalFrontierCurve
+from .frontier import MaximalFrontierCurve as MaximalFrontierCurve
 

@@ -158,12 +158,14 @@ class MaximalFrontierCurve:
 
     if is_rate:
       rate = results
-      total = spend * rate
     else:
-      total = results
-      rate = total / spend
+      rate = results / spend
 
     if method == "linear" and q is None:
+      if is_rate:
+        total = spend * rate
+      else:
+        total = results
       slope, intercept = np.polyfit(spend, total, 1)
       return cls(cr=slope, r_prime=intercept, model_type="2-parameter")
 
