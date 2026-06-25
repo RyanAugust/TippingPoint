@@ -75,6 +75,7 @@ class MarketingReturnCurve:
       return -0.5 * np.sum(((y - y_pred) / sigma) ** 2) - len(y) * np.log(sigma)
 
     def log_prior(beta, alpha, K, sigma):
+      if beta <= 0 or alpha <= 0 or K <= 0 or sigma <= 0: return -np.inf
       lp = 0
       # LogNormal priors for beta, alpha, K
       for name, val in [('beta', beta), ('alpha', alpha), ('K', K)]:
@@ -155,7 +156,7 @@ class MarketingReturnCurve:
     max_y = np.max(return_array)
     median_x = np.median(spend_array[spend_array > 0]) if np.any(spend_array > 0) else 1.0
 
-    Tensor.traning = True
+    Tensor.training = True
     x = Tensor(spend_array, dtype=dtypes.float32)
     x.requires_grad = False
     y = Tensor(return_array, dtype=dtypes.float32)
@@ -169,19 +170,18 @@ class MarketingReturnCurve:
     log_alpha.requires_grad = True
     optimizer = Adam([log_beta, log_k, log_alpha], lr=lr)
 
-    Tensor.traning = True
-    with Tensor.train():
-      for _ in range(epochs):
-        optimizer.zero_grad()
-        beta = log_beta.exp()
-        k = log_k.exp()
-        alpha = log_alpha.exp()
-        x_safe = x + 1e-5 # Add tiny epsilon to x to prevent 0^alpha resulting in NaNs
-        y_pred = (beta * (x_safe ** alpha)) / (k ** alpha + x_safe ** alpha) # Hill Function
-        loss = ((y_pred - y) ** 2).mean() # Loss Function (Mean Squared Error)
-        loss.backward()
-        optimizer.step()
-    Tensor.traning = False
+    for _ in range(epochs):
+      optimizer.zero_grad()
+      beta = log_beta.exp()
+      k = log_k.exp()
+      alpha = log_alpha.exp()
+      x_safe = x + 1e-5 # Add tiny epsilon to x to prevent 0^alpha resulting in NaNs
+      y_pred = (beta * (x_safe ** alpha)) / (k ** alpha + x_safe ** alpha) # Hill Function
+      loss = ((y_pred - y) ** 2).mean() # Loss Function (Mean Squared Error)
+      loss.backward()
+      optimizer.step()
+
+    Tensor.training = False
     final_loss = loss.numpy().item()
     print(f"[{channel_name}] Curve fit complete. Loss: {final_loss:.4f}")
     model = cls(log_beta.exp().numpy().item(), log_alpha.exp().numpy().item(), log_k.exp().numpy().item(), channel_name)
@@ -417,5 +417,3 @@ class MarketingReturnCurve:
 
     plt.tight_layout()
     plt.show()
-
-def format_currency_k(x, pos): return f'${x/1000:g}k'
