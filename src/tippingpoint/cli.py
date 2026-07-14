@@ -8,7 +8,7 @@ def main():
     subparsers = parser.add_subparsers(dest="command")
 
     # Dashboard command
-    dashboard_parser = subparsers.add_parser("dashboard", help="Launch the interactive Streamlit dashboard")
+    subparsers.add_parser("dashboard", help="Launch the interactive Streamlit dashboard")
 
     args = parser.parse_args()
 
