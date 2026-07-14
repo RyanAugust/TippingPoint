@@ -162,7 +162,7 @@ def create_plotly_plot(model, target_mroas, scatter=None):
   return fig
 
 def create_adstock_timeline_plot(spends, model):
-    """Generates an interactive Plotly timeline comparing raw vs adstocked spends."""
+  """Generates an interactive Plotly timeline comparing raw vs adstocked spends."""
   adstocked = model.adstock_spend(spends)
   indices = np.arange(len(spends))
 
