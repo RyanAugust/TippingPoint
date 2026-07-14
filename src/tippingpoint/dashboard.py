@@ -77,8 +77,11 @@ def create_plotly_plot(model, target_mroas):
     # Layout tuning
     fig.update_layout(
         title_text=f"Media Response Analysis: {model.channel_name}",
+        title_font=dict(size=20, color='#202124'),
+        font=dict(size=13, color='#5F6368'),
+        height=650,
         hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=12)),
         template="plotly_white",
         margin=dict(l=20, r=20, t=60, b=20)
     )
