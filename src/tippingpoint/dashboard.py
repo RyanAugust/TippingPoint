@@ -179,6 +179,12 @@ def run_dashboard():
                     spend_col = st.sidebar.selectbox("Spend Column", df.columns, index=0 if "spend" in df.columns[0].lower() else 0)
                     return_col = st.sidebar.selectbox("Return/KPI Column", df.columns, index=1 if len(df.columns) > 1 and "return" in df.columns[1].lower() else 0)
 
+                    # Conversion value multiplier
+                    set_val = st.sidebar.checkbox("set conversion value", value=False)
+                    conversion_val = 1.0
+                    if set_val:
+                        conversion_val = st.sidebar.number_input("Conversion Value ($)", value=100.0, min_value=0.01, step=1.0, help="Multiply raw returns (e.g. counts) by this value to generate revenue-denominated returns.")
+
                     epochs = st.sidebar.number_input("Fitting Epochs", value=1000, step=100)
 
                     if st.sidebar.button("🚀 Fit Model from CSV"):
@@ -186,7 +192,7 @@ def run_dashboard():
                         try:
                             with st.spinner("Fitting curve using tinygrad..."):
                                 spends = df[spend_col].values
-                                returns = df[return_col].values
+                                returns = df[return_col].values * conversion_val
                                 model = fit_in_subprocess(
                                     spends=spends,
                                     returns=returns,
