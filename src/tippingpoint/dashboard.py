@@ -422,6 +422,24 @@ def run_dashboard():
     st.warning(f"Target mROAS of {target_mroas} is unreachable with current model parameters.")
     st.write(f"Max possible mROAS: {model.predict_marginal_return(min_spend):.2f}")
 
+  if model.theta > 0:
+    st.markdown("---")
+    st.subheader("🕰️ Adstock Carryover Analysis")
+
+    col1, col2 = st.columns(2)
+    with col1:
+      st.metric("Fitted Decay Rate (Theta)", f"{model.theta:.4f}")
+    with col2:
+      half_life = -np.log(2) / np.log(model.theta) if model.theta > 0 else 0.0
+      st.metric("Carryover Half-Life", f"{half_life:.1f} Days")
+
+    if st.session_state.training_data is not None:
+      spends, _ = st.session_state.training_data
+      adstock_fig = create_adstock_timeline_plot(spends, model)
+      st.plotly_chart(adstock_fig, use_container_width=True)
+    else:
+      st.info("No timeline data available to show carryover plot (Manual Parameters loaded).")
+
   st.markdown("---")
   st.subheader("Model Summary")
   st.json(model.summary())
