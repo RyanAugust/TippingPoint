@@ -119,3 +119,24 @@ class MarketingReturnCurve:
       import matplotlib.pyplot as plt
       plt.show()
     return fig
+
+  def launch_dashboard(self):
+    """Launches the interactive dashboard for this specific model instance."""
+    import streamlit.web.cli as stcli
+    import sys
+    import os
+    import tempfile
+    import pickle
+
+    # To pass THIS model instance to the dashboard, we'll use a temporary pickle file
+    with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as tmp:
+      pickle.dump(self, tmp)
+      tmp_path = tmp.name
+
+    dashboard_path = os.path.join(os.path.dirname(__file__), "dashboard.py")
+
+    # We set an environment variable so the dashboard knows to load the specific model
+    os.environ["TIPPINGPOINT_MODEL_PATH"] = tmp_path
+
+    sys.argv = ["streamlit", "run", dashboard_path]
+    stcli.main()

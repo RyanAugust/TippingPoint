@@ -1,7 +1,27 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+import pickle
 from tippingpoint import MarketingReturnCurve
+
+@st.cache_resource
+def load_external_model(path):
+    with open(path, "rb") as f:
+        return pickle.load(f)
+
+@st.cache_resource
+def get_sample_model():
+    # Generate some dummy data
+    spends = np.array([1000, 5000, 15000, 25000, 40000, 60000])
+    returns = np.array([200, 1500, 12000, 22000, 28000, 32000])
+
+    return MarketingReturnCurve.from_historical_data(
+        spend_array=spends,
+        return_array=returns,
+        channel_name="Sample Channel",
+        epochs=1000
+    )
 
 def run_dashboard():
     st.set_page_config(page_title="Tipping Point Dashboard", layout="wide")
@@ -14,25 +34,25 @@ def run_dashboard():
 
     # Sidebar for Model Parameters or Data
     st.sidebar.header("Model Configuration")
-    data_source = st.sidebar.selectbox("Data Source", ["Sample Data", "Manual Parameters"])
 
-    if data_source == "Sample Data":
-        # Generate some dummy data
-        spends = np.array([1000, 5000, 15000, 25000, 40000, 60000])
-        returns = np.array([200, 1500, 12000, 22000, 28000, 32000])
-
-        with st.spinner("Fitting model to sample data..."):
-            model = MarketingReturnCurve.from_historical_data(
-                spend_array=spends,
-                return_array=returns,
-                channel_name="Sample Channel",
-                epochs=1000
-            )
+    external_model_path = os.environ.get("TIPPINGPOINT_MODEL_PATH")
+    if external_model_path and os.path.exists(external_model_path):
+        model = load_external_model(external_model_path)
+        st.sidebar.success(f"Loaded model: {model.channel_name}")
+        if st.sidebar.button("Clear External Model"):
+            del os.environ["TIPPINGPOINT_MODEL_PATH"]
+            st.rerun()
     else:
-        beta = st.sidebar.number_input("Beta (Max Capacity)", value=50000.0)
-        alpha = st.sidebar.number_input("Alpha (Shape)", value=1.8, min_value=0.1)
-        k = st.sidebar.number_input("K (Half-Saturation)", value=20000.0)
-        model = MarketingReturnCurve(beta=beta, alpha=alpha, half_saturation_k=k, channel_name="Custom Channel")
+        data_source = st.sidebar.selectbox("Data Source", ["Sample Data", "Manual Parameters"])
+
+        if data_source == "Sample Data":
+            with st.spinner("Fitting model to sample data..."):
+                model = get_sample_model()
+        else:
+            beta = st.sidebar.number_input("Beta (Max Capacity)", value=50000.0)
+            alpha = st.sidebar.number_input("Alpha (Shape)", value=1.8, min_value=0.1)
+            k = st.sidebar.number_input("K (Half-Saturation)", value=20000.0)
+            model = MarketingReturnCurve(beta=beta, alpha=alpha, half_saturation_k=k, channel_name="Custom Channel")
 
     # Interactive Slider for Target mROAS
     st.sidebar.markdown("---")
