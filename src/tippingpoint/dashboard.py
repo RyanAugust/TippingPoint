@@ -1,27 +1,10 @@
 import streamlit as st
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import pickle
 from tippingpoint import MarketingReturnCurve
-
-@st.cache_resource
-def load_external_model(path):
-    with open(path, "rb") as f:
-        return pickle.load(f)
-
-@st.cache_resource
-def get_sample_model():
-    # Generate some dummy data
-    spends = np.array([1000, 5000, 15000, 25000, 40000, 60000])
-    returns = np.array([200, 1500, 12000, 22000, 28000, 32000])
-
-    return MarketingReturnCurve.from_historical_data(
-        spend_array=spends,
-        return_array=returns,
-        channel_name="Sample Channel",
-        epochs=1000
-    )
 
 def run_dashboard():
     st.set_page_config(page_title="Tipping Point Dashboard", layout="wide")
@@ -32,29 +15,114 @@ def run_dashboard():
     Adjust the target marginal ROAS (mROAS) to see how it impacts your recommended spend limits.
     """)
 
-    # Sidebar for Model Parameters or Data
+    # Initialize session state for the model
+    if "model" not in st.session_state:
+        st.session_state.model = None
+
+    # Check for external model from python script invocation (launch_dashboard)
+    external_model_path = os.environ.get("TIPPINGPOINT_MODEL_PATH")
+    if external_model_path and os.path.exists(external_model_path) and st.session_state.model is None:
+        try:
+            with open(external_model_path, "rb") as f:
+                st.session_state.model = pickle.load(f)
+            st.sidebar.success(f"Loaded model from script: {st.session_state.model.channel_name}")
+        except Exception as e:
+            st.sidebar.error(f"Failed to load external model: {e}")
+
+    # Sidebar: Model Configuration / Actions
     st.sidebar.header("Model Configuration")
 
-    external_model_path = os.environ.get("TIPPINGPOINT_MODEL_PATH")
-    if external_model_path and os.path.exists(external_model_path):
-        model = load_external_model(external_model_path)
-        st.sidebar.success(f"Loaded model: {model.channel_name}")
-        if st.sidebar.button("Clear External Model"):
+    if st.session_state.model is None:
+        # Step 1: No model loaded yet. Show configuration options.
+        data_source = st.sidebar.selectbox("Select Input Method", ["Upload CSV", "Use Sample Data", "Manual Parameters"])
+
+        if data_source == "Upload CSV":
+            uploaded_file = st.sidebar.file_uploader("Upload Historical Data (CSV)", type=["csv"])
+            if uploaded_file:
+                try:
+                    df = pd.read_csv(uploaded_file)
+                    st.sidebar.write("Preview:")
+                    st.sidebar.dataframe(df.head(3))
+
+                    # Try to find columns
+                    spend_col = st.sidebar.selectbox("Spend Column", df.columns, index=0 if "spend" in df.columns[0].lower() else 0)
+                    return_col = st.sidebar.selectbox("Return/KPI Column", df.columns, index=1 if len(df.columns) > 1 and "return" in df.columns[1].lower() else 0)
+
+                    epochs = st.sidebar.number_input("Fitting Epochs", value=1000, step=100)
+
+                    if st.sidebar.button("🚀 Fit Model from CSV"):
+                        with st.spinner("Fitting curve using tinygrad..."):
+                            spends = df[spend_col].values
+                            returns = df[return_col].values
+                            model = MarketingReturnCurve.from_historical_data(
+                                spend_array=spends,
+                                return_array=returns,
+                                channel_name="Uploaded Channel",
+                                epochs=epochs
+                            )
+                            st.session_state.model = model
+                            st.rerun()
+                except Exception as e:
+                    st.sidebar.error(f"Error processing CSV: {e}")
+            else:
+                st.info("Please upload a CSV file with spend and return columns.")
+
+        elif data_source == "Use Sample Data":
+            st.sidebar.markdown("""
+            **Sample Dataset:**
+            - Spends: `[1k, 5k, 15k, 25k, 40k, 60k]`
+            - Returns: `[200, 1.5k, 12k, 22k, 28k, 32k]`
+            """)
+            epochs = st.sidebar.number_input("Fitting Epochs", value=1000, step=100)
+            if st.sidebar.button("🚀 Fit Sample Model"):
+                with st.spinner("Fitting sample curve..."):
+                    spends = np.array([1000, 5000, 15000, 25000, 40000, 60000])
+                    returns = np.array([200, 1500, 12000, 22000, 28000, 32000])
+                    model = MarketingReturnCurve.from_historical_data(
+                        spend_array=spends,
+                        return_array=returns,
+                        channel_name="Sample Channel",
+                        epochs=epochs
+                    )
+                    st.session_state.model = model
+                    st.rerun()
+
+        elif data_source == "Manual Parameters":
+            beta = st.sidebar.number_input("Beta (Max Capacity)", value=50000.0, step=1000.0)
+            alpha = st.sidebar.number_input("Alpha (Shape Parameter)", value=1.8, min_value=0.1, step=0.1)
+            k = st.sidebar.number_input("K (Half-Saturation Point)", value=20000.0, step=1000.0)
+
+            if st.sidebar.button("✅ Apply Parameters"):
+                model = MarketingReturnCurve(beta=beta, alpha=alpha, half_saturation_k=k, channel_name="Custom Channel")
+                st.session_state.model = model
+                st.rerun()
+
+        # Display placeholder in main area when no model is active
+        st.warning("👈 Please configure and fit/apply a model in the sidebar to begin.")
+
+        # Simple math reference for the user
+        st.markdown("""
+        ### Mathematical Reference
+        The model fits historical performance data to a continuous **Hill Function**:
+
+        $$Return = \\frac{\\beta \\cdot Spend^\\alpha}{K^\\alpha + Spend^\\alpha}$$
+
+        - **$\\beta$ (Beta):** Maximum possible return capacity (asymptote).
+        - **$\\alpha$ (Alpha):** Shape parameter (S-shape if $>1$, C-shape if $\\le 1$).
+        - **$K$ (Half-Saturation):** Spend level where half of maximum capacity is achieved.
+        """)
+        return
+
+    # Step 2: Model is active. Show full interactive dashboard.
+    model = st.session_state.model
+
+    # Option to reset/change model
+    if st.sidebar.button("🔄 Reset / Load New Model"):
+        st.session_state.model = None
+        if "TIPPINGPOINT_MODEL_PATH" in os.environ:
             del os.environ["TIPPINGPOINT_MODEL_PATH"]
-            st.rerun()
-    else:
-        data_source = st.sidebar.selectbox("Data Source", ["Sample Data", "Manual Parameters"])
+        st.rerun()
 
-        if data_source == "Sample Data":
-            with st.spinner("Fitting model to sample data..."):
-                model = get_sample_model()
-        else:
-            beta = st.sidebar.number_input("Beta (Max Capacity)", value=50000.0)
-            alpha = st.sidebar.number_input("Alpha (Shape)", value=1.8, min_value=0.1)
-            k = st.sidebar.number_input("K (Half-Saturation)", value=20000.0)
-            model = MarketingReturnCurve(beta=beta, alpha=alpha, half_saturation_k=k, channel_name="Custom Channel")
-
-    # Interactive Slider for Target mROAS
     st.sidebar.markdown("---")
     st.sidebar.header("Optimization Settings")
     target_mroas = st.sidebar.slider(
@@ -75,7 +143,6 @@ def run_dashboard():
 
     with col1:
         st.subheader("Media Response & Marginal Efficiency")
-        # Use the existing plotting logic
         fig = model.plot_response_curve(target_mroas=target_mroas, show=False)
         st.pyplot(fig)
 
