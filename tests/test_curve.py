@@ -1,7 +1,6 @@
 import pytest
 import numpy as np
 from unittest.mock import patch
-import warnings
 
 # Import the class from your module (change 'marketing_curve' to your actual file name without .py)
 from tippingpoint import MarketingReturnCurve
