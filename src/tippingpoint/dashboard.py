@@ -62,10 +62,18 @@ def create_plotly_plot(model, target_mroas, scatter=None):
   min_spend = model.get_minimal_marginal_cost_point()
   max_spend = model.get_diminishing_returns_point(target_mroas)
 
+  # Prepare scatter data if adstock is active
+  scatter_spend = None
+  if scatter is not None:
+    scatter_spend, scatter_return = scatter
+    if model.theta > 0:
+      from tippingpoint.math import geometric_adstock
+      scatter_spend = geometric_adstock(scatter_spend, model.theta)
+
   # Determine plot limits
   plot_limit = (max_spend * 1.5) if max_spend else (min_spend * 4 or 100000)
-  if scatter is not None and len(scatter[0]) > 0:
-    plot_limit = max(plot_limit, float(np.max(scatter[0]) * 1.1))
+  if scatter_spend is not None and len(scatter_spend) > 0:
+    plot_limit = max(plot_limit, float(np.max(scatter_spend) * 1.1))
 
   x_vals = np.linspace(0, plot_limit, 500)
   y_return = model.predict_incremental_return(x_vals)
@@ -99,17 +107,16 @@ def create_plotly_plot(model, target_mroas, scatter=None):
   )
 
   # Add Scatter data if enabled
-  if scatter is not None:
-    fig.add_trace(
-      go.Scatter(
-        x=scatter[0], y=scatter[1],
-        mode="markers", name="Historical Data",
-        marker=dict(color='#4285F4', size=8, opacity=0.6, line=dict(color='white', width=1)),
-        showlegend=True
-      ),
-      secondary_y=False
-    )
-
+  if scatter_spend is not None:
+      fig.add_trace(
+          go.Scatter(
+              x=scatter_spend, y=scatter_return,
+              mode="markers", name="Historical Data (Adstocked)" if model.theta > 0 else "Historical Data",
+              marker=dict(color='#4285F4', size=8, opacity=0.6, line=dict(color='white', width=1)),
+              showlegend=True
+          ),
+          secondary_y=False
+      )
   # Highlight Optimal Scaling Zone (using shapes)
   if max_spend and max_spend > min_spend:
     fig.add_vrect(
