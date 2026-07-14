@@ -417,7 +417,9 @@ def run_dashboard():
       annual_spend_m = annual_spend / 1_000_000
       st.metric("Stop Scaling Point (Annualized)", f"${annual_spend_m:.2f}M")
 
-    st.info(f"💡 **Strategic Recommendation:** You should spend at least **${min_spend:,.2f}** per day to exit the inefficient warm-up phase (Peak Efficiency). However, do not scale spend beyond **${max_spend:,.2f}** per day (or **${annual_spend_m:.2f}M** annualized), as any additional dollar spent beyond this threshold will return less than your target mROAS of **{target_mroas:.2f}**.")
+    st.info(f"💡 **Strategic Recommendation:** You should spend at least **${min_spend:,.2f}** per day to exit the inefficient warm-up phase (Peak Efficiency). \
+            However, do not scale spend beyond **${max_spend:,.2f}** per day (or **${annual_spend_m:.2f}M** annualized), as any additional dollar spent beyond this \
+            threshold will return less than your target mROAS of **{target_mroas:.2f}**.")
   else:
     st.warning(f"Target mROAS of {target_mroas} is unreachable with current model parameters.")
     st.write(f"Max possible mROAS: {model.predict_marginal_return(min_spend):.2f}")

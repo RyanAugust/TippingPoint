@@ -20,7 +20,7 @@ def main():
 def launch_dashboard():
   """Launches the Streamlit dashboard."""
   try:
-    import streamlit
+    import streamlit # noqa
   except ImportError:
     print("Error: Streamlit is not installed. Please install it with 'pip install streamlit'.")
     sys.exit(1)
