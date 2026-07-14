@@ -108,15 +108,15 @@ def create_plotly_plot(model, target_mroas, scatter=None):
 
   # Add Scatter data if enabled
   if scatter_spend is not None:
-      fig.add_trace(
-          go.Scatter(
-              x=scatter_spend, y=scatter_return,
-              mode="markers", name="Historical Data (Adstocked)" if model.theta > 0 else "Historical Data",
-              marker=dict(color='#4285F4', size=8, opacity=0.6, line=dict(color='white', width=1)),
-              showlegend=True
-          ),
-          secondary_y=False
-      )
+    fig.add_trace(
+      go.Scatter(
+        x=scatter_spend, y=scatter_return,
+        mode="markers", name="Historical Data (Adstocked)" if model.theta > 0 else "Historical Data",
+        marker=dict(color='#4285F4', size=8, opacity=0.6, line=dict(color='white', width=1)),
+        showlegend=True
+      ),
+    secondary_y=False
+  )
   # Highlight Optimal Scaling Zone (using shapes)
   if max_spend and max_spend > min_spend:
     fig.add_vrect(
@@ -163,40 +163,40 @@ def create_plotly_plot(model, target_mroas, scatter=None):
 
 def create_adstock_timeline_plot(spends, model):
     """Generates an interactive Plotly timeline comparing raw vs adstocked spends."""
-    adstocked = model.adstock_spend(spends)
-    indices = np.arange(len(spends))
+  adstocked = model.adstock_spend(spends)
+  indices = np.arange(len(spends))
 
-    fig = go.Figure()
+  fig = go.Figure()
 
-    # Raw Spend (Bar Chart)
-    fig.add_trace(go.Bar(
-        x=indices, y=spends,
-        name="Raw Spend",
-        marker_color="#EA4335",
-        opacity=0.4
-    ))
+  # Raw Spend (Bar Chart)
+  fig.add_trace(go.Bar(
+    x=indices, y=spends,
+    name="Raw Spend",
+    marker_color="#EA4335",
+    opacity=0.4
+  ))
 
-    # Adstocked Spend (Line/Area Chart)
-    fig.add_trace(go.Scatter(
-        x=indices, y=adstocked,
-        mode="lines",
-        name="Effective Adstocked Spend",
-        line=dict(color="#4285F4", width=3),
-        fill='tozeroy',
-        fillcolor="rgba(66, 133, 244, 0.1)"
-    ))
+  # Adstocked Spend (Line/Area Chart)
+  fig.add_trace(go.Scatter(
+    x=indices, y=adstocked,
+    mode="lines",
+    name="Effective Adstocked Spend",
+    line=dict(color="#4285F4", width=3),
+    fill='tozeroy',
+    fillcolor="rgba(66, 133, 244, 0.1)"
+  ))
 
-    half_life = -np.log(2) / np.log(model.theta) if model.theta > 0 else 0.0
-    fig.update_layout(
-        title=f"Adstock Carryover Decay (Half-Life: {half_life:.1f} Days, Theta: {model.theta:.4f})",
-        xaxis_title="Observation Timeline (Days / Periods)",
-        yaxis_title="Spend ($)",
-        template="plotly_white",
-        hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-    )
+  half_life = -np.log(2) / np.log(model.theta) if model.theta > 0 else 0.0
+  fig.update_layout(
+    title=f"Adstock Carryover Decay (Half-Life: {half_life:.1f} Days, Theta: {model.theta:.4f})",
+    xaxis_title="Observation Timeline (Days / Periods)",
+    yaxis_title="Spend ($)",
+    template="plotly_white",
+    hovermode="x unified",
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+  )
 
-    return fig
+  return fig
 
 def run_dashboard():
 
