@@ -115,4 +115,4 @@ class CurveVisualizer:
              fontsize=10, color=cls.G_GRAY)
 
     plt.tight_layout()
-    plt.show()
+    return fig

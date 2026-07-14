@@ -113,5 +113,9 @@ class MarketingReturnCurve:
     elif max_spend is not None and current_spend > max_spend: print(f"Status: OVER-SATURATED (Unprofitable Marginal Growth)\n Recommendation: Scale back spend to ${max_spend:,.2f} to maintain target unit economics.")
     else: print("Status: OPTIMAL SCALING ZONE.\nRecommendation: You are operating within the highly efficient growth window.")
 
-  def plot_response_curve(self, target_mroas=1.0, current_spend=None, show_intervals=True, scatter=None):
-    return CurveVisualizer.plot_response_curve(self, target_mroas, current_spend, show_intervals, scatter)
+  def plot_response_curve(self, target_mroas=1.0, current_spend=None, show_intervals=True, scatter=None, show=True):
+    fig = CurveVisualizer.plot_response_curve(self, target_mroas, current_spend, show_intervals, scatter)
+    if show:
+      import matplotlib.pyplot as plt
+      plt.show()
+    return fig
