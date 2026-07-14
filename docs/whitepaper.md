@@ -12,33 +12,43 @@ The Tipping Point module relies on established econometric principles to model t
 
 ### 1.1 Media Saturation (The Hill Function)
 
-It is a well-established premise in marketing mix modeling (MMM) that media investments do not yield linear returns indefinitely. At a certain threshold, the target audience becomes saturated, and the incremental return for each additional dollar spent begins to decline.
+In plain terms, media saturation is the mathematical expression of "diminishing returns." It acknowledges a fundamental truth of advertising: simply spending more money or showing the same ad more times does not guarantee a proportional increase in sales. Eventually, you run out of new people to reach, or the people you are reaching stop paying attention.
 
-Tipping Point models this saturation using the **Hill Function**, a flexible, continuous curve that can take either an S-shape or a C-shape depending on the channel's dynamics:
+From a social science and psychological perspective, this phenomenon is deeply rooted in concepts like **habituation** and **cognitive wear-out**. When consumers are repeatedly exposed to the same stimulus, their response naturally dampens over time. Similarly, economic theory dictates a law of diminishing marginal utility—the first few exposures are highly persuasive, but subsequent exposures yield progressively less impact as the most receptive audience members convert first, leaving behind a more resistant pool of non-buyers.
+
+To model this complex psychological reality, industry-standard MMMs (including Google Meridian) employ the **Hill Function**. Originally developed in biochemistry to describe the binding of molecules, it perfectly mirrors the constraints of human attention, mapping a flexible, continuous curve between media spend and incremental return:
 
 $$ Return = \frac{\beta \cdot Spend^\alpha}{K^\alpha + Spend^\alpha} $$
 
-*   **$\beta$ (Beta - Capacity):** Represents the asymptote, or the maximum possible incremental return a channel can generate.
-*   **$\alpha$ (Alpha - Shape):** Dictates the shape of the curve. An $\alpha > 1$ creates an S-curve (indicating an initial "warm-up" phase of increasing marginal returns before saturation), while $\alpha \le 1$ creates a C-curve (diminishing returns from the very first dollar).
-*   **$K$ (Half-Saturation):** The spend level at which the channel reaches exactly half of its maximum capacity ($\beta$).
+*   **$\beta$ (Beta - Capacity):** Represents the asymptote, or the absolute ceiling. No matter how much you spend, this is the maximum possible return a channel can generate before the audience is entirely exhausted.
+*   **$\alpha$ (Alpha - Shape):** Dictates the learning curve. An $\alpha > 1$ creates an **S-curve**, indicating an initial "warm-up" phase where frequency builds trust before saturation sets in. An $\alpha \le 1$ creates a **C-curve**, implying that the very first dollar spent is the most efficient, with returns diminishing immediately thereafter.
+*   **$K$ (Half-Saturation):** The specific spend level at which the channel achieves exactly half of its absolute maximum capacity ($\beta$).
 
-By calculating the **first derivative** of this function (the Marginal ROAS), Tipping Point identifies two critical zones:
-1.  **Peak Efficiency Point:** Where the first derivative is maximized ($f''(x) = 0$). This marks the end of the inefficient warm-up phase.
-2.  **Stop Scaling Point:** Where the Marginal ROAS drops below the advertiser's target profitability threshold (e.g., $f'(x) = 1.0$), marking the boundary of the Optimal Scaling Zone.
+Within the Tipping Point module, we don't just fit this curve; we analyze its rate of change. By calculating the **first derivative** (the Marginal ROAS), Tipping Point identifies two critical zones for the advertiser:
+1.  **Peak Efficiency Point:** The mathematical inflection point ($f''(x) = 0$). This marks the exact moment the "warm-up" phase ends and the curve is steepest, representing the cheapest acquisition cost.
+2.  **Stop Scaling Point:** The boundary where the Marginal ROAS drops below the advertiser's target profitability threshold (e.g., a return of exactly $1.00 for every $1.00 spent). Spending beyond this point is mathematically unprofitable.
 
 ### 1.2 Geometric Adstock (Lagged Effects)
 
-Media exposure rarely results in immediate, instantaneous conversion. Advertisers recognize that media has a "memory" or carryover effect. Tipping Point accounts for this using **Geometric Adstock**, a decay model that calculates the *effective* media spend over time.
+In simple terms, "adstock" is the memory or the "echo effect" of advertising. If a consumer sees a television commercial on Monday but doesn't purchase the product until Friday, Monday's media spend was still responsible for generating that return. Media exposure rarely results in immediate, instantaneous conversion.
+
+In cognitive psychology, this aligns with the principles of **cognitive persistence** and the **Ebbinghaus forgetting curve**. When a brand message is encoded into a consumer's memory, it doesn't vanish immediately when the ad stops playing; instead, it decays gradually over time. If a consumer is repeatedly exposed to the brand, this residual memory accumulates, building a stronger underlying predisposition to buy.
+
+To account for this delayed impact, Tipping Point utilizes **Geometric Adstock**, a mathematical decay model that calculates the *effective* media spend over time, rather than just the raw daily spend:
 
 $$ S_{t\_adstocked} = S_t + \theta \cdot S_{t-1\_adstocked} $$
 
-Where $\theta$ is the decay rate (retention rate) between $0$ and $1$. A higher $\theta$ indicates a longer carryover effect (e.g., brand campaigns), while a lower $\theta$ indicates highly transient impact (e.g., direct response search).
+Where $\theta$ is the decay rate (retention rate) between $0$ and $1$.
+*   A **higher $\theta$** indicates a long carryover effect where memory persists (e.g., highly memorable brand television campaigns or out-of-home billboards).
+*   A **lower $\theta$** indicates a highly transient impact that is forgotten quickly (e.g., a direct-response search ad or a fleeting social media banner).
 
-To provide flexibility, the model supports four adstock configurations during training:
-1.  **No Adstock:** Assumes all media impact occurs in the current period ($\theta = 0$).
-2.  **Fixed Adstock:** Applies an explicitly defined decay half-life.
-3.  **Bounded Optimization:** Fits the decay parameter within a user-defined range of valid half-life days.
-4.  **Free Optimization:** Automatically learns the optimal $\theta$ entirely from the historical data variance.
+**How they interact:** Within the Tipping Point module, these two models—Adstock and the Hill Function—do not exist in isolation; they are deeply intertwined. The model first applies the Adstock decay to understand the true, accumulated "weight" of the media in the consumer's mind. It then feeds this *adstocked spend* directly into the Hill Function. This means the module understands that you can hit "Media Saturation" (diminishing returns) not just by spending too much today, but because you spent so heavily yesterday that the consumer's memory is already completely saturated.
+
+To provide maximum flexibility to the analyst, the module supports four adstock configurations during training:
+1.  **No Adstock:** Assumes all media impact occurs in the current period with zero memory ($\theta = 0$).
+2.  **Fixed Adstock:** Applies an explicitly defined decay half-life, useful if the advertiser already knows their channel's decay rate from prior studies.
+3.  **Bounded Optimization:** Fits the decay parameter within a user-defined range of valid half-life days (e.g., telling the model to find the best fit, but forcing it to assume a search ad cannot be remembered for longer than 3 days).
+4.  **Free Optimization:** Automatically learns the optimal $\theta$ entirely from the historical data variance, letting the machine decide how memorable the media was.
 
 ---
 
