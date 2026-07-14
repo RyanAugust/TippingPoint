@@ -1,10 +1,89 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import os
 import pickle
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from tippingpoint import MarketingReturnCurve
+
+def create_plotly_plot(model, target_mroas):
+    min_spend = model.get_minimal_marginal_cost_point()
+    max_spend = model.get_diminishing_returns_point(target_mroas)
+
+    # Determine plot limits
+    plot_limit = (max_spend * 1.5) if max_spend else (min_spend * 4 or 100000)
+    x_vals = np.linspace(0, plot_limit, 500)
+    y_return = model.predict_incremental_return(x_vals)
+    y_mroas = model.predict_marginal_return(x_vals)
+
+    # Create figure with secondary y-axis
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    # Add Incremental Return trace
+    fig.add_trace(
+        go.Scatter(x=x_vals, y=y_return, name="Incremental Return", line=dict(color='#4285F4', width=3)),
+        secondary_y=False,
+    )
+
+    # Add Marginal ROAS trace
+    fig.add_trace(
+        go.Scatter(x=x_vals, y=y_mroas, name="Marginal ROAS", line=dict(color='#5F6368', dash='dash', width=1.5), opacity=0.8),
+        secondary_y=True,
+    )
+
+    # Add Target mROAS horizontal line
+    fig.add_trace(
+        go.Scatter(
+            x=[0, plot_limit],
+            y=[target_mroas, target_mroas],
+            name=f"Target mROAS ({target_mroas})",
+            line=dict(color='#EA4335', width=1, dash='dot'),
+            showlegend=True
+        ),
+        secondary_y=True,
+    )
+
+    # Highlight Optimal Scaling Zone (using shapes)
+    if max_spend and max_spend > min_spend:
+        fig.add_vrect(
+            x0=min_spend, x1=max_spend,
+            fillcolor="#34A853", opacity=0.1,
+            layer="below", line_width=0,
+            annotation_text="OPTIMAL ZONE", annotation_position="top left",
+            annotation_font=dict(size=10, color="#34A853", weight="bold")
+        )
+
+    # Markers for key points
+    if min_spend > 0:
+        idx = (np.abs(x_vals - min_spend)).argmin()
+        fig.add_trace(
+            go.Scatter(
+                x=[min_spend], y=[y_mroas[idx]],
+                mode="markers", name="Peak Efficiency",
+                marker=dict(color="#FBBC04", size=10, line=dict(color="#5F6368", width=1)),
+                showlegend=True
+            ),
+            secondary_y=True
+        )
+
+    # Set x-axis title
+    fig.update_xaxes(title_text="Daily Spend ($)", tickformat="$,.0f")
+
+    # Set y-axes titles
+    fig.update_yaxes(title_text="Incremental Return", secondary_y=False, tickformat=",.0f")
+    fig.update_yaxes(title_text="Marginal ROAS", secondary_y=True, tickformat=",.2f")
+
+    # Layout tuning
+    fig.update_layout(
+        title_text=f"Media Response Analysis: {model.channel_name}",
+        hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        template="plotly_white",
+        margin=dict(l=20, r=20, t=60, b=20)
+    )
+
+    return fig
 
 def run_dashboard():
     st.set_page_config(page_title="Tipping Point Dashboard", layout="wide")
@@ -143,8 +222,8 @@ def run_dashboard():
 
     with col1:
         st.subheader("Media Response & Marginal Efficiency")
-        fig = model.plot_response_curve(target_mroas=target_mroas, show=False)
-        st.pyplot(fig)
+        fig = create_plotly_plot(model, target_mroas)
+        st.plotly_chart(fig, use_container_width=True)
 
     with col2:
         st.subheader("Scaling Recommendations")

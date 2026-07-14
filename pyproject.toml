@@ -26,7 +26,8 @@ dependencies = [
     "numpy",
     "tinygrad",
     "matplotlib",
-    "streamlit"
+    "streamlit",
+    "plotly"
 ]
 
 [build-system]
