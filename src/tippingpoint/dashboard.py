@@ -56,12 +56,15 @@ with open({repr(out_path)}, 'wb') as f:
         if os.path.exists(in_path): os.remove(in_path)
         if os.path.exists(out_path): os.remove(out_path)
 
-def create_plotly_plot(model, target_mroas):
+def create_plotly_plot(model, target_mroas, scatter=None):
     min_spend = model.get_minimal_marginal_cost_point()
     max_spend = model.get_diminishing_returns_point(target_mroas)
 
     # Determine plot limits
     plot_limit = (max_spend * 1.5) if max_spend else (min_spend * 4 or 100000)
+    if scatter is not None and len(scatter[0]) > 0:
+        plot_limit = max(plot_limit, float(np.max(scatter[0]) * 1.1))
+
     x_vals = np.linspace(0, plot_limit, 500)
     y_return = model.predict_incremental_return(x_vals)
     y_mroas = model.predict_marginal_return(x_vals)
@@ -92,6 +95,18 @@ def create_plotly_plot(model, target_mroas):
         ),
         secondary_y=True,
     )
+
+    # Add Scatter data if enabled
+    if scatter is not None:
+        fig.add_trace(
+            go.Scatter(
+                x=scatter[0], y=scatter[1],
+                mode="markers", name="Historical Data",
+                marker=dict(color='#4285F4', size=8, opacity=0.6, line=dict(color='white', width=1)),
+                showlegend=True
+            ),
+            secondary_y=False
+        )
 
     # Highlight Optimal Scaling Zone (using shapes)
     if max_spend and max_spend > min_spend:
@@ -149,6 +164,8 @@ def run_dashboard():
     # Initialize session state for the model
     if "model" not in st.session_state:
         st.session_state.model = None
+    if "training_data" not in st.session_state:
+        st.session_state.training_data = None
 
     # Check for external model from python script invocation (launch_dashboard)
     external_model_path = os.environ.get("TIPPINGPOINT_MODEL_PATH")
@@ -205,6 +222,7 @@ def run_dashboard():
 
                         if model:
                             st.session_state.model = model
+                            st.session_state.training_data = (spends, returns)
                             st.rerun()
                 except Exception as e:
                     st.sidebar.error(f"Error processing CSV: {e}")
@@ -236,6 +254,7 @@ def run_dashboard():
 
                 if model:
                     st.session_state.model = model
+                    st.session_state.training_data = (spends, returns)
                     st.rerun()
 
         elif data_source == "Manual Parameters":
@@ -270,6 +289,7 @@ def run_dashboard():
     # Option to reset/change model
     if st.sidebar.button("🔄 Reset / Load New Model"):
         st.session_state.model = None
+        st.session_state.training_data = None
         if "TIPPINGPOINT_MODEL_PATH" in os.environ:
             del os.environ["TIPPINGPOINT_MODEL_PATH"]
         st.rerun()
@@ -285,13 +305,18 @@ def run_dashboard():
         help="The minimum return you expect for every additional dollar spent."
     )
 
+    # Historical Data Points toggle
+    show_data_points = False
+    if "training_data" in st.session_state and st.session_state.training_data is not None:
+        show_data_points = st.sidebar.checkbox("Show Historical Data Points", value=True)
+
     # Calculations
     min_spend = model.get_minimal_marginal_cost_point()
     max_spend = model.get_diminishing_returns_point(target_mroas=target_mroas)
 
     # Dashboard Layout
     st.subheader("Media Response & Marginal Efficiency")
-    fig = create_plotly_plot(model, target_mroas)
+    fig = create_plotly_plot(model, target_mroas, scatter=st.session_state.training_data if show_data_points else None)
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")
