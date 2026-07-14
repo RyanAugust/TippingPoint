@@ -13,10 +13,11 @@ class MarketingReturnCurve:
   Returns (profitability floor).
   """
 
-  def __init__(self, beta, alpha, half_saturation_k, channel_name="Generic", posterior_samples=None):
+  def __init__(self, beta, alpha, half_saturation_k, theta=0.0, channel_name="Generic", posterior_samples=None):
     self.beta = float(beta)
     self.alpha = float(alpha)
     self.K = float(half_saturation_k)
+    self.theta = float(theta)
     self.channel_name = channel_name
     self.posterior_samples = posterior_samples
     self.loss = 0
@@ -24,18 +25,29 @@ class MarketingReturnCurve:
     self.calculate_tipping_points()
 
   @classmethod
-  def fit_bayesian(cls, spend_array, return_array, channel_name="Generic", priors=None, n_samples=2000, chains=4, burn_in=1000):
-    beta, alpha, K, samples = fit_bayesian_mcmc(spend_array, return_array, channel_name, priors, n_samples, chains, burn_in)
+  def fit_bayesian(cls, spend_array, return_array, channel_name="Generic", priors=None, n_samples=2000, chains=4, burn_in=1000, adstock_type="none", adstock_bounds=None, adstock_fixed_days=None):
+    beta, alpha, K, theta, samples = fit_bayesian_mcmc(
+        spend_array, return_array, channel_name, priors, n_samples, chains, burn_in,
+        adstock_type=adstock_type, adstock_bounds=adstock_bounds, adstock_fixed_days=adstock_fixed_days
+    )
     print(f"[{channel_name}] Bayesian fit complete. Samples: {len(samples['beta'])}")
-    return cls(beta, alpha, K, channel_name, posterior_samples=samples)
+    return cls(beta, alpha, K, theta, channel_name, posterior_samples=samples)
 
   @classmethod
-  def from_historical_data(cls, spend_array, return_array, channel_name="Generic", epochs=5000, lr=0.05):
-    beta, alpha, K, loss = fit_mle_gradient(spend_array, return_array, epochs, lr)
-    print(f"[{channel_name}] Curve fit complete. Loss: {loss:.4f}")
-    model = cls(beta, alpha, K, channel_name)
+  def from_historical_data(cls, spend_array, return_array, channel_name="Generic", epochs=5000, lr=0.05, adstock_type="none", adstock_bounds=None, adstock_fixed_days=None):
+    beta, alpha, K, theta, loss = fit_mle_gradient(
+        spend_array, return_array, epochs, lr,
+        adstock_type=adstock_type, adstock_bounds=adstock_bounds, adstock_fixed_days=adstock_fixed_days
+    )
+    print(f"[{channel_name}] Curve fit complete. Loss: {loss:.4f} (Theta: {theta:.4f})")
+    model = cls(beta, alpha, K, theta, channel_name)
     model.update_loss(loss)
     return model
+
+  def adstock_spend(self, spend_timeline):
+    """Applies the model's fitted geometric adstock decay to a timeline of spends."""
+    from .math import geometric_adstock
+    return geometric_adstock(spend_timeline, self.theta)
 
   def update_loss(self, loss: float) -> None:
     self.loss = loss
@@ -56,9 +68,16 @@ class MarketingReturnCurve:
     return self.tipping_points.get("max_profit_point")
 
   def summary(self):
+    half_life = -np.log(2) / np.log(self.theta) if self.theta > 0 else 0.0
     return {
       "channel": self.channel_name,
-      "parameters": {"beta": self.beta, "alpha": self.alpha, "K": self.K},
+      "parameters": {
+        "beta": self.beta,
+        "alpha": self.alpha,
+        "K": self.K,
+        "theta": self.theta,
+        "adstock_half_life_days": half_life
+      },
       "tipping_points": self.tipping_points,
       "current_mroas_at_max_profit": self.predict_marginal_return(self.max_profit_point) if self.max_profit_point else None
     }

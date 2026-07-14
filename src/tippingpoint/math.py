@@ -1,5 +1,26 @@
 import numpy as np
 
+def days_to_theta(days):
+  """Converts half-life in days/periods to geometric decay rate theta.
+
+  Formula: theta = 0.5 ** (1 / days)
+  """
+  if days <= 0: return 0.0
+  return 0.5 ** (1.0 / days)
+
+def geometric_adstock(spend, theta):
+  """Applies geometric adstock decay to a spend array.
+
+  Formula: S_t_adstocked = S_t + theta * S_{t-1_adstocked}
+  """
+  spend = np.array(spend, dtype=float)
+  adstocked = np.zeros_like(spend)
+  current = 0.0
+  for t in range(len(spend)):
+    current = spend[t] + theta * current
+    adstocked[t] = current
+  return adstocked
+
 def hill_function(spend, beta, alpha, K):
   """Calculates the Hill Function value: f(x) = (beta * x^alpha) / (K^alpha + x^alpha)."""
   spend = np.array(spend, dtype=float) + 1e-5
