@@ -38,6 +38,8 @@ class MarketingReturnCurve:
     self.channel_name = channel_name
     self.posterior_samples = posterior_samples
     self.loss = 0
+    self.tipping_points = {}
+    self.calculate_tipping_points()
 
   @classmethod
   def fit_bayesian(cls, spend_array, return_array, channel_name="Generic", priors=None, n_samples=2000, chains=4, burn_in=1000):
@@ -190,6 +192,40 @@ class MarketingReturnCurve:
 
   def update_loss(self, loss: float) -> None:
     self.loss = loss
+
+  def calculate_tipping_points(self):
+    """Pre-computes and caches key strategic inflection points."""
+    self.tipping_points = {
+      "max_efficiency_point": self.get_minimal_marginal_cost_point(),
+      "max_profit_point": self.get_diminishing_returns_point(target_mroas=1.0)
+    }
+
+  @property
+  def max_efficiency_point(self):
+    """The spend level where marginal return peaks (f''(x) = 0)."""
+    return self.tipping_points.get("max_efficiency_point")
+
+  @property
+  def max_profit_point(self):
+    """The spend level where marginal return equals marginal cost (f'(x) = 1.0)."""
+    return self.tipping_points.get("max_profit_point")
+
+  def summary(self):
+    """Returns a strategic summary of the model's findings and tipping points.
+
+    Returns:
+      dict: A dictionary containing parameters and inflection points.
+    """
+    return {
+      "channel": self.channel_name,
+      "parameters": {
+        "beta": self.beta,
+        "alpha": self.alpha,
+        "K": self.K
+      },
+      "tipping_points": self.tipping_points,
+      "current_mroas_at_max_profit": self.predict_marginal_return(self.max_profit_point) if self.max_profit_point else None
+    }
 
   def predict_incremental_return(self, spend, use_samples=False):
     """Calculates the total incremental return for a given spend.
