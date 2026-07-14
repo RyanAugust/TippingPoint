@@ -3,9 +3,58 @@ import numpy as np
 import pandas as pd
 import os
 import pickle
+import subprocess
+import sys
+import tempfile
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from tippingpoint import MarketingReturnCurve
+
+def fit_in_subprocess(spends, returns, epochs, lr, channel_name):
+    """Fits the model in an isolated Python subprocess to prevent tinygrad from crashing Streamlit."""
+    with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as f_in:
+        pickle.dump((spends, returns, epochs, lr, channel_name), f_in)
+        in_path = f_in.name
+
+    with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as f_out:
+        out_path = f_out.name
+
+    code = f"""
+import pickle
+import sys
+# Make sure src is in path if running locally
+sys.path.append('src')
+from tippingpoint import MarketingReturnCurve
+
+with open({repr(in_path)}, 'rb') as f:
+    spends, returns, epochs, lr, channel_name = pickle.load(f)
+
+model = MarketingReturnCurve.from_historical_data(
+    spend_array=spends,
+    return_array=returns,
+    channel_name=channel_name,
+    epochs=epochs,
+    lr=lr
+)
+
+with open({repr(out_path)}, 'wb') as f:
+    pickle.dump(model, f)
+"""
+
+    try:
+        # Run subprocess with the current python executable
+        result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+        if result.returncode != 0:
+            raise RuntimeError(f"Fitting process failed:\\n{result.stderr or result.stdout}")
+
+        with open(out_path, "rb") as f:
+            model = pickle.load(f)
+
+        return model
+    finally:
+        # Clean up temp files
+        if os.path.exists(in_path): os.remove(in_path)
+        if os.path.exists(out_path): os.remove(out_path)
 
 def create_plotly_plot(model, target_mroas):
     min_spend = model.get_minimal_marginal_cost_point()
@@ -91,7 +140,7 @@ def create_plotly_plot(model, target_mroas):
 def run_dashboard():
     st.set_page_config(page_title="Tipping Point Dashboard", layout="wide")
 
-    st.title("📈 Media Response Curve Dashboard")
+    st.title("Media Response Curve Dashboard")
     st.markdown("""
     Interact with your media response model to find the **Optimal Scaling Zone**.
     Adjust the target marginal ROAS (mROAS) to see how it impacts your recommended spend limits.
@@ -133,15 +182,22 @@ def run_dashboard():
                     epochs = st.sidebar.number_input("Fitting Epochs", value=1000, step=100)
 
                     if st.sidebar.button("🚀 Fit Model from CSV"):
-                        with st.spinner("Fitting curve using tinygrad..."):
-                            spends = df[spend_col].values
-                            returns = df[return_col].values
-                            model = MarketingReturnCurve.from_historical_data(
-                                spend_array=spends,
-                                return_array=returns,
-                                channel_name="Uploaded Channel",
-                                epochs=epochs
-                            )
+                        model = None
+                        try:
+                            with st.spinner("Fitting curve using tinygrad..."):
+                                spends = df[spend_col].values
+                                returns = df[return_col].values
+                                model = fit_in_subprocess(
+                                    spends=spends,
+                                    returns=returns,
+                                    epochs=epochs,
+                                    lr=0.05,
+                                    channel_name="Uploaded Channel"
+                                )
+                        except Exception as e:
+                            st.sidebar.error(f"Error processing CSV: {e}")
+
+                        if model:
                             st.session_state.model = model
                             st.rerun()
                 except Exception as e:
@@ -157,15 +213,22 @@ def run_dashboard():
             """)
             epochs = st.sidebar.number_input("Fitting Epochs", value=1000, step=100)
             if st.sidebar.button("🚀 Fit Sample Model"):
-                with st.spinner("Fitting sample curve..."):
-                    spends = np.array([1000, 5000, 15000, 25000, 40000, 60000])
-                    returns = np.array([200, 1500, 12000, 22000, 28000, 32000])
-                    model = MarketingReturnCurve.from_historical_data(
-                        spend_array=spends,
-                        return_array=returns,
-                        channel_name="Sample Channel",
-                        epochs=epochs
-                    )
+                model = None
+                try:
+                    with st.spinner("Fitting sample curve..."):
+                        spends = np.array([1000, 5000, 15000, 25000, 40000, 60000])
+                        returns = np.array([200, 1500, 12000, 22000, 28000, 32000])
+                        model = fit_in_subprocess(
+                            spends=spends,
+                            returns=returns,
+                            epochs=epochs,
+                            lr=0.05,
+                            channel_name="Sample Channel"
+                        )
+                except Exception as e:
+                    st.sidebar.error(f"Error fitting sample model: {e}")
+
+                if model:
                     st.session_state.model = model
                     st.rerun()
 
