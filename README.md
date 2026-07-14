@@ -98,11 +98,15 @@ Status: OPTIMAL SCALING ZONE
 Recommendation: You are operating within the highly efficient growth window.
 ```
 
-### 4. Visualization
-Generate an executive-ready, dual-axis chart mapping the Incremental Return curve against the Marginal ROAS curve. If fitted via Bayesian methods, it automatically includes **90% Credible Intervals**.
+### 5. Interactive Dashboard
+Explore your model interactively using the built-in Streamlit dashboard. Adjust your target mROAS on the fly and see the impact on your optimal scaling zone.
 
-```python
-model_bayesian.plot_response_curve(target_mroas=1.5, current_spend=12000)
+```bash
+# If installed via pip
+tipp dashboard
+
+# Or run directly via streamlit
+streamlit run src/tippingpoint/dashboard.py
 ```
 
 ## 🛠 Integrating with existing MMMs (Meridian)
