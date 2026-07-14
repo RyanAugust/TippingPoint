@@ -80,7 +80,11 @@ class CurveVisualizer:
 
     # Scatter data
     if scatter is not None:
-      ax1.scatter(scatter[0], scatter[1], color=cls.G_BLUE, alpha=0.3, s=40, edgecolors='white', linewidth=0.8, label="Historical Data", zorder=1)
+      scatter_spend, scatter_return = scatter
+      if model.theta > 0:
+        from .math import geometric_adstock
+        scatter_spend = geometric_adstock(scatter_spend, model.theta)
+      ax1.scatter(scatter_spend, scatter_return, color=cls.G_BLUE, alpha=0.3, s=40, edgecolors='white', linewidth=0.8, label="Historical Data (Adstocked)" if model.theta > 0 else "Historical Data", zorder=1)
 
     # Markers for key points
     if min_spend > 0:
