@@ -1,14 +1,14 @@
 <!doctype html>
-<html class="no-js" lang="en" data-content_root="../">
+<html class="no-js" lang="en" data-content_root="../../">
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Overview: module code - Tipping Point 0.0.2 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+        <title>tippingpoint.math - Tipping Point 0.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
 
 
 
@@ -160,7 +160,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">Tipping Point 0.0.2 documentation</div></a>
+      <a href="../../index.html"><div class="brand">Tipping Point 0.0.2 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -179,11 +179,11 @@
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
 
-      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
 
   <span class="sidebar-brand-text">Tipping Point 0.0.2 documentation</span>
 
-</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
@@ -191,7 +191,7 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
 </ul>
 
 </div>
@@ -224,11 +224,62 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <h1>All modules for which code is available</h1>
-<ul><li><a href="tippingpoint/math.html">tippingpoint.math</a></li>
-<li><a href="tippingpoint/models.html">tippingpoint.models</a></li>
-<li><a href="tippingpoint/viz.html">tippingpoint.viz</a></li>
-</ul>
+          <h1>Source code for tippingpoint.math</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<div class="viewcode-block" id="days_to_theta">
+<a class="viewcode-back" href="../../api.html#tippingpoint.math.days_to_theta">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">days_to_theta</span><span class="p">(</span><span class="n">days</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Converts half-life in days/periods to geometric decay rate theta.</span>
+
+<span class="sd">  Formula: theta = 0.5 ** (1 / days)</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="n">days</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span> <span class="mf">0.0</span>
+  <span class="k">return</span> <span class="mf">0.5</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">days</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="geometric_adstock">
+<a class="viewcode-back" href="../../api.html#tippingpoint.math.geometric_adstock">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">geometric_adstock</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Applies geometric adstock decay to a spend array.</span>
+
+<span class="sd">  Formula: S_t_adstocked = S_t + theta * S_{t-1_adstocked}</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">spend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+  <span class="n">adstocked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">spend</span><span class="p">)</span>
+  <span class="n">current</span> <span class="o">=</span> <span class="mf">0.0</span>
+  <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">spend</span><span class="p">)):</span>
+    <span class="n">current</span> <span class="o">=</span> <span class="n">spend</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">theta</span> <span class="o">*</span> <span class="n">current</span>
+    <span class="n">adstocked</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">current</span>
+  <span class="k">return</span> <span class="n">adstocked</span></div>
+
+
+<div class="viewcode-block" id="hill_function">
+<a class="viewcode-back" href="../../api.html#tippingpoint.math.hill_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">hill_function</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Calculates the Hill Function value: f(x) = (beta * x^alpha) / (K^alpha + x^alpha).&quot;&quot;&quot;</span>
+  <span class="n">spend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1e-5</span>
+  <span class="k">return</span> <span class="p">(</span><span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">spend</span> <span class="o">**</span> <span class="n">alpha</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">K</span> <span class="o">**</span> <span class="n">alpha</span> <span class="o">+</span> <span class="n">spend</span> <span class="o">**</span> <span class="n">alpha</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="hill_first_derivative">
+<a class="viewcode-back" href="../../api.html#tippingpoint.math.hill_first_derivative">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">hill_first_derivative</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Calculates the first derivative of the Hill Function (Marginal ROAS).&quot;&quot;&quot;</span>
+  <span class="n">spend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1e-5</span>
+  <span class="n">numerator</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">K</span> <span class="o">**</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">spend</span> <span class="o">**</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+  <span class="n">denominator</span> <span class="o">=</span> <span class="p">(</span><span class="n">K</span> <span class="o">**</span> <span class="n">alpha</span> <span class="o">+</span> <span class="n">spend</span> <span class="o">**</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+  <span class="k">return</span> <span class="n">numerator</span> <span class="o">/</span> <span class="n">denominator</span></div>
+
+
+<div class="viewcode-block" id="get_inflection_point">
+<a class="viewcode-back" href="../../api.html#tippingpoint.math.get_inflection_point">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_inflection_point</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Calculates the inflection point where marginal return peaks (f&#39;&#39;(x) = 0).&quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="n">alpha</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span> <span class="k">return</span> <span class="mf">0.0</span>
+  <span class="k">return</span> <span class="n">K</span> <span class="o">*</span> <span class="p">(((</span><span class="n">alpha</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">alpha</span><span class="p">))</span></div>
+
+</pre></div>
         </article>
       </div>
       <footer>
@@ -260,9 +311,9 @@
 
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=d58853b1"></script>
-    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
-    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
-    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+</div><script src="../../_static/documentation_options.js?v=d58853b1"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
     </body>
 </html>

@@ -234,11 +234,53 @@
           <section id="tipping-point">
 <h1>Tipping Point<a class="headerlink" href="#tipping-point" title="Link to this heading">¶</a></h1>
 <p><strong>Tipping Point</strong> is a lightweight, high-performance marketing intelligence module that uses machine learning and calculus to determine the exact inflection points of a media response curve.</p>
+<p>Inspired by the Google Meridian methodology, Tipping Point helps growth marketers make optimal, data-driven budget allocation and scaling decisions.</p>
+</section>
+<section id="key-concepts">
+<h1>Key Concepts<a class="headerlink" href="#key-concepts" title="Link to this heading">¶</a></h1>
+<ol class="arabic">
+<li><p><strong>The Hill Function</strong>
+A S-shaped (or C-shaped) media response curve that maps media spend to incremental return.</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[Return = \frac{\beta \cdot Spend^\alpha}{K^\alpha + Spend^\alpha}\]</div>
+</div>
+</li>
+<li><p><strong>First Derivative (Marginal ROAS)</strong>
+Determines the marginal efficiency of the next dollar spent. Peak marginal efficiency occurs at the <strong>Inflection Point</strong>.</p></li>
+<li><p><strong>Tipping Points</strong>
+- <strong>Peak Efficiency Point (Daily):</strong> The inflection point ($f’’(x) = 0$) where acquisition cost is minimized.
+- <strong>Stop Scaling Point (Daily/Annualized):</strong> The point of diminishing returns where Marginal ROAS falls below your profitability threshold (default 1.0).</p></li>
+<li><p><strong>Geometric Adstock (Prior Decay Carryover)</strong>
+Accounts for lagged effects of prior spend on upcoming returns following a geometric decay model:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[S_{t\_adstocked} = S_t + \theta \cdot S_{t-1\_adstocked}\]</div>
+</div>
+<p>Tipping Point supports 4 adstock modes during training:
+- <strong>No Adstock:</strong> Assumes immediate return.
+- <strong>Free Adstock Fit:</strong> Automatically learns decay parameter $theta in (0, 1)$ from historical data.
+- <strong>Bounded Adstock Fit:</strong> Constrains the learned half-life decay to a specified day interval $[x, y]$.
+- <strong>Fixed Adstock:</strong> Directly enforces a user-defined decay half-life in days.</p>
+</li>
+</ol>
+</section>
+<section id="interactive-dashboard">
+<h1>Interactive Dashboard<a class="headerlink" href="#interactive-dashboard" title="Link to this heading">¶</a></h1>
+<p>Tipping Point includes a fully interactive Streamlit dashboard allowing web-based exploration:</p>
+<ul class="simple">
+<li><p><strong>Top-Down Web Layout:</strong> Features a large, dual-axis <strong>Plotly</strong> visualization where users can zoom, drag, and view unified hover tooltips.</p></li>
+<li><p><strong>Explicit Setup Mode:</strong> Launches in a dormant state, allowing users to upload custom CSV data, map columns, and set optional conversion value multipliers (to turn raw conversions like leads/installs into monetary value) before fitting.</p></li>
+<li><p><strong>Active Persistence:</strong> State is managed via <cite>st.session_state</cite> to prevent re-runs or re-fits on slider adjustments.</p></li>
+<li><p><strong>Carryover Analysis Plot:</strong> Shows a dedicated timeline comparing raw daily spends (bars) against accumulated adstocked spends (area) to visually display media wear-out.</p></li>
+</ul>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#tippingpoint.curve.MarketingReturnCurve"><code class="docutils literal notranslate"><span class="pre">MarketingReturnCurve</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.models">Model Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.math">Mathematical Core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.viz">Visualization</a></li>
 </ul>
 </li>
 </ul>
@@ -296,5 +338,6 @@
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     </body>
 </html>
