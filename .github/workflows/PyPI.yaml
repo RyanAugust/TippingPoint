@@ -11,6 +11,9 @@ jobs:
     name: publish
     needs: [tests]
     runs-on: ubuntu-latest
+    environment:
+      name: publication env
+      deployment: false
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
