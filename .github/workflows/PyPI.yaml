@@ -10,6 +10,8 @@ jobs:
   publish:
     name: publish
     needs: [tests]
+    permissions:
+      id-token: write
     runs-on: ubuntu-latest
     environment:
       name: publication env
