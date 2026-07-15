@@ -36,6 +36,21 @@
 }{% if KOMA class
   \KOMAoptions{parskip=half}}
 \makeatother
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
 \setlength{\emergencystretch}{3em} % prevent overfull lines
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
@@ -140,6 +155,12 @@ profitability threshold (e.g., a return of exactly \$1.00 for every
 \$1.00 spent). Spending beyond this point is mathematically
 unprofitable.
 
+\begin{figure}
+\centering
+\pandocbounded{\includegraphics[keepaspectratio,alt={Generic Hill Function Fit with Scatter Data}]{images/hill_fit.png}}
+\caption{Generic Hill Function Fit with Scatter Data}
+\end{figure}
+
 \subsubsection{1.2 Geometric Adstock (Lagged
 Effects)}\label{geometric-adstock-lagged-effects}
 
@@ -193,6 +214,12 @@ forcing it to assume a search ad cannot be remembered for longer than 3
 days). 4. \textbf{Free Optimization:} Automatically learns the optimal
 \(\theta\) entirely from the historical data variance, letting the
 machine decide how memorable the media was.
+
+\begin{figure}
+\centering
+\pandocbounded{\includegraphics[keepaspectratio,alt={Geometric Adstock Carryover Timeline}]{images/adstock.png}}
+\caption{Geometric Adstock Carryover Timeline}
+\end{figure}
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
@@ -292,6 +319,12 @@ time horizons.} It is best utilized as a strategic compass for
 macro-level budget liquidity, cross-channel capital allocation, and
 setting broad monthly or quarterly scaling ceilings, rather than as a
 micro-bidding algorithm.
+
+\begin{figure}
+\centering
+\pandocbounded{\includegraphics[keepaspectratio,alt={Strategic Budget Evaluation Output}]{images/module_output.png}}
+\caption{Strategic Budget Evaluation Output}
+\end{figure}
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 

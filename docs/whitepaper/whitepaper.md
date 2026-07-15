@@ -28,6 +28,8 @@ Within the Tipping Point module, we don't just fit this curve; we analyze its ra
 1.  **Peak Efficiency Point:** The mathematical inflection point ($f''(x) = 0$). This marks the exact moment the "warm-up" phase ends and the curve is steepest, representing the cheapest acquisition cost.
 2.  **Stop Scaling Point:** The boundary where the Marginal ROAS drops below the advertiser's target profitability threshold (e.g., a return of exactly $1.00 for every $1.00 spent). Spending beyond this point is mathematically unprofitable.
 
+![Generic Hill Function Fit with Scatter Data](images/hill_fit.png)
+
 ### 1.2 Geometric Adstock (Lagged Effects)
 
 In simple terms, "adstock" is the memory or the "echo effect" of advertising. If a consumer sees a television commercial on Monday but doesn't purchase the product until Friday, Monday's media spend was still responsible for generating that return. Media exposure rarely results in immediate, instantaneous conversion.
@@ -49,6 +51,8 @@ To provide maximum flexibility to the analyst, the module supports four adstock 
 2.  **Fixed Adstock:** Applies an explicitly defined decay half-life, useful if the advertiser already knows their channel's decay rate from prior studies.
 3.  **Bounded Optimization:** Fits the decay parameter within a user-defined range of valid half-life days (e.g., telling the model to find the best fit, but forcing it to assume a search ad cannot be remembered for longer than 3 days).
 4.  **Free Optimization:** Automatically learns the optimal $\theta$ entirely from the historical data variance, letting the machine decide how memorable the media was.
+
+![Geometric Adstock Carryover Timeline](images/adstock.png)
 
 ---
 
@@ -93,6 +97,8 @@ Crucially, the model does not account for:
 Due to the omission of real-time exogenous variables, the output of the Tipping Point model should not be used for hyper-granular, daily bid adjustments on single, isolated campaigns.
 
 Instead, the model's output demonstrates **increasing statistical validity when analyzing higher-level marketing initiatives over longer time horizons.** It is best utilized as a strategic compass for macro-level budget liquidity, cross-channel capital allocation, and setting broad monthly or quarterly scaling ceilings, rather than as a micro-bidding algorithm.
+
+![Strategic Budget Evaluation Output](images/module_output.png)
 
 ---
 
