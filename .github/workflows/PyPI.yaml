@@ -26,7 +26,4 @@ jobs:
           python -m pip install -U pip build
           python -m build
       - name: Publish
-        uses: pypa/gh-action-pypi-publish@v1.13.0
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_KEY }}
+        uses: pypa/gh-action-pypi-publish@v1.14.0
