@@ -181,6 +181,61 @@ def create_adstock_timeline_plot(spends, model):
 
     return fig
 
+def create_portfolio_curves_plot(models_dict, allocations):
+    """Generates an overlay of saturation curves for all channels, marking optimal allocations."""
+    fig = go.Figure()
+
+    # Generate a nice color palette for channels
+    colors = ['#4285F4', '#EA4335', '#FBBC04', '#34A853', '#AB47BC', '#00ACC1', '#FF7043', '#8D6E63']
+
+    max_spend_limit = 0.0
+    for alloc in allocations.values():
+        max_spend_limit = max(max_spend_limit, alloc * 2.5) # ensure the curve extends past the allocation
+    if max_spend_limit == 0:
+        max_spend_limit = 100000.0
+
+    x_vals = np.linspace(0, max_spend_limit, 500)
+
+    for i, (cname, model) in enumerate(models_dict.items()):
+        color = colors[i % len(colors)]
+        y_return = model.predict_incremental_return(x_vals)
+
+        # Add curve
+        fig.add_trace(go.Scatter(
+            x=x_vals, y=y_return,
+            mode='lines',
+            name=cname,
+            line=dict(color=color, width=3)
+        ))
+
+        # Add marker for allocation
+        if cname in allocations and allocations[cname] > 0:
+            alloc_x = allocations[cname]
+            alloc_y = model.predict_incremental_return(alloc_x)
+            fig.add_trace(go.Scatter(
+                x=[alloc_x], y=[alloc_y],
+                mode='markers',
+                name=f"{cname} Allocation",
+                marker=dict(color=color, size=12, line=dict(color='white', width=2)),
+                showlegend=False,
+                hovertemplate=f"<b>{cname}</b><br>Spend: ${{x:,.0f}}<br>Return: ${{y:,.0f}}<extra></extra>"
+            ))
+
+    fig.update_layout(
+        title_text="Cross-Channel Saturation Curve Overlay",
+        title_font=dict(size=18, color='#202124'),
+        font=dict(size=13, color='#5F6368'),
+        xaxis_title="Allocated Spend ($)",
+        yaxis_title="Incremental Return",
+        height=500,
+        hovermode="closest",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=12)),
+        template="plotly_white",
+        margin=dict(l=20, r=20, t=60, b=20)
+    )
+
+    return fig
+
 def run_dashboard():
     st.set_page_config(page_title="Tipping Point Dashboard", layout="wide")
 
@@ -437,6 +492,11 @@ def run_dashboard():
                                 height=400
                             )
                             st.plotly_chart(fig, use_container_width=True)
+
+                            st.markdown("---")
+                            st.subheader("Cross-Channel Saturation")
+                            curves_fig = create_portfolio_curves_plot(st.session_state.models, res["allocation"])
+                            st.plotly_chart(curves_fig, use_container_width=True)
 
                             st.subheader("Allocation Details")
                             details_data = []
