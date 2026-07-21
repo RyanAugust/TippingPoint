@@ -27,7 +27,8 @@ dependencies = [
     "tinygrad",
     "matplotlib",
     "streamlit",
-    "plotly"
+    "plotly",
+    "scipy"
 ]
 
 [build-system]

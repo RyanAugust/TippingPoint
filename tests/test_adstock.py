@@ -69,6 +69,54 @@ class TestAdstock:
         theta_max = 0.5 ** (1.0 / max_days)
         assert theta_min <= model.theta <= theta_max
 
+    def test_mle_edge_cases(self):
+        """Test MLE edge cases missing coverage."""
+        spends = np.array([1000, 2000, 5000])
+        returns = np.array([100, 300, 1000])
+
+        # Fixed but no days given
+        m1 = MarketingReturnCurve.from_historical_data(spends, returns, adstock_type="fixed", epochs=5)
+        assert m1.theta == 0.0
+
+        # Bounded but no bounds given
+        m2 = MarketingReturnCurve.from_historical_data(spends, returns, adstock_type="bounded", epochs=5)
+        assert 0.0 <= m2.theta <= 0.999
+
+        # Bounded with negative bounds
+        m3 = MarketingReturnCurve.from_historical_data(spends, returns, adstock_type="bounded", adstock_bounds=(-1, -1), epochs=5)
+        assert m3.theta == 0.0
+
+        # Fixed with negative days
+        m4 = MarketingReturnCurve.from_historical_data(spends, returns, adstock_type="fixed", adstock_fixed_days=-1, epochs=5)
+        assert m4.theta == 0.0
+
+    def test_bayesian_fitting_types(self):
+        """Test Bayesian MCMC fitting with different adstock types."""
+        spends = np.array([1000, 2000, 5000])
+        returns = np.array([100, 300, 1000])
+
+        # None
+        m_none = MarketingReturnCurve.fit_bayesian(spends, returns, adstock_type="none", n_samples=5, chains=1, burn_in=2)
+        assert m_none.theta == 0.0
+
+        # Fixed
+        m_fixed = MarketingReturnCurve.fit_bayesian(spends, returns, adstock_type="fixed", adstock_fixed_days=3.0, n_samples=5, chains=1, burn_in=2)
+        assert m_fixed.theta > 0.0
+
+        # Bounded
+        m_bounded = MarketingReturnCurve.fit_bayesian(spends, returns, adstock_type="bounded", adstock_bounds=(1.0, 7.0), n_samples=5, chains=1, burn_in=2)
+        assert m_bounded.theta > 0.0
+
+        # Bounded edge cases
+        m_bounded_none = MarketingReturnCurve.fit_bayesian(spends, returns, adstock_type="bounded", n_samples=5, chains=1, burn_in=2)
+        assert m_bounded_none.theta >= 0.0
+
+        m_bounded_neg = MarketingReturnCurve.fit_bayesian(spends, returns, adstock_type="bounded", adstock_bounds=(-1, -1), n_samples=5, chains=1, burn_in=2)
+        assert m_bounded_neg.theta == 0.0
+
+        m_fixed_neg = MarketingReturnCurve.fit_bayesian(spends, returns, adstock_type="fixed", adstock_fixed_days=-1, n_samples=5, chains=1, burn_in=2)
+        assert m_fixed_neg.theta == 0.0
+
     def test_bayesian_fitting_with_free_adstock(self):
         """Test MCMC Bayesian fitting with free optimized adstock."""
         spends = np.array([1000, 2000, 5000, 10000, 15000, 25000])
