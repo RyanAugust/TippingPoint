@@ -147,6 +147,56 @@ def create_plotly_plot(model, target_mroas, scatter=None):
 
     return fig
 
+def create_allocation_mix_plot(models_dict, max_budget, channel_bounds):
+    """Generates a stacked area chart showing optimal channel mix as total budget increases."""
+    from tippingpoint.portfolio import PortfolioAllocator
+    allocator = PortfolioAllocator(list(models_dict.values()))
+
+    # We will test 50 budget points from 0 to the target max budget
+    budgets = np.linspace(max_budget * 0.1, max_budget * 1.5, 50)
+    allocations_history = {cname: [] for cname in models_dict.keys()}
+    valid_budgets = []
+
+    for b in budgets:
+        res = allocator.allocate_budget(total_budget=b, channel_bounds=channel_bounds)
+        if res["success"]:
+            valid_budgets.append(b)
+            for cname in models_dict.keys():
+                allocations_history[cname].append(res["allocation"][cname])
+
+    fig = go.Figure()
+    colors = ['#4285F4', '#EA4335', '#FBBC04', '#34A853', '#AB47BC', '#00ACC1', '#FF7043', '#8D6E63']
+
+    for i, (cname, allocs) in enumerate(allocations_history.items()):
+        if np.sum(allocs) > 0:  # Only plot if channel gets some budget
+            color = colors[i % len(colors)]
+            fig.add_trace(go.Scatter(
+                x=valid_budgets, y=allocs,
+                mode='lines',
+                name=cname,
+                stackgroup='one',
+                line=dict(width=0.5, color=color),
+                fillcolor=color
+            ))
+
+    # Add vertical line for the current selected budget
+    fig.add_vline(x=max_budget, line_width=2, line_dash="dash", line_color="#202124",
+                  annotation_text="Current Budget", annotation_position="top left")
+
+    fig.update_layout(
+        title_text="Optimal Channel Mix at Scale",
+        title_font=dict(size=18, color='#202124'),
+        font=dict(size=13, color='#5F6368'),
+        xaxis_title="Total Portfolio Budget ($)",
+        yaxis_title="Allocated Spend ($)",
+        height=400,
+        hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=12)),
+        template="plotly_white",
+        margin=dict(l=20, r=20, t=60, b=20)
+    )
+    return fig
+
 def create_adstock_timeline_plot(spends, model):
     adstocked = model.adstock_spend(spends)
     indices = np.arange(len(spends))
@@ -198,19 +248,34 @@ def create_portfolio_curves_plot(models_dict, allocations):
 
     for i, (cname, model) in enumerate(models_dict.items()):
         color = colors[i % len(colors)]
-        y_return = model.predict_incremental_return(x_vals)
+        alloc_x = allocations.get(cname, 0.0)
 
-        # Add curve
-        fig.add_trace(go.Scatter(
-            x=x_vals, y=y_return,
-            mode='lines',
-            name=cname,
-            line=dict(color=color, width=3)
-        ))
+        if alloc_x > 0:
+            # Solid line before allocation
+            x_solid = x_vals[x_vals <= alloc_x]
+            if len(x_solid) == 0 or x_solid[-1] < alloc_x:
+                x_solid = np.append(x_solid, alloc_x)
+            y_solid = model.predict_incremental_return(x_solid)
 
-        # Add marker for allocation
-        if cname in allocations and allocations[cname] > 0:
-            alloc_x = allocations[cname]
+            fig.add_trace(go.Scatter(
+                x=x_solid, y=y_solid,
+                mode='lines',
+                name=cname,
+                line=dict(color=color, width=3)
+            ))
+
+            # Dashed line after allocation
+            x_dashed = x_vals[x_vals >= alloc_x]
+            if len(x_dashed) > 0:
+                y_dashed = model.predict_incremental_return(x_dashed)
+                fig.add_trace(go.Scatter(
+                    x=x_dashed, y=y_dashed,
+                    mode='lines',
+                    showlegend=False,
+                    line=dict(color=color, width=3, dash='dash')
+                ))
+
+            # Marker for allocation
             alloc_y = model.predict_incremental_return(alloc_x)
             fig.add_trace(go.Scatter(
                 x=[alloc_x], y=[alloc_y],
@@ -219,6 +284,15 @@ def create_portfolio_curves_plot(models_dict, allocations):
                 marker=dict(color=color, size=12, line=dict(color='white', width=2)),
                 showlegend=False,
                 hovertemplate=f"<b>{cname}</b><br>Spend: ${{x:,.0f}}<br>Return: ${{y:,.0f}}<extra></extra>"
+            ))
+        else:
+            # Fully dashed if no allocation
+            y_return = model.predict_incremental_return(x_vals)
+            fig.add_trace(go.Scatter(
+                x=x_vals, y=y_return,
+                mode='lines',
+                name=cname,
+                line=dict(color=color, width=3, dash='dash')
             ))
 
     fig.update_layout(
@@ -497,6 +571,11 @@ def run_dashboard():
                             st.subheader("Cross-Channel Saturation")
                             curves_fig = create_portfolio_curves_plot(st.session_state.models, res["allocation"])
                             st.plotly_chart(curves_fig, use_container_width=True)
+
+                            st.markdown("---")
+                            st.subheader("Optimal Channel Mix at Scale")
+                            mix_fig = create_allocation_mix_plot(st.session_state.models, total_budget, channel_bounds)
+                            st.plotly_chart(mix_fig, use_container_width=True)
 
                             st.subheader("Allocation Details")
                             details_data = []
