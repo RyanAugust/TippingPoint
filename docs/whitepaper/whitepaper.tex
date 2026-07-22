@@ -227,24 +227,54 @@ Planning)}\label{portfolio-optimization-cross-channel-scenario-planning}
 While fitting individual saturation curves provides immense value for
 isolating a single channel's headroom, true strategic planning requires
 cross-channel liquidity. Tipping Point extends its mathematical core to
-support full \textbf{Portfolio Optimization}.
+support full \textbf{Portfolio Optimization}, shifting the paradigm from
+a purely analytical view to an actionable, forward-looking planning
+engine.
 
-Rather than manually attempting to balance budgets across disparate
-channels, the module ingests an array of fitted models and utilizes
-mathematical constrained optimization (Sequential Least SQuares
-Programming via \texttt{scipy}) to find the exact budget distribution
+\paragraph{The Distinction from Traditional
+MMMs}\label{the-distinction-from-traditional-mmms}
+
+A full-fledged Marketing Mix Model (MMM) is primarily a \emph{historical
+attribution} tool. It relies on massive multivariable regression models
+to untangle the ``soup'' of historical data---attempting to separate
+organic baseline sales, seasonality, pricing changes, macroeconomic
+factors, and cross-channel synergies. This process is notoriously
+complex, highly correlational, and often struggles to prove true
+causality without extensive calibration.
+
+In contrast, Tipping Point's Portfolio Optimizer is an
+\textbf{Incrementality-Calibrated Allocator}. Instead of trying to
+retroactively untangle a massive, noisy baseline, it focuses exclusively
+on the empirically fitted saturation curves for each independent
+channel. When advertisers use gold-standard \textbf{incrementality
+studies} (like Geo-experiments or lift tests) to generate the data
+points that feed into this module, the paradigm shifts entirely. The
+module stops relying on biased, correlational platform attribution and
+instead fits the Hill Function to \emph{causally proven} data. The
+resulting \(\beta\) (capacity/headroom) and saturation ceilings are no
+longer probabilistic guesses; they are empirically validated truths.
+
+\paragraph{Technical Implementation}\label{technical-implementation}
+
+To execute this scenario planning, the module eschews simple heuristics
+in favor of rigorous mathematical constrained optimization. It utilizes
+the \textbf{Sequential Least SQuares Programming (SLSQP)} algorithm via
+the \texttt{scipy.optimize} library.
+
+The optimizer ingests an array of fitted models and systematically
+searches thousands of permutations to find the exact budget distribution
 that maximizes total incremental return for a given total budget
-constraint.
+constraint. Mathematically, the optimal portfolio allocation is achieved
+when the \textbf{Marginal ROAS is exactly equal across all unbounded
+channels}. If one channel possesses a higher marginal ROAS, the
+algorithm iteratively shifts a dollar from a lower-performing channel to
+the superior one until their rates of diminishing returns perfectly
+balance out.
 
-Mathematically, the optimal portfolio allocation is achieved when the
-\textbf{Marginal ROAS is exactly equal across all unbounded channels}.
-If one channel possesses a higher marginal ROAS, the optimizer shifts a
-dollar from a lower-performing channel to the superior one until their
-rates of diminishing returns perfectly balance out. This allows
-advertisers to input hard constraints (e.g., minimum or maximum spend
-limits per platform) and instantly map how their optimal channel mix
-should expand, bottleneck, and shift weighting as their total investment
-ceiling scales up or down.
+This engine inherently supports hard business constraints (e.g., minimum
+or maximum spend limits per platform), allowing advertisers to instantly
+map how their optimal channel mix should expand, bottleneck, and shift
+weighting as their total investment ceiling scales up or down.
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 

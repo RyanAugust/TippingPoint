@@ -56,11 +56,19 @@ To provide maximum flexibility to the analyst, the module supports four adstock 
 
 ### 1.3 Portfolio Optimization (Cross-Channel Scenario Planning)
 
-While fitting individual saturation curves provides immense value for isolating a single channel's headroom, true strategic planning requires cross-channel liquidity. Tipping Point extends its mathematical core to support full **Portfolio Optimization**.
+While fitting individual saturation curves provides immense value for isolating a single channel's headroom, true strategic planning requires cross-channel liquidity. Tipping Point extends its mathematical core to support full **Portfolio Optimization**, shifting the paradigm from a purely analytical view to an actionable, forward-looking planning engine.
 
-Rather than manually attempting to balance budgets across disparate channels, the module ingests an array of fitted models and utilizes mathematical constrained optimization (Sequential Least SQuares Programming via `scipy`) to find the exact budget distribution that maximizes total incremental return for a given total budget constraint.
+#### The Distinction from Traditional MMMs
+A full-fledged Marketing Mix Model (MMM) is primarily a *historical attribution* tool. It relies on massive multivariable regression models to untangle the "soup" of historical data—attempting to separate organic baseline sales, seasonality, pricing changes, macroeconomic factors, and cross-channel synergies. This process is notoriously complex, highly correlational, and often struggles to prove true causality without extensive calibration.
 
-Mathematically, the optimal portfolio allocation is achieved when the **Marginal ROAS is exactly equal across all unbounded channels**. If one channel possesses a higher marginal ROAS, the optimizer shifts a dollar from a lower-performing channel to the superior one until their rates of diminishing returns perfectly balance out. This allows advertisers to input hard constraints (e.g., minimum or maximum spend limits per platform) and instantly map how their optimal channel mix should expand, bottleneck, and shift weighting as their total investment ceiling scales up or down.
+In contrast, Tipping Point's Portfolio Optimizer is an **Incrementality-Calibrated Allocator**. Instead of trying to retroactively untangle a massive, noisy baseline, it focuses exclusively on the empirically fitted saturation curves for each independent channel. When advertisers use gold-standard **incrementality studies** (like Geo-experiments or lift tests) to generate the data points that feed into this module, the paradigm shifts entirely. The module stops relying on biased, correlational platform attribution and instead fits the Hill Function to *causally proven* data. The resulting $\beta$ (capacity/headroom) and saturation ceilings are no longer probabilistic guesses; they are empirically validated truths.
+
+#### Technical Implementation
+To execute this scenario planning, the module eschews simple heuristics in favor of rigorous mathematical constrained optimization. It utilizes the **Sequential Least SQuares Programming (SLSQP)** algorithm via the `scipy.optimize` library.
+
+The optimizer ingests an array of fitted models and systematically searches thousands of permutations to find the exact budget distribution that maximizes total incremental return for a given total budget constraint. Mathematically, the optimal portfolio allocation is achieved when the **Marginal ROAS is exactly equal across all unbounded channels**. If one channel possesses a higher marginal ROAS, the algorithm iteratively shifts a dollar from a lower-performing channel to the superior one until their rates of diminishing returns perfectly balance out.
+
+This engine inherently supports hard business constraints (e.g., minimum or maximum spend limits per platform), allowing advertisers to instantly map how their optimal channel mix should expand, bottleneck, and shift weighting as their total investment ceiling scales up or down.
 
 ---
 
