@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.optimize import minimize
-from .models import MarketingReturnCurve
 
 class PortfolioAllocator:
   """Optimizes budget allocation across multiple MarketingReturnCurve models."""
