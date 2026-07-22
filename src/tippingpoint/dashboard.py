@@ -283,7 +283,7 @@ def create_portfolio_curves_plot(models_dict, allocations):
         name=f"{cname} Allocation",
         marker=dict(color=color, size=12, line=dict(color='white', width=2)),
         showlegend=False,
-        hovertemplate=f"<b>{cname}</b><br>Spend: ${{x:,.0f}}<br>Return: ${{y:,.0f}}<extra></extra>"
+        hovertemplate=f"<b>{cname}</b><br>Spend: ${alloc_x:,.0f}<br>Return: ${alloc_y:,.0f}<extra></extra>"
       ))
     else:
       # Fully dashed if no allocation
