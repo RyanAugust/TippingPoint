@@ -8,27 +8,37 @@ A lightweight, high-performance marketing intelligence module that uses machine 
 
 Growth marketers and media buyers constantly ask two questions: *"When are we out of the inefficient learning phase?"* and *"When should we stop scaling spend?"* By fitting historical performance data to a continuous mathematical curve, this tool identifies the **Minimal Marginal Cost Point** (where efficiency peaks) and the **Point of Diminishing Returns** (where scaling is no longer profitable), defining your exact **Optimal Scaling Zone**.
 
+Tipping Point scales from single-channel analysis to a full scenario planning engine. Using the included `PortfolioAllocator`, advertisers can instantly calculate the exact budget distribution that maximizes total return across multiple channels.
+
 ## 🧠 Methodology
 
 This project leverages the mathematical foundations of modern Marketing Mix Modeling (MMM)—specifically the techniques popularized by [Google’s Meridian](https://github.com/google/meridian).
 
+### 1. Media Saturation (The Hill Function)
 Instead of basic linear or logarithmic approximations, this module natively models media saturation using the **Hill Function**.
 
 $$Return = \frac{\beta \cdot Spend^\alpha}{K^\alpha + Spend^\alpha}$$
 
 *   **$\beta$ (Beta):** The asymptote (maximum possible return/capacity).
-*   **$\alpha$ (Alpha):** The shape parameter. If $\alpha > 1$, the curve is S-shaped (featuring a warm-up phase). If $\alpha \le 1$, it strictly exhibits diminishing returns from the start (C-shaped).
+*   **$\alpha$ (Alpha):** The shape parameter. S-shaped ($\alpha > 1$) or C-shaped ($\alpha \le 1$).
 *   **$K$ (Half-Saturation):** The spend amount at which you achieve half of the maximum return.
 
-### The Calculus Engine
-Once the Hill Curve parameters are found, the module uses exact calculus to provide strategic recommendations:
-*   **Marginal ROAS ($f'(x)$):** Represents the efficiency of the *next* dollar spent.
-*   **Minimal Marginal Cost ($f''(x) = 0$):** The inflection point of the S-Curve. This is the absolute peak of Marginal ROAS. You should spend *at least* this much to exit the inefficient warm-up phase.
-*   **Point of Diminishing Returns ($f'(x) = Target\_mROAS$):** The exact spend level where the efficiency drops below your acceptable baseline unit economics (e.g., Target CPA or Target ROAS constraint).
+### 2. Geometric Adstock (Lagged Effects)
+Media impact decays over time. The module implements Meridian-style **Geometric Adstock**, transforming raw spends into effective memory-adjusted spends:
+
+$$ S_{t\_adstocked} = S_t + \theta \cdot S_{t-1\_adstocked} $$
+
+Tipping Point supports 4 adstock optimization modes: `none`, `free` (fully optimized $\theta$), `bounded` (constrained half-life), and `fixed` (explicit decay days).
+
+### 3. The Calculus Engine
+Using exact calculus, the module provides strategic recommendations:
+*   **Marginal ROAS ($f'(x)$):** The efficiency of the *next* dollar spent.
+*   **Peak Efficiency ($f''(x) = 0$):** The inflection point. Spend *at least* this much to exit the warm-up phase.
+*   **Stop Scaling Point ($f'(x) = Target\_mROAS$):** The exact spend level where efficiency drops below your baseline unit economics.
 
 ## 🚀 Installation & Prerequisites
 
-This module uses **tinygrad** for ultra-lightweight GPU-accelerated gradient descent, alongside standard scientific libraries.
+This module uses **tinygrad** for ultra-lightweight GPU-accelerated gradient descent, **scipy** for portfolio optimization, and **plotly/streamlit** for visualization.
 
 ```bash
 pip install tippingpt
@@ -37,58 +47,31 @@ pip install tippingpt
 ## 💻 Usage
 
 ### 1. Fitting from Historical Data
-You can pass raw `Spend` and `Return` (Revenue, Conversions, etc.) arrays directly into the module. The PyTorch/Tinygrad backend will automatically find the optimal $\beta$, $\alpha$, and $K$ parameters.
+Pass raw `Spend` and `Return` arrays directly into the module.
 
 ```python
 import numpy as np
 from tippingpoint import MarketingReturnCurve
 
-# 1. Provide your historical marketing data (Spend vs. Revenue/Conversions)
 spends = np.array([1200, 5000, 15000, 25000, 40000])
 returns = np.array([200, 1500, 12000, 22000, 28000])
 
-# 2. Fit the Curve (MLE)
+# Fit with Gradient Descent (MLE) & bounded adstock (1-14 days half-life)
 model = MarketingReturnCurve.from_historical_data(
     spend_array=spends,
     return_array=returns,
     channel_name="YouTube",
-    epochs=3000,
-    lr=0.05
-)
-
-# 3. Fit the Curve (Bayesian MCMC)
-# This provides posterior distributions and uncertainty intervals
-model_bayesian = MarketingReturnCurve.fit_bayesian(
-    spend_array=spends,
-    return_array=returns,
-    channel_name="YouTube (Bayesian)",
-    n_samples=2000,
-    chains=4
+    epochs=1000,
+    adstock_type="bounded",
+    adstock_bounds=(1.0, 14.0)
 )
 ```
 
 ### 2. Extracting Intelligence & Inflection Points
-Once the curve is fitted (or if you manually provide parameters from an existing Meridian model), you can extract actionable business intelligence.
 
 ```python
-target_mroas = 1.5      # We need at least $1.50 back on the marginal dollar
-current_spend = 12000   # Our current daily/weekly budget
-
-# Get precise inflection points
-optimal_floor = model.get_minimal_marginal_cost_point()
-spend_cap = model.get_diminishing_returns_point(target_mroas)
-
-print(f"Start Scaling At: ${optimal_floor:,.2f}")
-print(f"Stop Scaling At: ${spend_cap:,.2f}")
-
-# Access Posterior Samples (if fitted via Bayesian method)
-if hasattr(model_bayesian, 'posterior_samples') and model_bayesian.posterior_samples:
-    print(f"Mean Alpha: {np.mean(model_bayesian.posterior_samples['alpha'])}")
-    # Access full distribution
-    beta_samples = model_bayesian.posterior_samples['beta']
-
-# Get a text-based evaluation of your current strategy
-model.evaluate_current_budget(current_spend, target_mroas)
+# Evaluate headroom based on current spend and a target return floor
+model.evaluate_current_budget(current_spend=12000, target_mroas=1.5)
 ```
 **Example Output:**
 ```text
@@ -98,21 +81,39 @@ Status: OPTIMAL SCALING ZONE
 Recommendation: You are operating within the highly efficient growth window.
 ```
 
-### 5. Interactive Dashboard
-Explore your model interactively using the built-in Streamlit dashboard. Adjust your target mROAS on the fly and see the impact on your optimal scaling zone.
+### 3. Portfolio Optimization (Scenario Planning)
+Instantly calculate optimal budget allocation across multiple fitted channels.
+
+```python
+from tippingpoint import PortfolioAllocator
+
+# Initialize the Allocator with your fitted channels
+allocator = PortfolioAllocator([model_search, model_youtube, model_tv])
+
+# Run a scenario analysis for a $1,000,000 budget
+scenario = allocator.allocate_budget(
+    total_budget=1000000,
+    channel_bounds={"Television": (50000, 200000)} # Optional min/max constraints
+)
+
+print(scenario["allocation"])
+print(f"Expected Return: ${scenario['expected_total_return']:,.2f}")
+```
+
+### 4. Interactive Multi-Channel Dashboard
+Explore your models and run cross-channel portfolio optimization interactively using the built-in Streamlit dashboard.
+
+**Stage 1: Channel Configuration:** Dynamically fit, configure, and stack multiple channels. Features conversion value multipliers and interactive Adstock carryover timelines.
+**Stage 2: Portfolio Optimization:** Set global budgets and constraints. Generates optimal scale mix (stacked area) plots and cross-channel saturation overlays.
 
 ```bash
-# If installed via pip
+# Launch the dashboard
 tipp dashboard
-
-# Or run directly via streamlit
-streamlit run src/tippingpoint/dashboard.py
 ```
 
 ## 🛠 Integrating with existing MMMs (Meridian)
-If you already run Google Meridian, you do not need to use the `from_historical_data` method. You can simply extract the posterior mean parameters for a specific channel directly from your Meridian output and initialize the class:
+If you already run Google Meridian, you can extract the posterior mean parameters and initialize the class without refitting:
 
 ```python
-# Assuming you extracted beta, alpha, and K from your Meridian posterior
-model = MarketingReturnCurve(beta=100000, alpha=1.8, half_saturation_k=20000)
+model = MarketingReturnCurve(beta=100000, alpha=1.8, half_saturation_k=20000, theta=0.75)
 ```

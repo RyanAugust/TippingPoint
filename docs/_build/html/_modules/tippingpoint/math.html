@@ -1,15 +1,14 @@
 <!doctype html>
-<html class="no-js" lang="en" data-content_root="./">
+<html class="no-js" lang="en" data-content_root="../../">
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="API Reference" href="api.html">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Tipping Point 0.0.2 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
+        <title>tippingpoint.math - Tipping Point 0.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
 
 
 
@@ -161,7 +160,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="#"><div class="brand">Tipping Point 0.0.2 documentation</div></a>
+      <a href="../../index.html"><div class="brand">Tipping Point 0.0.2 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -180,11 +179,11 @@
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
 
-      <div class="sidebar-sticky"><a class="sidebar-brand" href="#">
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
 
   <span class="sidebar-brand-text">Tipping Point 0.0.2 documentation</span>
 
-</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
@@ -192,7 +191,7 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
 </ul>
 
 </div>
@@ -212,13 +211,7 @@
           <span>Back to top</span>
         </a>
         <div class="content-icon-container">
-          <div class="view-this-page">
-  <a class="muted-link" href="_sources/index.rst.txt" title="View this page">
-    <svg><use href="#svg-eye"></use></svg>
-    <span class="visually-hidden">View this page</span>
-  </a>
-</div>
-<div class="theme-toggle-container theme-toggle-content">
+          <div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
               <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
               <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
@@ -231,90 +224,68 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="tipping-point">
-<h1>Tipping Point<a class="headerlink" href="#tipping-point" title="Link to this heading">¶</a></h1>
-<p><strong>Tipping Point</strong> is a lightweight, high-performance marketing intelligence module that uses machine learning and calculus to determine the exact inflection points of a media response curve.</p>
-<p>Inspired by the Google Meridian methodology, Tipping Point helps growth marketers make optimal, data-driven budget allocation and scaling decisions.</p>
-</section>
-<section id="key-concepts">
-<h1>Key Concepts<a class="headerlink" href="#key-concepts" title="Link to this heading">¶</a></h1>
-<ol class="arabic">
-<li><p><strong>The Hill Function</strong>
-A S-shaped (or C-shaped) media response curve that maps media spend to incremental return.</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[Return = \frac{\beta \cdot Spend^\alpha}{K^\alpha + Spend^\alpha}\]</div>
-</div>
-</li>
-<li><p><strong>First Derivative (Marginal ROAS)</strong>
-Determines the marginal efficiency of the next dollar spent. Peak marginal efficiency occurs at the <strong>Inflection Point</strong>.</p></li>
-<li><p><strong>Tipping Points</strong>
-- <strong>Peak Efficiency Point (Daily):</strong> The inflection point ($f’’(x) = 0$) where acquisition cost is minimized.
-- <strong>Stop Scaling Point (Daily/Annualized):</strong> The point of diminishing returns where Marginal ROAS falls below your profitability threshold (default 1.0).</p></li>
-<li><p><strong>Geometric Adstock (Prior Decay Carryover)</strong>
-Accounts for lagged effects of prior spend on upcoming returns following a geometric decay model:</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[S_{t\_adstocked} = S_t + \theta \cdot S_{t-1\_adstocked}\]</div>
-</div>
-<p>Tipping Point supports 4 adstock modes during training:
-- <strong>No Adstock:</strong> Assumes immediate return.
-- <strong>Free Adstock Fit:</strong> Automatically learns decay parameter $theta in (0, 1)$ from historical data.
-- <strong>Bounded Adstock Fit:</strong> Constrains the learned half-life decay to a specified day interval $[x, y]$.
-- <strong>Fixed Adstock:</strong> Directly enforces a user-defined decay half-life in days.</p>
-</li>
-<li><p><strong>Portfolio Optimization (Cross-Channel Scenario Planning)</strong>
-Tipping Point scales from single-channel analysis to a full scenario planning engine. The <cite>PortfolioAllocator</cite> class takes multiple fitted <cite>MarketingReturnCurve</cite> models and utilizes <cite>scipy</cite> optimization (SLSQP algorithm) to find the exact budget allocation that maximizes total incremental return for a given total budget constraint, ensuring marginal ROAS is balanced across all valid channels.</p></li>
-</ol>
-</section>
-<section id="interactive-dashboard">
-<h1>Interactive Dashboard<a class="headerlink" href="#interactive-dashboard" title="Link to this heading">¶</a></h1>
-<p>Tipping Point includes a fully interactive Streamlit dashboard allowing web-based exploration, separated into two powerful stages:</p>
-<p><strong>Stage 1: Channel Configuration</strong>
-- <strong>Dynamic Stacking:</strong> Users can upload custom CSV data or input manual parameters to fit and stack multiple independent channels.
-- <strong>Value Denomination:</strong> Optional conversion value multipliers turn raw conversions (leads, installs) into revenue-denominated curves before fitting.
-- <strong>Deep Dive Analysis:</strong> Provides a channel-by-channel view of the Plotly saturation curve, marginal efficiency metrics, and an <strong>Adstock Carryover</strong> timeline displaying raw vs. accumulated spend.</p>
-<p><strong>Stage 2: Portfolio Optimization</strong>
-- <strong>Scenario Planning:</strong> Input a total portfolio budget and optionally set hard constraints (min/max limits) on specific channels.
-- <strong>Optimal Cross-Channel Allocation:</strong> Instantly calculates the most efficient distribution of funds across your configured channels.
-- <strong>Visual Benchmarking:</strong> Overlays all configured saturation curves on a single Plotly axis, cleanly marking the “setpoint” for each channel (solid line for funded spend, dashed line for untapped potential).
-- <strong>Scale Mix:</strong> A beautiful stacked area plot showing how your optimal channel mix expands, bottlenecks, and shifts weighting as your total investment ceiling increases.</p>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.models">Model Interface</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.portfolio">Portfolio Optimization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.math">Mathematical Core</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.viz">Visualization</a></li>
-</ul>
-</li>
-</ul>
-</div>
-</section>
-<section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading">¶</a></h1>
-<ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
-</ul>
-</section>
+          <h1>Source code for tippingpoint.math</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
+<div class="viewcode-block" id="days_to_theta">
+<a class="viewcode-back" href="../../api.html#tippingpoint.math.days_to_theta">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">days_to_theta</span><span class="p">(</span><span class="n">days</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Converts half-life in days/periods to geometric decay rate theta.</span>
+
+<span class="sd">  Formula: theta = 0.5 ** (1 / days)</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="n">days</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span> <span class="mf">0.0</span>
+  <span class="k">return</span> <span class="mf">0.5</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">days</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="geometric_adstock">
+<a class="viewcode-back" href="../../api.html#tippingpoint.math.geometric_adstock">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">geometric_adstock</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Applies geometric adstock decay to a spend array.</span>
+
+<span class="sd">  Formula: S_t_adstocked = S_t + theta * S_{t-1_adstocked}</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">spend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+  <span class="n">adstocked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">spend</span><span class="p">)</span>
+  <span class="n">current</span> <span class="o">=</span> <span class="mf">0.0</span>
+  <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">spend</span><span class="p">)):</span>
+    <span class="n">current</span> <span class="o">=</span> <span class="n">spend</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">theta</span> <span class="o">*</span> <span class="n">current</span>
+    <span class="n">adstocked</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">current</span>
+  <span class="k">return</span> <span class="n">adstocked</span></div>
+
+
+<div class="viewcode-block" id="hill_function">
+<a class="viewcode-back" href="../../api.html#tippingpoint.math.hill_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">hill_function</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Calculates the Hill Function value: f(x) = (beta * x^alpha) / (K^alpha + x^alpha).&quot;&quot;&quot;</span>
+  <span class="n">spend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1e-5</span>
+  <span class="k">return</span> <span class="p">(</span><span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">spend</span> <span class="o">**</span> <span class="n">alpha</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">K</span> <span class="o">**</span> <span class="n">alpha</span> <span class="o">+</span> <span class="n">spend</span> <span class="o">**</span> <span class="n">alpha</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="hill_first_derivative">
+<a class="viewcode-back" href="../../api.html#tippingpoint.math.hill_first_derivative">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">hill_first_derivative</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Calculates the first derivative of the Hill Function (Marginal ROAS).&quot;&quot;&quot;</span>
+  <span class="n">spend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1e-5</span>
+  <span class="n">numerator</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">K</span> <span class="o">**</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">spend</span> <span class="o">**</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+  <span class="n">denominator</span> <span class="o">=</span> <span class="p">(</span><span class="n">K</span> <span class="o">**</span> <span class="n">alpha</span> <span class="o">+</span> <span class="n">spend</span> <span class="o">**</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+  <span class="k">return</span> <span class="n">numerator</span> <span class="o">/</span> <span class="n">denominator</span></div>
+
+
+<div class="viewcode-block" id="get_inflection_point">
+<a class="viewcode-back" href="../../api.html#tippingpoint.math.get_inflection_point">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_inflection_point</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Calculates the inflection point where marginal return peaks (f&#39;&#39;(x) = 0).&quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="n">alpha</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span> <span class="k">return</span> <span class="mf">0.0</span>
+  <span class="k">return</span> <span class="n">K</span> <span class="o">*</span> <span class="p">(((</span><span class="n">alpha</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">alpha</span><span class="p">))</span></div>
+
+</pre></div>
         </article>
       </div>
       <footer>
 
         <div class="related-pages">
-          <a class="next-page" href="api.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">API Reference</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
+
 
         </div>
         <div class="bottom-of-page">
@@ -340,10 +311,9 @@ Tipping Point scales from single-channel analysis to a full scenario planning en
 
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=d58853b1"></script>
-    <script src="_static/doctools.js?v=fd6eb6e6"></script>
-    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
-    <script src="_static/scripts/furo.js?v=46bd48cc"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+</div><script src="../../_static/documentation_options.js?v=d58853b1"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
     </body>
 </html>
