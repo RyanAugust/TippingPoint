@@ -54,6 +54,14 @@ To provide maximum flexibility to the analyst, the module supports four adstock 
 
 ![Geometric Adstock Carryover Timeline](images/adstock.png)
 
+### 1.3 Portfolio Optimization (Cross-Channel Scenario Planning)
+
+While fitting individual saturation curves provides immense value for isolating a single channel's headroom, true strategic planning requires cross-channel liquidity. Tipping Point extends its mathematical core to support full **Portfolio Optimization**.
+
+Rather than manually attempting to balance budgets across disparate channels, the module ingests an array of fitted models and utilizes mathematical constrained optimization (Sequential Least SQuares Programming via `scipy`) to find the exact budget distribution that maximizes total incremental return for a given total budget constraint.
+
+Mathematically, the optimal portfolio allocation is achieved when the **Marginal ROAS is exactly equal across all unbounded channels**. If one channel possesses a higher marginal ROAS, the optimizer shifts a dollar from a lower-performing channel to the superior one until their rates of diminishing returns perfectly balance out. This allows advertisers to input hard constraints (e.g., minimum or maximum spend limits per platform) and instantly map how their optimal channel mix should expand, bottleneck, and shift weighting as their total investment ceiling scales up or down.
+
 ---
 
 ## 2. Empirical Grounding: The Advertiser as the Source of Truth

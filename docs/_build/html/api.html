@@ -330,6 +330,37 @@ Returns (profitability floor).</p>
 </dd></dl>
 
 </section>
+<section id="module-tippingpoint.portfolio">
+<span id="portfolio-optimization"></span><h2>Portfolio Optimization<a class="headerlink" href="#module-tippingpoint.portfolio" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tippingpoint.portfolio.PortfolioAllocator">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">tippingpoint.portfolio.</span></span><span class="sig-name descname"><span class="pre">PortfolioAllocator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">models</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/portfolio.html#PortfolioAllocator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.portfolio.PortfolioAllocator" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Optimizes budget allocation across multiple MarketingReturnCurve models.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tippingpoint.portfolio.PortfolioAllocator.allocate_budget">
+<span class="sig-name descname"><span class="pre">allocate_budget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_budget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/portfolio.html#PortfolioAllocator.allocate_budget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.portfolio.PortfolioAllocator.allocate_budget" title="Link to this definition">¶</a></dt>
+<dd><p>Finds the optimal spend distribution to maximize total return.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>total_budget</strong> (<em>float</em>) – Total budget to allocate.</p></li>
+<li><p><strong>channel_bounds</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of (min_spend, max_spend) bounds
+keyed by channel_name.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The optimal allocation, marginal ROAS, and expected return.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
 <section id="module-tippingpoint.math">
 <span id="mathematical-core"></span><h2>Mathematical Core<a class="headerlink" href="#module-tippingpoint.math" title="Link to this heading">¶</a></h2>
 <dl class="py function">
@@ -478,6 +509,13 @@ Returns (profitability floor).</p>
 <li><a class="reference internal" href="#tippingpoint.models.MarketingReturnCurve.predict_marginal_return"><code class="docutils literal notranslate"><span class="pre">MarketingReturnCurve.predict_marginal_return()</span></code></a></li>
 <li><a class="reference internal" href="#tippingpoint.models.MarketingReturnCurve.summary"><code class="docutils literal notranslate"><span class="pre">MarketingReturnCurve.summary()</span></code></a></li>
 <li><a class="reference internal" href="#tippingpoint.models.MarketingReturnCurve.update_loss"><code class="docutils literal notranslate"><span class="pre">MarketingReturnCurve.update_loss()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-tippingpoint.portfolio">Portfolio Optimization</a><ul>
+<li><a class="reference internal" href="#tippingpoint.portfolio.PortfolioAllocator"><code class="docutils literal notranslate"><span class="pre">PortfolioAllocator</span></code></a><ul>
+<li><a class="reference internal" href="#tippingpoint.portfolio.PortfolioAllocator.allocate_budget"><code class="docutils literal notranslate"><span class="pre">PortfolioAllocator.allocate_budget()</span></code></a></li>
 </ul>
 </li>
 </ul>

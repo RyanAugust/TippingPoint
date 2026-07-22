@@ -11,6 +11,14 @@ Model Interface
    :undoc-members:
    :show-inheritance:
 
+Portfolio Optimization
+----------------------
+
+.. automodule:: tippingpoint.portfolio
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Mathematical Core
 -----------------
 

@@ -263,22 +263,28 @@ Accounts for lagged effects of prior spend on upcoming returns following a geome
 - <strong>Bounded Adstock Fit:</strong> Constrains the learned half-life decay to a specified day interval $[x, y]$.
 - <strong>Fixed Adstock:</strong> Directly enforces a user-defined decay half-life in days.</p>
 </li>
+<li><p><strong>Portfolio Optimization (Cross-Channel Scenario Planning)</strong>
+Tipping Point scales from single-channel analysis to a full scenario planning engine. The <cite>PortfolioAllocator</cite> class takes multiple fitted <cite>MarketingReturnCurve</cite> models and utilizes <cite>scipy</cite> optimization (SLSQP algorithm) to find the exact budget allocation that maximizes total incremental return for a given total budget constraint, ensuring marginal ROAS is balanced across all valid channels.</p></li>
 </ol>
 </section>
 <section id="interactive-dashboard">
 <h1>Interactive Dashboard<a class="headerlink" href="#interactive-dashboard" title="Link to this heading">¶</a></h1>
-<p>Tipping Point includes a fully interactive Streamlit dashboard allowing web-based exploration:</p>
-<ul class="simple">
-<li><p><strong>Top-Down Web Layout:</strong> Features a large, dual-axis <strong>Plotly</strong> visualization where users can zoom, drag, and view unified hover tooltips.</p></li>
-<li><p><strong>Explicit Setup Mode:</strong> Launches in a dormant state, allowing users to upload custom CSV data, map columns, and set optional conversion value multipliers (to turn raw conversions like leads/installs into monetary value) before fitting.</p></li>
-<li><p><strong>Active Persistence:</strong> State is managed via <cite>st.session_state</cite> to prevent re-runs or re-fits on slider adjustments.</p></li>
-<li><p><strong>Carryover Analysis Plot:</strong> Shows a dedicated timeline comparing raw daily spends (bars) against accumulated adstocked spends (area) to visually display media wear-out.</p></li>
-</ul>
+<p>Tipping Point includes a fully interactive Streamlit dashboard allowing web-based exploration, separated into two powerful stages:</p>
+<p><strong>Stage 1: Channel Configuration</strong>
+- <strong>Dynamic Stacking:</strong> Users can upload custom CSV data or input manual parameters to fit and stack multiple independent channels.
+- <strong>Value Denomination:</strong> Optional conversion value multipliers turn raw conversions (leads, installs) into revenue-denominated curves before fitting.
+- <strong>Deep Dive Analysis:</strong> Provides a channel-by-channel view of the Plotly saturation curve, marginal efficiency metrics, and an <strong>Adstock Carryover</strong> timeline displaying raw vs. accumulated spend.</p>
+<p><strong>Stage 2: Portfolio Optimization</strong>
+- <strong>Scenario Planning:</strong> Input a total portfolio budget and optionally set hard constraints (min/max limits) on specific channels.
+- <strong>Optimal Cross-Channel Allocation:</strong> Instantly calculates the most efficient distribution of funds across your configured channels.
+- <strong>Visual Benchmarking:</strong> Overlays all configured saturation curves on a single Plotly axis, cleanly marking the “setpoint” for each channel (solid line for funded spend, dashed line for untapped potential).
+- <strong>Scale Mix:</strong> A beautiful stacked area plot showing how your optimal channel mix expands, bottlenecks, and shifts weighting as your total investment ceiling increases.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.models">Model Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.portfolio">Portfolio Optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.math">Mathematical Core</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.viz">Visualization</a></li>
 </ul>

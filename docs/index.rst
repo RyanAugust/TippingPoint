@@ -38,15 +38,24 @@ Key Concepts
    - **Bounded Adstock Fit:** Constrains the learned half-life decay to a specified day interval $[x, y]$.
    - **Fixed Adstock:** Directly enforces a user-defined decay half-life in days.
 
+5. **Portfolio Optimization (Cross-Channel Scenario Planning)**
+   Tipping Point scales from single-channel analysis to a full scenario planning engine. The `PortfolioAllocator` class takes multiple fitted `MarketingReturnCurve` models and utilizes `scipy` optimization (SLSQP algorithm) to find the exact budget allocation that maximizes total incremental return for a given total budget constraint, ensuring marginal ROAS is balanced across all valid channels.
+
 Interactive Dashboard
 =====================
 
-Tipping Point includes a fully interactive Streamlit dashboard allowing web-based exploration:
+Tipping Point includes a fully interactive Streamlit dashboard allowing web-based exploration, separated into two powerful stages:
 
-- **Top-Down Web Layout:** Features a large, dual-axis **Plotly** visualization where users can zoom, drag, and view unified hover tooltips.
-- **Explicit Setup Mode:** Launches in a dormant state, allowing users to upload custom CSV data, map columns, and set optional conversion value multipliers (to turn raw conversions like leads/installs into monetary value) before fitting.
-- **Active Persistence:** State is managed via `st.session_state` to prevent re-runs or re-fits on slider adjustments.
-- **Carryover Analysis Plot:** Shows a dedicated timeline comparing raw daily spends (bars) against accumulated adstocked spends (area) to visually display media wear-out.
+**Stage 1: Channel Configuration**
+- **Dynamic Stacking:** Users can upload custom CSV data or input manual parameters to fit and stack multiple independent channels.
+- **Value Denomination:** Optional conversion value multipliers turn raw conversions (leads, installs) into revenue-denominated curves before fitting.
+- **Deep Dive Analysis:** Provides a channel-by-channel view of the Plotly saturation curve, marginal efficiency metrics, and an **Adstock Carryover** timeline displaying raw vs. accumulated spend.
+
+**Stage 2: Portfolio Optimization**
+- **Scenario Planning:** Input a total portfolio budget and optionally set hard constraints (min/max limits) on specific channels.
+- **Optimal Cross-Channel Allocation:** Instantly calculates the most efficient distribution of funds across your configured channels.
+- **Visual Benchmarking:** Overlays all configured saturation curves on a single Plotly axis, cleanly marking the "setpoint" for each channel (solid line for funded spend, dashed line for untapped potential).
+- **Scale Mix:** A beautiful stacked area plot showing how your optimal channel mix expands, bottlenecks, and shifts weighting as your total investment ceiling increases.
 
 .. toctree::
    :maxdepth: 2
