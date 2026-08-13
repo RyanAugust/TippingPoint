@@ -29,12 +29,16 @@ class CurveVisualizer:
 
     x_vals = np.linspace(0, max_x, 500)
     if show_intervals and model.posterior_samples:
-      y_returns_dist = model.predict_incremental_return(x_vals, use_samples=True)
+      y_returns_dist = np.nan_to_num(model.predict_incremental_return(x_vals, use_samples=True), nan=0.0)
       y_return = np.mean(y_returns_dist, axis=0)
       y_return_low = np.percentile(y_returns_dist, 5, axis=0)
       y_return_high = np.percentile(y_returns_dist, 95, axis=0)
 
-      y_mroas_dist = model.predict_marginal_return(x_vals, use_samples=True)
+      y_mroas_raw = model.predict_marginal_return(x_vals, use_samples=True)
+      finite_mask = np.isfinite(y_mroas_raw)
+      max_finite = float(np.max(y_mroas_raw[finite_mask])) if np.any(finite_mask) else 1.0
+      y_mroas_dist = np.nan_to_num(y_mroas_raw, nan=0.0, posinf=max_finite, neginf=0.0)
+
       y_mroas = np.mean(y_mroas_dist, axis=0)
       y_mroas_low = np.percentile(y_mroas_dist, 5, axis=0)
       y_mroas_high = np.percentile(y_mroas_dist, 95, axis=0)
