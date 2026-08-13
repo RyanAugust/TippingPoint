@@ -74,8 +74,11 @@ class CurveVisualizer:
     # Optimal Scaling Zone
     if max_spend and max_spend > min_spend:
       ax1.axvspan(min_spend, max_spend, color=cls.G_GREEN, alpha=0.08, label='Optimal Scaling Zone', zorder=0)
-      ax1.text((min_spend + max_spend)/2, plt.ylim()[1]*0.02, 'OPTIMAL ZONE',
-               horizontalalignment='center', fontsize=9, color=cls.G_GREEN, fontweight='bold', alpha=0.6)
+      # Use blended transform (x in data coords, y in axes fraction) for robust placement
+      ax1.text((min_spend + max_spend) / 2.0, 0.03, 'OPTIMAL ZONE',
+               transform=ax1.get_xaxis_transform(),
+               horizontalalignment='center', verticalalignment='bottom',
+               fontsize=9, color=cls.G_GREEN, fontweight='bold', alpha=0.7)
 
     # Current Spend marker
     if current_spend:
@@ -85,18 +88,36 @@ class CurveVisualizer:
     # Scatter data
     if scatter is not None:
       scatter_spend, scatter_return = scatter
-      if model.theta > 0:
-        from .math import geometric_adstock
-        scatter_spend = geometric_adstock(scatter_spend, model.theta)
-      ax1.scatter(scatter_spend, scatter_return, color=cls.G_BLUE, alpha=0.3, s=40, edgecolors='white', linewidth=0.8, label="Historical Data (Adstocked)" if model.theta > 0 else "Historical Data", zorder=1)
+      scatter_spend_adstocked = model.adstock_spend(scatter_spend)
+      has_adstock = (model.theta > 0) or (model.adstock_type and model.adstock_type != "none")
+      ax1.scatter(scatter_spend_adstocked, scatter_return, color=cls.G_BLUE, alpha=0.3, s=40, edgecolors='white', linewidth=0.8,
+                  label="Historical Data (Adstocked)" if has_adstock else "Historical Data", zorder=1)
 
     # Markers for key points
     if min_spend > 0:
       ax2.scatter(min_spend, model.predict_marginal_return(min_spend), marker='o', color=cls.G_YELLOW, s=100, edgecolors=cls.G_GRAY, linewidth=1, label="Peak Efficiency", zorder=6)
 
-    # Formatting
-    ax1.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'${x/1000:g}k' if x >= 1000 else f'${x:g}'))
-    ax1.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'{x/1000:g}k' if x >= 1000 else f'{x:g}'))
+    # Formatting with smart scaling ($M, $k, $)
+    def format_spend(x, p):
+      if abs(x) >= 1e6:
+        return f'${x*1e-6:g}M'
+      elif abs(x) >= 1e3:
+        return f'${x*1e-3:g}k'
+      else:
+        return f'${x:g}'
+
+    def format_return(x, p):
+      if abs(x) >= 1e6:
+        return f'{x*1e-6:g}M'
+      elif abs(x) >= 1e3:
+        return f'{x*1e-3:g}k'
+      else:
+        return f'{x:g}'
+
+    ax1.xaxis.set_major_formatter(ticker.FuncFormatter(format_spend))
+    ax1.yaxis.set_major_formatter(ticker.FuncFormatter(format_return))
+    ax1.set_ylim(bottom=0)
+    ax2.set_ylim(bottom=0)
 
     # Hide spines
     ax1.spines['top'].set_visible(False)
@@ -124,3 +145,4 @@ class CurveVisualizer:
 
     plt.tight_layout()
     return fig
+
