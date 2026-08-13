@@ -59,3 +59,15 @@ def test_plot_with_samples(synthetic_data):
     import matplotlib.pyplot as plt
     plt.show = lambda: None
     model.plot_response_curve()
+
+def test_mcmc_diagnostics(synthetic_data):
+    x, y = synthetic_data
+    model = MarketingReturnCurve.fit_bayesian(x, y, n_samples=200, burn_in=50, chains=2)
+    assert 'diagnostics' in model.posterior_samples
+    diag = model.posterior_samples['diagnostics']
+    assert 'acceptance_rate' in diag
+    assert 0.1 <= diag['acceptance_rate'] <= 0.8
+    assert 'r_hat' in diag
+    assert 'beta' in diag['r_hat']
+    assert diag['r_hat']['beta'] > 0
+
