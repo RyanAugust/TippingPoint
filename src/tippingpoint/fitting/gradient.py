@@ -13,8 +13,8 @@ def tinygrad_geometric_adstock(spend, theta):
   weights = (theta ** diff_safe) * mask
   return weights.matmul(spend)
 
-def fit_mle_gradient(spend_array, return_array, epochs=5000, lr=0.05, adstock_type="none", adstock_bounds=None, adstock_fixed_days=None):
-  """Fits a Hill Curve to historical data using MLE (Adam optimizer), with optional adstock."""
+def fit_mle_gradient(spend_array, return_array, epochs=5000, lr=0.05, adstock_type="none", adstock_bounds=None, adstock_fixed_days=None, fit_baseline=False):
+  """Fits a Hill Curve to historical data using MLE (Adam optimizer), with optional adstock and baseline."""
   spend_arr = np.array(spend_array, dtype=float)
   return_arr = np.array(return_array, dtype=float)
 
@@ -43,6 +43,12 @@ def fit_mle_gradient(spend_array, return_array, epochs=5000, lr=0.05, adstock_ty
   log_alpha.requires_grad = True
 
   optimizable_params = [log_beta, log_k, log_alpha]
+  log_baseline = None
+  if fit_baseline:
+    log_baseline = Tensor([np.log(0.1)], dtype=dtypes.float32)
+    log_baseline.requires_grad = True
+    optimizable_params.append(log_baseline)
+
   theta_tensor = None
   theta_min, theta_max = 0.0, 0.999
 
@@ -79,6 +85,7 @@ def fit_mle_gradient(spend_array, return_array, epochs=5000, lr=0.05, adstock_ty
       beta = log_beta.exp()
       k = log_k.exp()
       alpha = log_alpha.exp()
+      base = log_baseline.exp() if fit_baseline else Tensor([0.0], dtype=dtypes.float32)
 
       # Apply adstock transformation
       if adstock_type == "none":
@@ -94,7 +101,7 @@ def fit_mle_gradient(spend_array, return_array, epochs=5000, lr=0.05, adstock_ty
 
       ratio = (x_adstocked + 1e-5) / k
       ratio_alpha = ratio ** alpha
-      y_pred = (beta * ratio_alpha) / (1.0 + ratio_alpha)
+      y_pred = base + (beta * ratio_alpha) / (1.0 + ratio_alpha)
       loss = ((y_pred - y) ** 2).mean()
       loss.backward()
       optimizer.step()
@@ -110,6 +117,7 @@ def fit_mle_gradient(spend_array, return_array, epochs=5000, lr=0.05, adstock_ty
   alpha_val = float(log_alpha.exp().numpy().item())
   k_val = float(log_k.exp().numpy().item() * max_x)
   final_loss = float(loss.numpy().item() * (max_y ** 2))
+  baseline_val = float(log_baseline.exp().numpy().item() * max_y) if fit_baseline else 0.0
 
   if adstock_type == "none":
     theta_val = 0.0
@@ -120,4 +128,7 @@ def fit_mle_gradient(spend_array, return_array, epochs=5000, lr=0.05, adstock_ty
   elif adstock_type == "bounded":
     theta_val = float((theta_min + (theta_max - theta_min) * adstock_w.sigmoid()).numpy().item())
 
+  if fit_baseline:
+    return beta_val, alpha_val, k_val, theta_val, final_loss, baseline_val
   return beta_val, alpha_val, k_val, theta_val, final_loss
+
