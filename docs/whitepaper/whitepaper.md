@@ -2,7 +2,9 @@
 
 ## Abstract
 
-**Tipping Point** is an advanced marketing intelligence module designed to help advertisers identify the optimal scaling zones for their media investments. By leveraging historical performance data, machine learning optimization (via Tinygrad), and rigorous calculus, the module determines the precise mathematical "tipping points"—specifically, the point of peak marginal efficiency and the point of diminishing marginal returns (profitability floor). This white paper outlines the underlying methodology, its conceptual alignment with Google Meridian, and the strategic implications, benefits, and limitations of relying on empirical, advertiser-specific data.
+**Tipping Point** is an advanced marketing intelligence and media mix modeling library designed to help advertisers identify the optimal scaling zones for their media investments. By leveraging historical performance data, GPU-accelerated gradient descent optimization (via Tinygrad), Markov Chain Monte Carlo (MCMC) Bayesian inference, and rigorous calculus, the module determines the precise mathematical "tipping points"—specifically, the point of peak marginal efficiency and the point of diminishing marginal returns (profitability floor).
+
+The library supports both **lightweight single-channel curve fitting** and a full **Hierarchical Bayesian Media Mix Model (Meridian-lite)** that jointly estimates adstock carryover, Hill saturation, baseline organic demand, and channel scale with partial pooling and geo-level hierarchy. This white paper outlines the underlying methodology, its conceptual alignment with Google Meridian, and the strategic implications, benefits, and applications for modern growth marketing.
 
 ---
 
@@ -10,19 +12,20 @@
 
 The Tipping Point module relies on established econometric principles to model the relationship between media spend and incremental returns. Central to this approach are the concepts of Media Saturation and Adstock (lagged effects), drawing heavily from the open-source methodologies pioneered by Google Meridian.
 
-### 1.1 Media Saturation (The Hill Function)
+### 1.1 Media Saturation (The Hill Function & Baseline Demand)
 
 In plain terms, media saturation is the mathematical expression of "diminishing returns." It acknowledges a fundamental truth of advertising: simply spending more money or showing the same ad more times does not guarantee a proportional increase in sales. Eventually, you run out of new people to reach, or the people you are reaching stop paying attention.
 
 From a social science and psychological perspective, this phenomenon is deeply rooted in concepts like **habituation** and **cognitive wear-out**. When consumers are repeatedly exposed to the same stimulus, their response naturally dampens over time. Similarly, economic theory dictates a law of diminishing marginal utility—the first few exposures are highly persuasive, but subsequent exposures yield progressively less impact as the most receptive audience members convert first, leaving behind a more resistant pool of non-buyers.
 
-To model this complex psychological reality, industry-standard MMMs (including Google Meridian) employ the **Hill Function**. Originally developed in biochemistry to describe the binding of molecules, it perfectly mirrors the constraints of human attention, mapping a flexible, continuous curve between media spend and incremental return:
+To model this complex psychological reality, industry-standard MMMs (including Google Meridian) employ the **Hill Function** augmented with an unobserved or observed **organic baseline demand** ($\beta_0$):
 
-$$ Return = \frac{\beta \cdot Spend^\alpha}{K^\alpha + Spend^\alpha} $$
+$$ Return = \beta_0 + \frac{\beta \cdot Spend_{adstocked}^\alpha}{K^\alpha + Spend_{adstocked}^\alpha} $$
 
-*   **$\beta$ (Beta - Capacity):** Represents the asymptote, or the absolute ceiling. No matter how much you spend, this is the maximum possible return a channel can generate before the audience is entirely exhausted.
+*   **$\beta_0$ (Baseline Demand):** Organic conversions or sales that occur independently of media spend.
+*   **$\beta$ (Beta - Capacity):** Represents the asymptote, or the absolute incremental ceiling. No matter how much you spend, this is the maximum possible return a channel can generate before the audience is entirely exhausted.
 *   **$\alpha$ (Alpha - Shape):** Dictates the learning curve. An $\alpha > 1$ creates an **S-curve**, indicating an initial "warm-up" phase where frequency builds trust before saturation sets in. An $\alpha \le 1$ creates a **C-curve**, implying that the very first dollar spent is the most efficient, with returns diminishing immediately thereafter.
-*   **$K$ (Half-Saturation):** The specific spend level at which the channel achieves exactly half of its absolute maximum capacity ($\beta$).
+*   **$K$ (Half-Saturation):** The specific spend level at which the channel achieves exactly half of its absolute maximum incremental capacity ($\beta$).
 
 Within the Tipping Point module, we don't just fit this curve; we analyze its rate of change. By calculating the **first derivative** (the Marginal ROAS), Tipping Point identifies two critical zones for the advertiser:
 1.  **Peak Efficiency Point:** The mathematical inflection point ($f''(x) = 0$). This marks the exact moment the "warm-up" phase ends and the curve is steepest, representing the cheapest acquisition cost.
@@ -30,94 +33,95 @@ Within the Tipping Point module, we don't just fit this curve; we analyze its ra
 
 ![Generic Hill Function Fit with Scatter Data](images/hill_fit.png)
 
-### 1.2 Geometric Adstock (Lagged Effects)
+### 1.2 Adstock Transformations (Geometric and Weibull)
 
 In simple terms, "adstock" is the memory or the "echo effect" of advertising. If a consumer sees a television commercial on Monday but doesn't purchase the product until Friday, Monday's media spend was still responsible for generating that return. Media exposure rarely results in immediate, instantaneous conversion.
 
 In cognitive psychology, this aligns with the principles of **cognitive persistence** and the **Ebbinghaus forgetting curve**. When a brand message is encoded into a consumer's memory, it doesn't vanish immediately when the ad stops playing; instead, it decays gradually over time. If a consumer is repeatedly exposed to the brand, this residual memory accumulates, building a stronger underlying predisposition to buy.
 
-To account for this delayed impact, Tipping Point utilizes **Geometric Adstock**, a mathematical decay model that calculates the *effective* media spend over time, rather than just the raw daily spend:
+To account for delayed impact, Tipping Point provides two primary adstock modeling engines:
+
+#### 1. Geometric Adstock
+Calculates exponential decay of media weight over time:
 
 $$ S_{t\_adstocked} = S_t + \theta \cdot S_{t-1\_adstocked} $$
 
-Where $\theta$ is the decay rate (retention rate) between $0$ and $1$.
-*   A **higher $\theta$** indicates a long carryover effect where memory persists (e.g., highly memorable brand television campaigns or out-of-home billboards).
+Where $\theta$ is the retention rate between $0$ and $1$.
+*   A **higher $\theta$** indicates a long carryover effect where memory persists (e.g., highly memorable brand video campaigns or out-of-home billboards).
 *   A **lower $\theta$** indicates a highly transient impact that is forgotten quickly (e.g., a direct-response search ad or a fleeting social media banner).
+
+#### 2. Weibull Adstock (PDF & CDF)
+For channels with delayed peak response (e.g., consideration video or influencer marketing where peak engagement occurs days after launch), Tipping Point supports **Weibull PDF** and **Weibull CDF** transformations parameterized by shape $k$ and scale $\lambda$:
+
+$$ w(l; k, \lambda) = \frac{k}{\lambda} \left( \frac{l}{\lambda} \right)^{k-1} \exp\left( - \left(\frac{l}{\lambda}\right)^k \right) $$
 
 **How they interact:** Within the Tipping Point module, these two models—Adstock and the Hill Function—do not exist in isolation; they are deeply intertwined. The model first applies the Adstock decay to understand the true, accumulated "weight" of the media in the consumer's mind. It then feeds this *adstocked spend* directly into the Hill Function. This means the module understands that you can hit "Media Saturation" (diminishing returns) not just by spending too much today, but because you spent so heavily yesterday that the consumer's memory is already completely saturated.
 
-To provide maximum flexibility to the analyst, the module supports four adstock configurations during training:
-1.  **No Adstock:** Assumes all media impact occurs in the current period with zero memory ($\theta = 0$).
-2.  **Fixed Adstock:** Applies an explicitly defined decay half-life, useful if the advertiser already knows their channel's decay rate from prior studies.
-3.  **Bounded Optimization:** Fits the decay parameter within a user-defined range of valid half-life days (e.g., telling the model to find the best fit, but forcing it to assume a search ad cannot be remembered for longer than 3 days).
-4.  **Free Optimization:** Automatically learns the optimal $\theta$ entirely from the historical data variance, letting the machine decide how memorable the media was.
-
 ![Geometric Adstock Carryover Timeline](images/adstock.png)
 
-### 1.3 Portfolio Optimization (Cross-Channel Scenario Planning)
+---
 
-While fitting individual saturation curves provides immense value for isolating a single channel's headroom, true strategic planning requires cross-channel liquidity. Tipping Point extends its mathematical core to support full **Portfolio Optimization**, shifting the paradigm from a purely analytical view to an actionable, forward-looking planning engine.
+## 2. Hierarchical Bayesian Modeling & Joint Estimation
 
-#### The Distinction from Traditional MMMs
-A full-fledged Marketing Mix Model (MMM) is primarily a *historical attribution* tool. It relies on massive multivariable regression models to untangle the "soup" of historical data—attempting to separate organic baseline sales, seasonality, pricing changes, macroeconomic factors, and cross-channel synergies. This process is notoriously complex, highly correlational, and often struggles to prove true causality without extensive calibration.
+In multi-channel settings, estimating adstock and saturation in sequential isolation leads to suboptimal, biased parameter recovery. Tipping Point implements a **Meridian-lite Hierarchical Bayesian MMM** (`MultiChannelMMM`) featuring:
 
-In contrast, Tipping Point's Portfolio Optimizer is an **Incrementality-Calibrated Allocator**. Instead of trying to retroactively untangle a massive, noisy baseline, it focuses exclusively on the empirically fitted saturation curves for each independent channel. When advertisers use gold-standard **incrementality studies** (like Geo-experiments or lift tests) to generate the data points that feed into this module, the paradigm shifts entirely. The module stops relying on biased, correlational platform attribution and instead fits the Hill Function to *causally proven* data. The resulting $\beta$ (capacity/headroom) and saturation ceilings are no longer probabilistic guesses; they are empirically validated truths.
+### 2.1 Joint Parameter Estimation
+Rather than pre-filtering adstock or fitting curves sequentially in stages, the model jointly estimates:
+*   **Adstock decay rate** ($\theta_m \in (0, 1)$)
+*   **Hill shape & scale** ($\alpha_m, K_m, \beta_m$)
+*   **Baseline organic demand** ($\beta_0$)
+*   **Observation error** ($\sigma_\epsilon$)
 
-#### Technical Implementation
-To execute this scenario planning, the module eschews simple heuristics in favor of rigorous mathematical constrained optimization. It utilizes the **Sequential Least SQuares Programming (SLSQP)** algorithm via the `scipy.optimize` library.
+Sampling is conducted simultaneously on unconstrained parameter spaces ($\mathbb{R}^D$) using Gaussian random-walk Metropolis-Hastings with adaptive burn-in tuning and Gelman-Rubin $\hat{R}$ multi-chain convergence diagnostics.
 
-The optimizer ingests an array of fitted models and systematically searches thousands of permutations to find the exact budget distribution that maximizes total incremental return for a given total budget constraint. Mathematically, the optimal portfolio allocation is achieved when the **Marginal ROAS is exactly equal across all unbounded channels**. If one channel possesses a higher marginal ROAS, the algorithm iteratively shifts a dollar from a lower-performing channel to the superior one until their rates of diminishing returns perfectly balance out.
+### 2.2 Hierarchical Partial Pooling Across Channels
+To stabilize parameters for channels with limited historical spend or noisy observations, Tipping Point introduces population hyperpriors:
 
-This engine inherently supports hard business constraints (e.g., minimum or maximum spend limits per platform), allowing advertisers to instantly map how their optimal channel mix should expand, bottleneck, and shift weighting as their total investment ceiling scales up or down.
+$$ \beta_m \sim \text{LogNormal}(\mu_\beta, \sigma_\beta^2), \quad \alpha_m \sim \text{LogNormal}(\mu_\alpha, \sigma_\alpha^2), \quad \theta_m \sim \text{LogitNormal}(\mu_\theta, \sigma_\theta^2) $$
+
+Partial pooling borrows statistical strength across the marketing portfolio, regularizing low-volume channels toward the population mean while allowing data-rich channels to reflect their own empirical likelihood.
+
+### 2.3 Geo / Region-Level Hierarchy
+When geo-level panel data is available (e.g. DMA or state-level observations), the model estimates geo-specific channel effectiveness multipliers:
+
+$$ \beta_{m,g} = \beta_m \cdot \exp(\delta_{m,g}), \quad \delta_{m,g} \sim \mathcal{N}(0, \sigma_{\text{geo}}^2) $$
+
+This captures local market idiosyncrasies while maintaining a unified national media saturation curve.
+
+### 2.4 Incrementality Lift Calibration
+To bridge the gap between correlational observational data and true causality, both the single-channel and multi-channel engines support **Bayesian prior calibration via lift experiments**. When an advertiser conducts a randomized geo-experiment or conversion lift test, the observed incremental lift ($\hat{L} \pm \text{SE}$) is incorporated as a Gaussian penalty in the posterior log-likelihood:
+
+$$ \log \mathcal{L}_{\text{cal}} = \log \mathcal{L}_{\text{data}} - \sum_{e} \frac{(L_{\text{pred}, e} - \hat{L}_e)^2}{2 \cdot \text{SE}_e^2} $$
+
+This anchors the saturation curve's scale and curvature to experimentally proven ground truth.
 
 ---
 
-## 2. Empirical Grounding: The Advertiser as the Source of Truth
+## 3. Portfolio Optimization & Historical Attribution
 
-Unlike top-down industry benchmarks or platform-generalized forecasts, Tipping Point is an **empirical model**; it fits its saturation curves directly to the prior historical marketing data provided by the customer themselves. This approach functions similarly to a localized Marketing Mix Model (MMM).
+### 3.1 Cross-Channel Scenario Planning
+The `PortfolioAllocator` utilizes the **Sequential Least SQuares Programming (SLSQP)** algorithm to find the exact budget distribution that maximizes total incremental return across all channels for any given portfolio budget constraint. Mathematically, optimal allocation is achieved when the **Marginal ROAS is equal across all unbounded channels**:
 
-### 2.1 Benefits of Advertiser-Specific Data
+$$ \frac{\partial Return_1}{\partial S_1} = \frac{\partial Return_2}{\partial S_2} = \dots = \frac{\partial Return_M}{\partial S_M} = \lambda^* $$
 
-Relying purely on the advertiser's historical (spend and return/KPI) vectors provides profound systemic consistency. The resulting saturation curves inherently encapsulate and bake-in all of the customer's specific, bespoke operational realities:
-
-*   **Funnel Dynamics:** The model naturally accounts for the advertiser's relative investment strategy across upper, mid, and lower-funnel tactics.
-*   **Attribution Logic:** Whether the input data is sourced from last-click, position-based, data-driven attribution (DDA), or an existing MMM, the fitted curve represents scaling *within the reality of that chosen attribution framework*.
-*   **Signal Reliability:** The model inherently adjusts to the advertiser's baseline of tracking accuracy, cookie loss, and signal fidelity.
-*   **Custom Success Metrics:** Because the input vector is agnostic, the "Return" can be defined as revenue, gross profit, lead volume, or app installs. The model simply optimizes for the chosen KPI.
-
-Because the data is their own, the output is highly consistent, trusted, and directly applicable to the advertiser's existing reporting paradigms.
+### 3.2 Historical Contribution Decomposition
+For post-campaign analysis, `MultiChannelMMM.decompose_historical_contributions()` decomposes observed time-series performance into baseline and channel-specific incremental returns, calculating historical ROI, share of spend, share of return, and current marginal efficiency.
 
 ---
 
-## 3. Limitations and Strategic Caveats
+## 4. Empirical Grounding: Benefits & Limitations
 
-While the empirical, historical grounding of the Tipping Point model is its greatest strength, it also introduces specific limitations that practitioners must navigate.
+### 4.1 Benefits of Advertiser-Specific Data
+*   **Funnel Dynamics:** Encapsulates the advertiser's specific mix of brand, consideration, and direct-response tactics.
+*   **Attribution Flexibility:** Compatible with raw revenue, profit, lead volume, or app conversions.
+*   **Incrementality Integration:** Directly groundable with causal lift experiments.
 
-### 3.1 Sensitivity to Strategic Deviations
-
-Because the saturation and adstock parameters ($\beta, \alpha, K, \theta$) are fitted to *historical* realities, they assume that the underlying mechanics of the marketing program remain relatively constant.
-
-If an advertiser makes significant, structural deviations to their marketing program—such as launching entirely new creative messaging, fundamentally altering their bidding strategy, overhauling audience targeting, or experiencing a major shift in product-market fit—the historical retention curves will drift away from their current fit. In these scenarios, the model's predictions may not be reliable until sufficient new data is gathered and the model is re-trained to capture the new programmatic reality.
-
-### 3.2 Omitted Variable Bias (Exogenous Factors)
-
-Tipping Point is a focused bivariate/time-series model (Spend vs. Return over Time, adjusted for Adstock). It is deliberately lightweight and **does not ingest external, exogenous variables**.
-
-Crucially, the model does not account for:
-*   **Platform Dynamics:** Real-time shifts in the Google/Meta known bid environment, auction density, or competitor CPC inflation.
-*   **Seasonality:** Predictable macroeconomic fluctuations, holiday spikes (e.g., Black Friday, Cyber Monday), or weather-driven demand changes.
-*   **Pricing/Promotions:** Internal changes to product pricing or discount codes that alter conversion rates independently of media spend.
-
-### 3.3 Validity Scope: Macro vs. Micro
-
-Due to the omission of real-time exogenous variables, the output of the Tipping Point model should not be used for hyper-granular, daily bid adjustments on single, isolated campaigns.
-
-Instead, the model's output demonstrates **increasing statistical validity when analyzing higher-level marketing initiatives over longer time horizons.** It is best utilized as a strategic compass for macro-level budget liquidity, cross-channel capital allocation, and setting broad monthly or quarterly scaling ceilings, rather than as a micro-bidding algorithm.
-
-![Strategic Budget Evaluation Output](images/module_output.png)
+### 4.2 Limitations & Strategic Caveats
+*   **Programmatic Shifts:** Structural deviations in creative strategy, targeting, or bidding algorithms will require refitting with fresh data.
+*   **Macro vs. Micro Scope:** Designed for macro-level budget liquidity, cross-channel capital allocation, and setting quarterly scaling ceilings rather than intra-day real-time bidding.
 
 ---
 
 ## Conclusion
 
-The Tipping Point module democratizes access to sophisticated, Google Meridian-style media saturation and adstock modeling. By anchoring its calculus in the advertiser's own historical data, it provides highly consistent, bespoke scaling recommendations. However, strategic operators must utilize these insights with an understanding of their historical bounds, applying them primarily to macro-level budget decisions while remaining vigilant of structural programmatic shifts.
+The Tipping Point module democratizes access to sophisticated, Google Meridian-style media saturation, adstock modeling, and hierarchical Bayesian media mix analysis. By anchoring its calculus in empirical data and causal incrementality tests, it provides robust, actionable guidance for growth marketers seeking to maximize portfolio capital efficiency.
