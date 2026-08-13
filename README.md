@@ -4,13 +4,17 @@
 [![PyPI Downloads](https://img.shields.io/pypi/dm/tippingpt.svg?label=PyPI%20downloads)](
 https://pypi.org/project/tippingpt/)
 
-A lightweight, high-performance marketing intelligence module that uses machine learning and calculus to determine the exact inflection points of a media response curve.
+A lightweight, marketing intelligence module that assists in identifying media response curves and determining the inflection points.
 
-Growth marketers and media buyers constantly ask two questions: *"When are we out of the inefficient learning phase?"* and *"When should we stop scaling spend?"* By fitting historical performance data to a continuous mathematical curve, this tool identifies the **Minimal Marginal Cost Point** (where efficiency peaks) and the **Point of Diminishing Returns** (where scaling is no longer profitable), defining your exact **Optimal Scaling Zone**.
+Growth marketers and media buyers ask two questions: 
+1) *"When are we out of the inefficient learning phase?"* 
+2) *"When should we stop scaling spend?"*
 
-Tipping Point scales from single-channel analysis to a full scenario planning engine. Using the included `PortfolioAllocator`, advertisers can instantly calculate the exact budget distribution that maximizes total return across multiple channels.
+By fitting historical performance data to a continuous curve, this tool identifies the **Minimal Marginal Cost Point** (where efficiency peaks) and the **Point of Diminishing Returns** (where scaling is no longer profitable), defining your exact **Optimal Scaling Zone**.
 
-## 🧠 Methodology
+Tipping Point focuses on single-channel analysis, but contains the necessary tools to run full scenario planning across multiple channels—using the included `PortfolioAllocator`, advertisers can calculate the budget distribution that maximizes total return across channels.
+
+## Methodology
 
 This project leverages the mathematical foundations of modern Marketing Mix Modeling (MMM)—specifically the techniques popularized by [Google’s Meridian](https://github.com/google/meridian).
 
@@ -30,21 +34,21 @@ $$ S_{t\_adstocked} = S_t + \theta \cdot S_{t-1\_adstocked} $$
 
 Tipping Point supports 4 adstock optimization modes: `none`, `free` (fully optimized $\theta$), `bounded` (constrained half-life), and `fixed` (explicit decay days).
 
-### 3. The Calculus Engine
-Using exact calculus, the module provides strategic recommendations:
+### 3. Margin Focused
+Using marginal costs and returnes instead of the average, the module provides strategic recommendations:
 *   **Marginal ROAS ($f'(x)$):** The efficiency of the *next* dollar spent.
 *   **Peak Efficiency ($f''(x) = 0$):** The inflection point. Spend *at least* this much to exit the warm-up phase.
 *   **Stop Scaling Point ($f'(x) = Target\_mROAS$):** The exact spend level where efficiency drops below your baseline unit economics.
 
-## 🚀 Installation & Prerequisites
+## Installation & Prerequisites
 
-This module uses **tinygrad** for ultra-lightweight GPU-accelerated gradient descent, **scipy** for portfolio optimization, and **plotly/streamlit** for visualization.
+This module uses **tinygrad** for ultra-lightweight GPU-accelerated gradient descent, **scipy** for portfolio optimization, and **plotly/streamlit** for visualization. Additionally saturation curves can be fit using bootstrapped bayesian MCMC for scenarios with sparse data and informed priors.
 
 ```bash
 pip install tippingpt
 ```
 
-## 💻 Usage
+## Usage
 
 ### 1. Fitting from Historical Data
 Pass raw `Spend` and `Return` arrays directly into the module.
@@ -111,7 +115,7 @@ Explore your models and run cross-channel portfolio optimization interactively u
 tipp dashboard
 ```
 
-## 🛠 Integrating with existing MMMs (Meridian)
+## Integrating with existing MMMs (Meridian)
 If you already run Google Meridian, you can extract the posterior mean parameters and initialize the class without refitting:
 
 ```python
