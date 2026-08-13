@@ -6,7 +6,11 @@ https://pypi.org/project/tippingpt/)
 
 A lightweight, marketing intelligence module that assists in identifying media response curves and determining the inflection points.
 
-Growth marketers and media buyers ask two questions: *"When are we out of the inefficient learning phase?"* and *"When should we stop scaling spend?"* By fitting historical performance data to a continuous curve, this tool identifies the **Minimal Marginal Cost Point** (where efficiency peaks) and the **Point of Diminishing Returns** (where scaling is no longer profitable), defining your exact **Optimal Scaling Zone**.
+Growth marketers and media buyers ask two questions: 
+1) *"When are we out of the inefficient learning phase?"* 
+2) *"When should we stop scaling spend?"*
+
+By fitting historical performance data to a continuous curve, this tool identifies the **Minimal Marginal Cost Point** (where efficiency peaks) and the **Point of Diminishing Returns** (where scaling is no longer profitable), defining your exact **Optimal Scaling Zone**.
 
 Tipping Point focuses on single-channel analysis, but contains the necessary tools to run full scenario planning across multiple channels—using the included `PortfolioAllocator`, advertisers can calculate the budget distribution that maximizes total return across channels.
 
