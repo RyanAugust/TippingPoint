@@ -18,7 +18,7 @@ def fit_mle_gradient(spend_array, return_array, epochs=5000, lr=0.05, adstock_ty
   max_y = np.max(return_array)
   median_x = np.median(spend_array[spend_array > 0]) if np.any(spend_array > 0) else 1.0
 
-  Tensor.traning = True
+  Tensor.training = True
   x = Tensor(spend_array, dtype=dtypes.float32)
   x.requires_grad = False
   y = Tensor(return_array, dtype=dtypes.float32)
@@ -58,7 +58,7 @@ def fit_mle_gradient(spend_array, return_array, epochs=5000, lr=0.05, adstock_ty
 
   optimizer = Adam(optimizable_params, lr=lr)
 
-  Tensor.traning = True
+  Tensor.training = True
   with Tensor.train():
     for _ in range(epochs):
       optimizer.zero_grad()
@@ -78,12 +78,13 @@ def fit_mle_gradient(spend_array, return_array, epochs=5000, lr=0.05, adstock_ty
         theta = theta_min + (theta_max - theta_min) * adstock_w.sigmoid()
         x_adstocked = tinygrad_geometric_adstock(x, theta)
 
-      x_safe = x_adstocked + 1e-5
-      y_pred = (beta * (x_safe ** alpha)) / (k ** alpha + x_safe ** alpha)
+      ratio = (x_adstocked + 1e-5) / k
+      ratio_alpha = ratio ** alpha
+      y_pred = (beta * ratio_alpha) / (1.0 + ratio_alpha)
       loss = ((y_pred - y) ** 2).mean()
       loss.backward()
       optimizer.step()
-  Tensor.traning = False
+  Tensor.training = False
 
   beta_val = log_beta.exp().numpy().item()
   alpha_val = log_alpha.exp().numpy().item()

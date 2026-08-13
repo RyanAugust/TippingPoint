@@ -1,5 +1,5 @@
 import numpy as np
-from tippingpoint.math import geometric_adstock
+from tippingpoint.math import geometric_adstock, hill_function
 
 def fit_bayesian_mcmc(spend_array, return_array, channel_name="Generic", priors=None, n_samples=2000, chains=4, burn_in=1000, adstock_type="none", adstock_bounds=None, adstock_fixed_days=None):
   """Fits a Hill Curve using Bayesian MCMC (Metropolis-Hastings) with optional adstock."""
@@ -43,7 +43,7 @@ def fit_bayesian_mcmc(spend_array, return_array, channel_name="Generic", priors=
       if theta < theta_min or theta > theta_max: return -np.inf
       x_adstocked = geometric_adstock(x, theta)
 
-    y_pred = (beta * (x_adstocked ** alpha)) / (K ** alpha + x_adstocked ** alpha)
+    y_pred = hill_function(x_adstocked, beta, alpha, K)
     return -0.5 * np.sum(((y - y_pred) / sigma) ** 2) - len(y) * np.log(sigma)
 
   def log_prior(beta, alpha, K, sigma, theta=0.0):
