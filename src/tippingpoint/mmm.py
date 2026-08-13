@@ -1,19 +1,42 @@
 import numpy as np
+import pandas as pd
 from tinygrad.tensor import Tensor
 from tinygrad.nn.optim import Adam
 from tinygrad import dtypes
-from tippingpoint.math import geometric_adstock, hill_function
+from tippingpoint.math import geometric_adstock, weibull_adstock, hill_function, hill_first_derivative
 from tippingpoint.fitting.gradient import tinygrad_geometric_adstock
 from tippingpoint.models import MarketingReturnCurve
 
-def fit_multichannel_gradient(spend_data, return_array, channel_names=None, epochs=5000, lr=0.05, fit_baseline=True, adstock_types=None, adstock_bounds=None, adstock_fixed_days=None):
-  """Fits a joint Multi-Channel Marketing Mix Model using Gradient Descent (Tinygrad Adam)."""
-  if isinstance(spend_data, dict):
-    channels = list(spend_data.keys())
-    spend_dict = {c: np.array(spend_data[c], dtype=float) for c in channels}
-  elif hasattr(spend_data, 'values') and hasattr(spend_data, 'columns'):
-    channels = list(spend_data.columns)
-    spend_dict = {c: np.array(spend_data[c].values, dtype=float) for c in channels}
+
+def _parse_spend_input(spend_data, channel_names=None):
+  """Helper to standardize spend input into a dict of {channel_name: 1D np.ndarray} or {geo: {channel: array}}."""
+  geos = None
+  if isinstance(spend_data, pd.DataFrame):
+    if 'geo' in spend_data.columns or 'region' in spend_data.columns:
+      geo_col = 'geo' if 'geo' in spend_data.columns else 'region'
+      geos = list(spend_data[geo_col].unique())
+      channels = [c for c in spend_data.columns if c not in [geo_col, 'date', 'period', 'week', 'return', 'revenue', 'target']]
+      geo_spend_dict = {}
+      for g in geos:
+        sub_df = spend_data[spend_data[geo_col] == g]
+        geo_spend_dict[g] = {c: np.array(sub_df[c].values, dtype=float) for c in channels}
+      return geo_spend_dict, channels, geos
+    else:
+      channels = list(spend_data.columns)
+      spend_dict = {c: np.array(spend_data[c].values, dtype=float) for c in channels}
+      return spend_dict, channels, None
+  elif isinstance(spend_data, dict):
+    # Check if nested dict for geos: {geo_name: {channel_name: array}}
+    first_val = next(iter(spend_data.values()))
+    if isinstance(first_val, dict):
+      geos = list(spend_data.keys())
+      channels = list(first_val.keys())
+      geo_spend_dict = {g: {c: np.array(spend_data[g][c], dtype=float) for c in channels} for g in geos}
+      return geo_spend_dict, channels, geos
+    else:
+      channels = list(spend_data.keys())
+      spend_dict = {c: np.array(spend_data[c], dtype=float) for c in channels}
+      return spend_dict, channels, None
   else:
     spend_mat = np.array(spend_data, dtype=float)
     if channel_names is None:
@@ -21,6 +44,18 @@ def fit_multichannel_gradient(spend_data, return_array, channel_names=None, epoc
     else:
       channels = list(channel_names)
     spend_dict = {channels[i]: spend_mat[:, i] for i in range(len(channels))}
+    return spend_dict, channels, None
+
+
+def fit_multichannel_gradient(spend_data, return_array, channel_names=None, epochs=5000, lr=0.05,
+                              fit_baseline=True, adstock_types=None, adstock_bounds=None, adstock_fixed_days=None):
+  """Fits a joint Multi-Channel Marketing Mix Model using Gradient Descent (Tinygrad Adam)."""
+  parsed, channels, _ = _parse_spend_input(spend_data, channel_names)
+  if isinstance(parsed, dict) and any(isinstance(v, dict) for v in parsed.values()):
+    # If geo data, aggregate spend across geos for global gradient fit
+    spend_dict = {c: sum(parsed[g][c] for g in parsed) for c in channels}
+  else:
+    spend_dict = parsed
 
   M = len(channels)
   return_arr = np.array(return_array, dtype=float)
@@ -161,25 +196,49 @@ def fit_multichannel_gradient(spend_data, return_array, channel_names=None, epoc
 
   return models_dict, baseline_val, final_loss
 
-def fit_multichannel_bayesian_mcmc(spend_data, return_array, channel_names=None, n_samples=2000, chains=4, burn_in=1000, fit_baseline=True, adstock_types=None, adstock_bounds=None, adstock_fixed_days=None, calibration_experiments=None):
-  """Fits a joint Multi-Channel Marketing Mix Model using Bayesian MCMC with optional experimental calibration."""
-  if isinstance(spend_data, dict):
-    channels = list(spend_data.keys())
-    spend_dict = {c: np.array(spend_data[c], dtype=float) for c in channels}
-  elif hasattr(spend_data, 'values') and hasattr(spend_data, 'columns'):
-    channels = list(spend_data.columns)
-    spend_dict = {c: np.array(spend_data[c].values, dtype=float) for c in channels}
-  else:
-    spend_mat = np.array(spend_data, dtype=float)
-    if channel_names is None:
-      channels = [f"Channel_{i+1}" for i in range(spend_mat.shape[1])]
-    else:
-      channels = list(channel_names)
-    spend_dict = {channels[i]: spend_mat[:, i] for i in range(len(channels))}
+
+def fit_multichannel_hierarchical_bayesian(spend_data, return_array, channel_names=None, n_samples=2000,
+                                           chains=4, burn_in=1000, fit_baseline=True, hierarchical=True,
+                                           adstock_types=None, adstock_bounds=None, adstock_fixed_days=None,
+                                           calibration_experiments=None):
+  """Fits a Meridian-lite Hierarchical Bayesian Marketing Mix Model.
+
+  Features:
+    1. Hierarchical shrinkage (partial pooling) across channels for capacity (beta),
+       S-curve steepness (alpha), half-saturation (K), and carryover decay (theta).
+    2. Optional Geo-level hierarchical partial pooling when geo/regional data is provided.
+    3. Joint simultaneous MCMC estimation of carryover adstock, Hill saturation, baseline,
+       and channel coefficients in transformed unconstrained parameter space.
+    4. Experimental lift calibration seamlessly integrated into the joint log-likelihood.
+    5. Convergence diagnostics including Gelman-Rubin R-hat and acceptance rates.
+  """
+  parsed, channels, geos = _parse_spend_input(spend_data, channel_names)
+  is_geo = geos is not None and len(geos) > 1
 
   M = len(channels)
-  y = np.array(return_array, dtype=float)
-  max_y = float(np.max(y)) if np.any(y > 0) else 1.0
+  G = len(geos) if is_geo else 1
+
+  if is_geo:
+    # return_array can be a dict {geo: array} or 2D array (G, T)
+    if isinstance(return_array, dict):
+      y_geo_dict = {g: np.array(return_array[g], dtype=float) for g in geos}
+    else:
+      y_arr = np.array(return_array, dtype=float)
+      if y_arr.ndim == 2:
+        y_geo_dict = {geos[i]: y_arr[i, :] for i in range(G)}
+      else:
+        # 1D flattened array corresponding to geo stacked
+        T = len(parsed[geos[0]][channels[0]])
+        y_geo_dict = {geos[i]: y_arr[i * T:(i + 1) * T] for i in range(G)}
+    max_y = max(float(np.max(y_geo_dict[g])) for g in geos)
+    geo_spend_dict = parsed
+    # Aggregated spend for priors
+    spend_dict = {c: sum(geo_spend_dict[g][c] for g in geos) for c in channels}
+  else:
+    spend_dict = parsed
+    y_total = np.array(return_array, dtype=float)
+    max_y = float(np.max(y_total)) if np.any(y_total > 0) else 1.0
+
   if max_y <= 0:
     max_y = 1.0
 
@@ -213,33 +272,59 @@ def fit_multichannel_bayesian_mcmc(spend_data, return_array, channel_names=None,
     else:
       fixed_thetas[c] = 0.0
 
-  priors_dict = {}
-  init_params = []
+  ref_k_dict = {}
   for c in channels:
     s_arr = spend_dict[c]
     med_x = float(np.median(s_arr[s_arr > 0])) if np.any(s_arr > 0) else 1.0
-    priors_dict[c] = {
-      'beta': (np.log((max_y * 1.2) / max(M, 1)), 0.5),
-      'alpha': (0.0, 0.5),
-      'K': (np.log(med_x), 0.5)
-    }
+    ref_k_dict[c] = med_x
 
+  # Parameter indices in unconstrained space:
+  # Channels: 3 * M parameters [log_beta_c, log_alpha_c, log_rel_k_c] where K_c = ref_k_c * exp(log_rel_k_c)
+  # Adstock: len(adstock_param_channels) parameters [logit_theta_c]
+  # Noise: log_sigma
+  # Baseline: log_baseline (if fit_baseline)
+  # Hierarchical hyperpriors (if hierarchical):
+  #   [mu_beta, log_sigma_beta, mu_alpha, log_sigma_alpha, mu_k, log_sigma_k]
+  #   if adstock params: [mu_theta, log_sigma_theta]
+  # Geo random effects (if is_geo):
+  #   G * M parameters [delta_geo_m] and log_sigma_geo
+
+  init_params = []
   for c in channels:
-    init_params.extend([priors_dict[c]['beta'][0], priors_dict[c]['alpha'][0], priors_dict[c]['K'][0]])
+    init_params.extend([np.log((max_y * 1.2) / max(M, 1)), 0.0, 0.0])
 
-  init_sigma = max(float(np.std(y) * 0.1), 1e-4)
+  for _ in adstock_param_channels:
+    init_params.append(0.0)
+
+  init_sigma = max(float(np.std(return_array) * 0.1), 1e-4)
   init_params.append(np.log(init_sigma))
 
   if fit_baseline:
     init_params.append(np.log(max_y * 0.1))
 
-  for _ in adstock_param_channels:
-    init_params.append(0.0)
+  hier_start_idx = len(init_params)
+  if hierarchical:
+    # mu_beta, log_sigma_beta
+    init_params.extend([np.log((max_y * 1.2) / max(M, 1)), np.log(0.5)])
+    # mu_alpha, log_sigma_alpha
+    init_params.extend([0.0, np.log(0.3)])
+    # mu_k, log_sigma_k
+    init_params.extend([0.0, np.log(0.5)])
+    if adstock_param_channels:
+      # mu_theta, log_sigma_theta
+      init_params.extend([0.0, np.log(0.5)])
+
+  geo_start_idx = len(init_params)
+  if is_geo:
+    # G * M geo multipliers and log_sigma_geo
+    init_params.extend([0.0] * (G * M))
+    init_params.append(np.log(0.2))
 
   num_params = len(init_params)
-  sigma_idx = 3 * M
-  base_idx = (3 * M + 1) if fit_baseline else None
-  theta_start_idx = (3 * M + (2 if fit_baseline else 1))
+
+  # Parameter index markers
+  sigma_idx = 3 * M + len(adstock_param_channels)
+  base_idx = (sigma_idx + 1) if fit_baseline else None
 
   def params_from_transformed(psi):
     betas = {}
@@ -248,14 +333,11 @@ def fit_multichannel_bayesian_mcmc(spend_data, return_array, channel_names=None,
     for i, c in enumerate(channels):
       betas[c] = float(np.exp(psi[3 * i]))
       alphas[c] = float(np.exp(psi[3 * i + 1]))
-      ks[c] = float(np.exp(psi[3 * i + 2]))
-
-    sigma = float(np.exp(psi[sigma_idx]))
-    baseline = float(np.exp(psi[base_idx])) if fit_baseline else 0.0
+      ks[c] = float(ref_k_dict[c] * np.exp(psi[3 * i + 2]))
 
     thetas = {}
     for i, c in enumerate(adstock_param_channels):
-      idx = theta_start_idx + i
+      idx = 3 * M + i
       sig = 1.0 / (1.0 + np.exp(-np.clip(psi[idx], -30, 30)))
       t_min, t_max = bounds_dict[c]
       thetas[c] = float(t_min + (t_max - t_min) * sig)
@@ -264,47 +346,115 @@ def fit_multichannel_bayesian_mcmc(spend_data, return_array, channel_names=None,
       if c not in thetas:
         thetas[c] = fixed_thetas[c]
 
-    return betas, alphas, ks, sigma, baseline, thetas
+    sigma = float(np.exp(psi[sigma_idx]))
+    baseline = float(np.exp(psi[base_idx])) if fit_baseline else 0.0
+
+    return betas, alphas, ks, thetas, sigma, baseline
 
   def log_prior(psi):
     lp = 0.0
-    for i, c in enumerate(channels):
-      mu_b, s_b = priors_dict[c]['beta']
-      mu_a, s_a = priors_dict[c]['alpha']
-      mu_k, s_k = priors_dict[c]['K']
-      lp += -0.5 * ((psi[3 * i] - mu_b) / s_b) ** 2
-      lp += -0.5 * ((psi[3 * i + 1] - mu_a) / s_a) ** 2
-      lp += -0.5 * ((psi[3 * i + 2] - mu_k) / s_k) ** 2
 
+    if hierarchical:
+      # Extract hyperparameters
+      mu_b = psi[hier_start_idx]
+      s_b = np.exp(psi[hier_start_idx + 1])
+      mu_a = psi[hier_start_idx + 2]
+      s_a = np.exp(psi[hier_start_idx + 3])
+      mu_k = psi[hier_start_idx + 4]
+      s_k = np.exp(psi[hier_start_idx + 5])
+
+      # Hyperpriors
+      lp += -0.5 * ((mu_b - np.log((max_y * 1.2) / max(M, 1))) / 1.0) ** 2
+      lp += -0.5 * (s_b / 0.5) ** 2 + psi[hier_start_idx + 1]
+      lp += -0.5 * (mu_a / 0.5) ** 2
+      lp += -0.5 * (s_a / 0.3) ** 2 + psi[hier_start_idx + 3]
+      lp += -0.5 * (mu_k / 0.5) ** 2
+      lp += -0.5 * (s_k / 0.5) ** 2 + psi[hier_start_idx + 5]
+
+      if adstock_param_channels:
+        mu_th = psi[hier_start_idx + 6]
+        s_th = np.exp(psi[hier_start_idx + 7])
+        lp += -0.5 * (mu_th / 1.0) ** 2
+        lp += -0.5 * (s_th / 0.5) ** 2 + psi[hier_start_idx + 7]
+
+      # Channel priors conditional on hyperparameters (Hierarchical partial pooling)
+      for i, c in enumerate(channels):
+        lp += -0.5 * ((psi[3 * i] - mu_b) / max(s_b, 1e-4)) ** 2 - np.log(max(s_b, 1e-4))
+        lp += -0.5 * ((psi[3 * i + 1] - mu_a) / max(s_a, 1e-4)) ** 2 - np.log(max(s_a, 1e-4))
+        lp += -0.5 * ((psi[3 * i + 2] - mu_k) / max(s_k, 1e-4)) ** 2 - np.log(max(s_k, 1e-4))
+
+      for i, _ in enumerate(adstock_param_channels):
+        idx = 3 * M + i
+        if adstock_param_channels:
+          mu_th = psi[hier_start_idx + 6]
+          s_th = np.exp(psi[hier_start_idx + 7])
+          lp += -0.5 * ((psi[idx] - mu_th) / max(s_th, 1e-4)) ** 2 - np.log(max(s_th, 1e-4))
+        else:
+          lp += -np.logaddexp(0.0, psi[idx]) - np.logaddexp(0.0, -psi[idx])
+    else:
+      # Independent unpooled priors
+      for i, c in enumerate(channels):
+        lp += -0.5 * ((psi[3 * i] - np.log((max_y * 1.2) / max(M, 1))) / 0.7) ** 2
+        lp += -0.5 * (psi[3 * i + 1] / 0.5) ** 2
+        lp += -0.5 * (psi[3 * i + 2] / 0.7) ** 2
+
+      for i, _ in enumerate(adstock_param_channels):
+        idx = 3 * M + i
+        lp += -np.logaddexp(0.0, psi[idx]) - np.logaddexp(0.0, -psi[idx])
+
+    # Observation noise prior
     sigma = np.exp(psi[sigma_idx])
-    lp += -0.5 * (sigma / (max_y * 0.1)) ** 2 + psi[sigma_idx]
+    lp += -0.5 * (sigma / (max_y * 0.15)) ** 2 + psi[sigma_idx]
 
+    # Baseline prior
     if fit_baseline:
       base_val = np.exp(psi[base_idx])
-      lp += -0.5 * (base_val / (max_y * 0.2)) ** 2 + psi[base_idx]
+      lp += -0.5 * (base_val / (max_y * 0.25)) ** 2 + psi[base_idx]
 
-    for i, _ in enumerate(adstock_param_channels):
-      idx = theta_start_idx + i
-      lp += -np.logaddexp(0.0, psi[idx]) - np.logaddexp(0.0, -psi[idx])
+    # Geo random effects priors
+    if is_geo:
+      s_geo = np.exp(psi[-1])
+      lp += -0.5 * (s_geo / 0.3) ** 2 + psi[-1]
+      for g_idx in range(G * M):
+        val = psi[geo_start_idx + g_idx]
+        lp += -0.5 * (val / max(s_geo, 1e-4)) ** 2 - np.log(max(s_geo, 1e-4))
+
     return lp
 
-  def log_likelihood(betas, alphas, ks, sigma, baseline, thetas):
+  def log_likelihood(psi):
+    betas, alphas, ks, thetas, sigma, baseline = params_from_transformed(psi)
     if sigma <= 0:
       return -np.inf
-    for c in channels:
-      if betas[c] <= 0 or alphas[c] <= 0 or ks[c] <= 0:
-        return -np.inf
 
-    y_pred = np.full_like(y, baseline)
-    for c in channels:
-      s_arr = spend_dict[c]
-      th = thetas[c]
-      s_ad = geometric_adstock(s_arr, th) if th > 0 else s_arr
-      y_pred = y_pred + hill_function(s_ad, betas[c], alphas[c], ks[c])
+    ll = 0.0
 
-    residuals = (y - y_pred) / sigma
-    ll = -0.5 * np.sum(residuals ** 2) - len(y) * np.log(sigma)
+    if is_geo:
+      s_geo = np.exp(psi[-1]) if is_geo else 1.0
+      for g_i, g in enumerate(geos):
+        y_g = y_geo_dict[g]
+        y_pred = np.full_like(y_g, baseline / G)
+        for m_i, c in enumerate(channels):
+          delta_gm = psi[geo_start_idx + g_i * M + m_i]
+          beta_gm = betas[c] * np.exp(delta_gm) / G
+          s_arr = geo_spend_dict[g][c]
+          th = thetas[c]
+          s_ad = geometric_adstock(s_arr, th) if th > 0 else s_arr
+          y_pred = y_pred + hill_function(s_ad, beta_gm, alphas[c], ks[c])
 
+        res = (y_g - y_pred) / sigma
+        ll += -0.5 * np.sum(res ** 2) - len(y_g) * np.log(sigma)
+    else:
+      y_pred = np.full_like(y_total, baseline)
+      for c in channels:
+        s_arr = spend_dict[c]
+        th = thetas[c]
+        s_ad = geometric_adstock(s_arr, th) if th > 0 else s_arr
+        y_pred = y_pred + hill_function(s_ad, betas[c], alphas[c], ks[c])
+
+      res = (y_total - y_pred) / sigma
+      ll += -0.5 * np.sum(res ** 2) - len(y_total) * np.log(sigma)
+
+    # Experimental lift calibration
     if calibration_experiments:
       for exp in calibration_experiments:
         c = exp.get("channel")
@@ -322,15 +472,20 @@ def fit_multichannel_bayesian_mcmc(spend_data, return_array, channel_names=None,
     return ll
 
   def log_posterior(psi):
-    betas, alphas, ks, sigma, baseline, thetas = params_from_transformed(psi)
-    return log_likelihood(betas, alphas, ks, sigma, baseline, thetas) + log_prior(psi)
+    lp = log_prior(psi)
+    if not np.isfinite(lp):
+      return -np.inf
+    ll = log_likelihood(psi)
+    if not np.isfinite(ll):
+      return -np.inf
+    return ll + lp
 
   all_samples = []
   total_accepted = 0
   total_proposals = 0
 
   for _ in range(chains):
-    curr_psi = np.array(init_params) + np.random.normal(0, 0.05, size=num_params)
+    curr_psi = np.array(init_params) + np.random.normal(0, 0.03, size=num_params)
     curr_log_post = log_posterior(curr_psi)
     step_size = np.full(num_params, 0.02)
 
@@ -359,7 +514,7 @@ def fit_multichannel_bayesian_mcmc(spend_data, return_array, channel_names=None,
 
       if i >= burn_in:
         total_proposals += 1
-        betas_i, alphas_i, ks_i, sigma_i, base_i, thetas_i = params_from_transformed(curr_psi)
+        betas_i, alphas_i, ks_i, thetas_i, sigma_i, base_i = params_from_transformed(curr_psi)
         row = []
         for c in channels:
           row.extend([betas_i[c], alphas_i[c], ks_i[c], thetas_i[c]])
@@ -376,6 +531,22 @@ def fit_multichannel_bayesian_mcmc(spend_data, return_array, channel_names=None,
         window_accepted = 0
 
     all_samples.append(np.array(chain_samples))
+
+  # Gelman-Rubin R-hat calculation
+  r_hat_dict = {}
+  if chains >= 2 and n_samples > 10:
+    for idx, c in enumerate(channels):
+      for p_offset, p_name in enumerate(['beta', 'alpha', 'K', 'theta']):
+        col = 4 * idx + p_offset
+        chain_means = [np.mean(chain[:, col]) for chain in all_samples]
+        chain_vars = [np.var(chain[:, col], ddof=1) for chain in all_samples]
+        N_s = len(all_samples[0])
+        M_c = len(all_samples)
+        B = (N_s / (M_c - 1)) * np.sum((chain_means - np.mean(chain_means)) ** 2)
+        W = np.mean(chain_vars)
+        var_plus = ((N_s - 1) / N_s) * W + (1.0 / N_s) * B
+        r_hat = np.sqrt(var_plus / W) if W > 0 else 1.0
+        r_hat_dict[f"{c}_{p_name}"] = float(np.round(r_hat, 3))
 
   posterior = np.vstack(all_samples)
   models_dict = {}
@@ -410,20 +581,34 @@ def fit_multichannel_bayesian_mcmc(spend_data, return_array, channel_names=None,
     'baseline': posterior[:, -1] if fit_baseline else np.zeros(len(posterior)),
     'sigma': posterior[:, -2],
     'diagnostics': {
-      'acceptance_rate': float(total_accepted / max(total_proposals, 1))
+      'acceptance_rate': float(total_accepted / max(total_proposals, 1)),
+      'r_hat': r_hat_dict,
+      'hierarchical': hierarchical,
+      'is_geo': is_geo
     }
   }
 
   return models_dict, baseline_mean, full_samples
 
 
-class MultiChannelMMM:
-  """Joint multi-channel marketing mix model decomposing total returns across channels.
+# Backward compatible alias
+fit_multichannel_bayesian_mcmc = fit_multichannel_hierarchical_bayesian
 
-  Fits simultaneously:
+
+class MultiChannelMMM:
+  """Meridian-Lite Hierarchical Bayesian Marketing Mix Model.
+
+  Jointly estimates:
     Y_t = Baseline + sum_{m=1}^M Hill_m(Adstock_m(S_{m, 1:t})) + eps_t
 
-  Prevents omitted variable bias and cross-channel double-counting.
+  Key Capabilities:
+    - Hierarchical Bayesian Partial Pooling across channels & geos.
+    - Joint simultaneous estimation of Carryover Adstock (theta), Hill Saturation (alpha, K),
+      and Channel Return Coefficients (beta).
+    - Prevents cross-channel double-counting and omitted variable bias.
+    - Experimental calibration (lift studies, geo experiments) integration.
+    - Historical contribution decomposition, Share of Return, ROI with 90% credible intervals.
+    - Direct integration with PortfolioAllocator for global budget optimization.
   """
 
   def __init__(self, channels, baseline=0.0, loss=0.0, posterior_samples=None):
@@ -445,7 +630,8 @@ class MultiChannelMMM:
     self.posterior_samples = posterior_samples
 
   @classmethod
-  def from_historical_data(cls, spend_data, return_array, channel_names=None, epochs=5000, lr=0.05, fit_baseline=True, adstock_types=None, adstock_bounds=None, adstock_fixed_days=None):
+  def from_historical_data(cls, spend_data, return_array, channel_names=None, epochs=5000, lr=0.05,
+                           fit_baseline=True, adstock_types=None, adstock_bounds=None, adstock_fixed_days=None):
     """Fits a joint multi-channel MMM using Gradient Descent (MLE / Tinygrad Adam)."""
     models_dict, baseline, loss = fit_multichannel_gradient(
       spend_data=spend_data, return_array=return_array, channel_names=channel_names,
@@ -456,32 +642,131 @@ class MultiChannelMMM:
     return cls(channels=models_dict, baseline=baseline, loss=loss)
 
   @classmethod
-  def fit_bayesian(cls, spend_data, return_array, channel_names=None, n_samples=2000, chains=4, burn_in=1000, fit_baseline=True, adstock_types=None, adstock_bounds=None, adstock_fixed_days=None, calibration_experiments=None):
-    """Fits a joint multi-channel MMM using Bayesian MCMC with optional experimental calibration."""
-    models_dict, baseline, samples = fit_multichannel_bayesian_mcmc(
+  def fit_bayesian(cls, spend_data, return_array, channel_names=None, n_samples=2000, chains=4, burn_in=1000,
+                   fit_baseline=True, hierarchical=True, adstock_types=None, adstock_bounds=None,
+                   adstock_fixed_days=None, calibration_experiments=None):
+    """Fits a Meridian-lite Hierarchical Bayesian Marketing Mix Model."""
+    models_dict, baseline, samples = fit_multichannel_hierarchical_bayesian(
       spend_data=spend_data, return_array=return_array, channel_names=channel_names,
       n_samples=n_samples, chains=chains, burn_in=burn_in, fit_baseline=fit_baseline,
-      adstock_types=adstock_types, adstock_bounds=adstock_bounds,
+      hierarchical=hierarchical, adstock_types=adstock_types, adstock_bounds=adstock_bounds,
       adstock_fixed_days=adstock_fixed_days,
       calibration_experiments=calibration_experiments
     )
     return cls(channels=models_dict, baseline=baseline, posterior_samples=samples)
 
-  def predict_total_return(self, spend_dict):
-    """Predicts total response (baseline + all channel responses) given a dictionary of channel spends."""
-    total = self.baseline
-    for cname, spend in spend_dict.items():
-      if cname in self.channels:
-        total += self.channels[cname].predict_incremental_return(spend)
-    return total
+  # Alias for explicit clarity
+  fit_hierarchical_bayesian = fit_bayesian
 
-  def predict_channel_contributions(self, spend_dict):
-    """Decomposes response into individual channel incremental contributions and baseline."""
-    contributions = {"Baseline": self.baseline}
-    for cname, spend in spend_dict.items():
-      if cname in self.channels:
-        contributions[cname] = self.channels[cname].predict_incremental_return(spend)
-    return contributions
+  def predict_total_return(self, spend_dict, use_samples=False):
+    """Predicts total response (baseline + all channel responses) given a dictionary of channel spends.
+
+    Supports both single-period scalars and multi-period 1D numpy arrays.
+    """
+    first_val = next(iter(spend_dict.values()))
+    is_array = hasattr(first_val, '__len__') and not isinstance(first_val, (str, bytes))
+
+    if is_array:
+      T = len(first_val)
+      total = np.full(T, self.baseline)
+      for cname, spend in spend_dict.items():
+        if cname in self.channels:
+          model = self.channels[cname]
+          s_ad = model.adstock_spend(spend)
+          total += model.predict_incremental_return(s_ad, use_samples=use_samples)
+      return total
+    else:
+      total = self.baseline
+      for cname, spend in spend_dict.items():
+        if cname in self.channels:
+          total += self.channels[cname].predict_incremental_return(spend, use_samples=use_samples)
+      return total
+
+  def predict_channel_contributions(self, spend_dict, use_samples=False):
+    """Decomposes response into individual channel incremental contributions and baseline.
+
+    Supports both single-period scalar spend queries and multi-period time-series arrays.
+    """
+    first_val = next(iter(spend_dict.values()))
+    is_array = hasattr(first_val, '__len__') and not isinstance(first_val, (str, bytes))
+
+    if is_array:
+      T = len(first_val)
+      contributions = {"Baseline": np.full(T, self.baseline)}
+      for cname, spend in spend_dict.items():
+        if cname in self.channels:
+          model = self.channels[cname]
+          s_ad = model.adstock_spend(spend)
+          contributions[cname] = model.predict_incremental_return(s_ad, use_samples=use_samples)
+      return contributions
+    else:
+      contributions = {"Baseline": self.baseline}
+      for cname, spend in spend_dict.items():
+        if cname in self.channels:
+          contributions[cname] = self.channels[cname].predict_incremental_return(spend, use_samples=use_samples)
+      return contributions
+
+  def decompose_historical_contributions(self, spend_data, return_array=None):
+    """Computes comprehensive historical attribution, share of spend vs return, and channel ROI.
+
+    Returns:
+      dict containing:
+        - 'contributions_df': pd.DataFrame with time-series breakdown of Baseline and all channels.
+        - 'summary_table': pd.DataFrame with Channel, Total Spend, Total Contribution,
+                           Share of Spend (%), Share of Return (%), ROI, and current mROAS.
+        - 'total_predicted': np.ndarray of total model predictions.
+    """
+    parsed, channels, _ = _parse_spend_input(spend_data)
+    if isinstance(parsed, dict) and any(isinstance(v, dict) for v in parsed.values()):
+      spend_dict = {c: sum(parsed[g][c] for g in parsed) for c in channels}
+    else:
+      spend_dict = parsed
+
+    contribs = self.predict_channel_contributions(spend_dict)
+    contribs_df = pd.DataFrame(contribs)
+    total_predicted = contribs_df.sum(axis=1).values
+
+    summary_rows = []
+    total_spend_all = sum(float(np.sum(spend_dict[c])) for c in channels)
+    total_return_all = float(np.sum(total_predicted))
+
+    # Baseline row
+    total_base = float(np.sum(contribs_df["Baseline"]))
+    summary_rows.append({
+      "Channel": "Baseline (Organic)",
+      "Total Spend": 0.0,
+      "Total Contribution": total_base,
+      "Share of Spend (%)": 0.0,
+      "Share of Return (%)": (total_base / max(total_return_all, 1e-6)) * 100.0,
+      "ROI": np.nan,
+      "Current mROAS": np.nan
+    })
+
+    for c in channels:
+      c_spend = float(np.sum(spend_dict[c]))
+      c_contrib = float(np.sum(contribs_df[c]))
+      roi = (c_contrib / c_spend) if c_spend > 0 else 0.0
+      last_spend = float(spend_dict[c][-1]) if len(spend_dict[c]) > 0 else 0.0
+      mroas = self.channels[c].predict_marginal_return(last_spend)
+
+      summary_rows.append({
+        "Channel": c,
+        "Total Spend": c_spend,
+        "Total Contribution": c_contrib,
+        "Share of Spend (%)": (c_spend / max(total_spend_all, 1e-6)) * 100.0,
+        "Share of Return (%)": (c_contrib / max(total_return_all, 1e-6)) * 100.0,
+        "ROI": roi,
+        "Current mROAS": mroas
+      })
+
+    summary_table = pd.DataFrame(summary_rows)
+
+    return {
+      "contributions_df": contribs_df,
+      "summary_table": summary_table,
+      "total_predicted": total_predicted,
+      "actual_return": np.array(return_array, dtype=float) if return_array is not None else None
+    }
 
   def get_allocator(self):
     """Returns a PortfolioAllocator configured with all fitted channel models."""
@@ -489,8 +774,12 @@ class MultiChannelMMM:
     return PortfolioAllocator(list(self.channels.values()))
 
   def summary(self):
-    return {
+    """Returns a dictionary summarizing all channel curves, baseline, and MCMC diagnostics."""
+    res = {
       "baseline": self.baseline,
       "loss": self.loss,
       "channels": {cname: m.summary() for cname, m in self.channels.items()}
     }
+    if self.posterior_samples and 'diagnostics' in self.posterior_samples:
+      res["diagnostics"] = self.posterior_samples['diagnostics']
+    return res

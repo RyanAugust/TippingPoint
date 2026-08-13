@@ -262,13 +262,12 @@
     <span class="c1"># Determine bounds for each channel</span>
     <span class="n">bounds</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
-      <span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">total_budget</span><span class="p">)</span>
+      <span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">total_budget</span><span class="p">))</span>
       <span class="k">if</span> <span class="n">channel_bounds</span> <span class="ow">and</span> <span class="n">model</span><span class="o">.</span><span class="n">channel_name</span> <span class="ow">in</span> <span class="n">channel_bounds</span><span class="p">:</span>
         <span class="n">provided_b</span> <span class="o">=</span> <span class="n">channel_bounds</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">channel_name</span><span class="p">]</span>
-        <span class="n">lb</span> <span class="o">=</span> <span class="n">provided_b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">ub</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">provided_b</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">total_budget</span><span class="p">)</span>
+        <span class="n">lb</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">provided_b</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">ub</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">provided_b</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">total_budget</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">lb</span> <span class="o">&gt;</span> <span class="n">ub</span><span class="p">:</span>
-          <span class="c1"># Enforce that lower bound cannot exceed upper bound (total budget constraint)</span>
           <span class="n">ub</span> <span class="o">=</span> <span class="n">lb</span>
         <span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">)</span>
       <span class="n">bounds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
@@ -284,30 +283,40 @@
 
     <span class="n">cons</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;eq&#39;</span><span class="p">,</span> <span class="s1">&#39;fun&#39;</span><span class="p">:</span> <span class="n">constraint</span><span class="p">}</span>
 
-    <span class="c1"># Global optimization or multi-start can be better for S-curves.</span>
-    <span class="c1"># We will use SLSQP with a simple proportional start, but if it fails to find</span>
-    <span class="c1"># a good optimum, we will try a few random starts.</span>
-
     <span class="n">best_res</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">best_return</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span> <span class="c1"># We are minimizing negative return</span>
+    <span class="n">best_return</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>  <span class="c1"># We are minimizing negative return</span>
 
-    <span class="c1"># Start points: proportional, and budget-heavy on individual channels</span>
+    <span class="c1"># Start points: proportional, channel inflection points, and Dirichlet/random starts</span>
     <span class="n">start_points</span> <span class="o">=</span> <span class="p">[]</span>
 
-    <span class="c1"># Proportional</span>
-    <span class="n">x0_prop</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bounds</span><span class="p">):</span>
-      <span class="n">x0_prop</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># satisfy min bounds</span>
+    <span class="c1"># 1. Proportional start respecting lower bounds</span>
+    <span class="n">x0_prop</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bounds</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
     <span class="n">rem_budget</span> <span class="o">=</span> <span class="n">total_budget</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x0_prop</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">rem_budget</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
       <span class="n">x0_prop</span> <span class="o">+=</span> <span class="n">rem_budget</span> <span class="o">/</span> <span class="n">n</span>
     <span class="n">start_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x0_prop</span><span class="p">)</span>
 
-    <span class="c1"># Random starts</span>
-    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
-      <span class="n">x_rand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
-      <span class="n">x_rand</span> <span class="o">=</span> <span class="n">x_rand</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x_rand</span><span class="p">)</span> <span class="o">*</span> <span class="n">total_budget</span>
-      <span class="c1"># Clamping to bounds</span>
+    <span class="c1"># 2. Inflection point anchored starts for S-curves</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">):</span>
+      <span class="n">x0_inf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bounds</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+      <span class="n">inf_pt</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_minimal_marginal_cost_point</span><span class="p">()</span>
+      <span class="k">if</span> <span class="n">inf_pt</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">inf_pt</span> <span class="o">&lt;=</span> <span class="n">bounds</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="n">x0_inf</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">x0_inf</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">inf_pt</span><span class="p">)</span>
+      <span class="n">rem</span> <span class="o">=</span> <span class="n">total_budget</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x0_inf</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">rem</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">x0_inf</span> <span class="o">+=</span> <span class="n">rem</span> <span class="o">/</span> <span class="n">n</span>
+      <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">x0_inf</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">x0_inf</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">bounds</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">bounds</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+      <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x0_inf</span><span class="p">)</span> <span class="o">-</span> <span class="n">total_budget</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+        <span class="n">start_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x0_inf</span><span class="p">)</span>
+
+    <span class="c1"># 3. Random Dirichlet starts</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+      <span class="n">raw_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">exponential</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
+      <span class="n">x_rand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bounds</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+      <span class="n">rem</span> <span class="o">=</span> <span class="n">total_budget</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x_rand</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">rem</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">x_rand</span> <span class="o">+=</span> <span class="p">(</span><span class="n">raw_weights</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">raw_weights</span><span class="p">))</span> <span class="o">*</span> <span class="n">rem</span>
       <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
         <span class="n">x_rand</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">x_rand</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">bounds</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">bounds</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
       <span class="n">start_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x_rand</span><span class="p">)</span>
@@ -319,20 +328,21 @@
         <span class="n">method</span><span class="o">=</span><span class="s1">&#39;SLSQP&#39;</span><span class="p">,</span>
         <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
         <span class="n">constraints</span><span class="o">=</span><span class="n">cons</span><span class="p">,</span>
-        <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;disp&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;ftol&#39;</span><span class="p">:</span> <span class="mf">1e-6</span><span class="p">,</span> <span class="s1">&#39;maxiter&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">}</span>
+        <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;disp&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;ftol&#39;</span><span class="p">:</span> <span class="mf">1e-7</span><span class="p">,</span> <span class="s1">&#39;maxiter&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">}</span>
       <span class="p">)</span>
 
-      <span class="c1"># Strict budget check, sometimes SLSQP drifts slightly</span>
+      <span class="c1"># Strict budget check</span>
       <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="n">total_budget</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-2</span> <span class="ow">and</span> <span class="n">res</span><span class="o">.</span><span class="n">fun</span> <span class="o">&lt;</span> <span class="n">best_return</span><span class="p">:</span>
         <span class="n">best_return</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">fun</span>
         <span class="n">best_res</span> <span class="o">=</span> <span class="n">res</span>
 
-    <span class="c1"># If all failed or drifted, just use the last one</span>
     <span class="k">if</span> <span class="n">best_res</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
       <span class="n">best_res</span> <span class="o">=</span> <span class="n">res</span>
 
+    <span class="n">is_success</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">best_res</span><span class="o">.</span><span class="n">success</span> <span class="ow">and</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">best_res</span><span class="o">.</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="n">total_budget</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-2</span><span class="p">))</span>
     <span class="n">allocation</span> <span class="o">=</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">channel_name</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">best_res</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)}</span>
     <span class="n">mroas</span> <span class="o">=</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">channel_name</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">predict_marginal_return</span><span class="p">(</span><span class="n">best_res</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)}</span>
+    <span class="n">channel_returns</span> <span class="o">=</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">channel_name</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">predict_incremental_return</span><span class="p">(</span><span class="n">best_res</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)}</span>
     <span class="n">expected_return</span> <span class="o">=</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="n">best_res</span><span class="o">.</span><span class="n">fun</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="p">{</span>
@@ -340,11 +350,15 @@
       <span class="s2">&quot;expected_total_return&quot;</span><span class="p">:</span> <span class="n">expected_return</span><span class="p">,</span>
       <span class="s2">&quot;overall_roas&quot;</span><span class="p">:</span> <span class="n">expected_return</span> <span class="o">/</span> <span class="n">total_budget</span> <span class="k">if</span> <span class="n">total_budget</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
       <span class="s2">&quot;allocation&quot;</span><span class="p">:</span> <span class="n">allocation</span><span class="p">,</span>
+      <span class="s2">&quot;marginal_roas&quot;</span><span class="p">:</span> <span class="n">mroas</span><span class="p">,</span>
       <span class="s2">&quot;marginal_roas_at_allocation&quot;</span><span class="p">:</span> <span class="n">mroas</span><span class="p">,</span>
-      <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="n">best_res</span><span class="o">.</span><span class="n">success</span><span class="p">,</span>
-      <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="n">best_res</span><span class="o">.</span><span class="n">message</span>
+      <span class="s2">&quot;channel_returns&quot;</span><span class="p">:</span> <span class="n">channel_returns</span><span class="p">,</span>
+      <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="n">is_success</span><span class="p">,</span>
+      <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="n">best_res</span><span class="o">.</span><span class="n">message</span> <span class="k">if</span> <span class="n">is_success</span> <span class="k">else</span> <span class="s2">&quot;Optimization failed to satisfy constraints (e.g. impossible bounds).&quot;</span>
     <span class="p">}</span></div>
 </div>
+
+
 
 </pre></div>
         </article>

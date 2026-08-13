@@ -133,3 +133,18 @@ class TestAdstock:
         )
         assert 0.0 <= model.theta < 1.0
         assert "theta" in model.posterior_samples
+
+    def test_mle_fitting_with_baseline(self):
+        """Test MLE gradient fitting with baseline parameter enabled."""
+        spends = np.array([1000, 2000, 5000, 10000, 15000, 25000])
+        returns = np.array([1100, 1300, 2000, 3500, 6000, 9000])
+
+        model = MarketingReturnCurve.from_historical_data(
+            spend_array=spends,
+            return_array=returns,
+            fit_baseline=True,
+            epochs=200
+        )
+        assert model.baseline > 0.0
+        assert model.beta > 0.0
+

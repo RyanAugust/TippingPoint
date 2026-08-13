@@ -234,8 +234,9 @@
 
 <span class="sd">  Formula: theta = 0.5 ** (1 / days)</span>
 <span class="sd">  &quot;&quot;&quot;</span>
-  <span class="k">if</span> <span class="n">days</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span> <span class="mf">0.0</span>
-  <span class="k">return</span> <span class="mf">0.5</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">days</span><span class="p">)</span></div>
+  <span class="k">if</span> <span class="n">days</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">return</span> <span class="mf">0.0</span>
+  <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">days</span><span class="p">))</span></div>
 
 
 <div class="viewcode-block" id="geometric_adstock">
@@ -257,27 +258,95 @@
 <div class="viewcode-block" id="hill_function">
 <a class="viewcode-back" href="../../api.html#tippingpoint.math.hill_function">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">hill_function</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
-<span class="w">  </span><span class="sd">&quot;&quot;&quot;Calculates the Hill Function value: f(x) = (beta * x^alpha) / (K^alpha + x^alpha).&quot;&quot;&quot;</span>
-  <span class="n">spend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1e-5</span>
-  <span class="k">return</span> <span class="p">(</span><span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">spend</span> <span class="o">**</span> <span class="n">alpha</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">K</span> <span class="o">**</span> <span class="n">alpha</span> <span class="o">+</span> <span class="n">spend</span> <span class="o">**</span> <span class="n">alpha</span><span class="p">)</span></div>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Calculates the Hill Function value: f(x) = (beta * (x/K)^alpha) / (1 + (x/K)^alpha).&quot;&quot;&quot;</span>
+  <span class="n">spend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asanyarray</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+  <span class="n">is_scalar</span> <span class="o">=</span> <span class="n">spend</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">beta</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+
+  <span class="n">spend_safe</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+  <span class="n">ratio</span> <span class="o">=</span> <span class="n">spend_safe</span> <span class="o">/</span> <span class="n">K</span>
+
+  <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">over</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
+    <span class="n">ratio_alpha</span> <span class="o">=</span> <span class="n">ratio</span> <span class="o">**</span> <span class="n">alpha</span>
+    <span class="n">val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">ratio_alpha</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">ratio_alpha</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">ratio_alpha</span><span class="p">))</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">spend_safe</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="k">if</span> <span class="n">is_scalar</span> <span class="k">else</span> <span class="n">result</span></div>
 
 
 <div class="viewcode-block" id="hill_first_derivative">
 <a class="viewcode-back" href="../../api.html#tippingpoint.math.hill_first_derivative">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">hill_first_derivative</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
 <span class="w">  </span><span class="sd">&quot;&quot;&quot;Calculates the first derivative of the Hill Function (Marginal ROAS).&quot;&quot;&quot;</span>
-  <span class="n">spend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1e-5</span>
-  <span class="n">numerator</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">K</span> <span class="o">**</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">spend</span> <span class="o">**</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
-  <span class="n">denominator</span> <span class="o">=</span> <span class="p">(</span><span class="n">K</span> <span class="o">**</span> <span class="n">alpha</span> <span class="o">+</span> <span class="n">spend</span> <span class="o">**</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
-  <span class="k">return</span> <span class="n">numerator</span> <span class="o">/</span> <span class="n">denominator</span></div>
+  <span class="n">spend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asanyarray</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+  <span class="n">is_scalar</span> <span class="o">=</span> <span class="n">spend</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">beta</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+
+  <span class="n">spend_safe</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+  <span class="n">ratio</span> <span class="o">=</span> <span class="n">spend_safe</span> <span class="o">/</span> <span class="n">K</span>
+
+  <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">over</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
+    <span class="n">ratio_alpha</span> <span class="o">=</span> <span class="n">ratio</span> <span class="o">**</span> <span class="n">alpha</span>
+    <span class="n">ratio_alpha_minus_1</span> <span class="o">=</span> <span class="n">ratio</span> <span class="o">**</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">denom</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">ratio_alpha</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="n">val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">denom</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">ratio_alpha_minus_1</span> <span class="o">/</span> <span class="n">denom</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">(</span><span class="n">beta</span> <span class="o">*</span> <span class="n">alpha</span> <span class="o">/</span> <span class="n">K</span><span class="p">)</span> <span class="o">*</span> <span class="n">val</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">spend</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
+      <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">spend</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="k">if</span> <span class="n">is_scalar</span> <span class="k">else</span> <span class="n">result</span></div>
 
 
 <div class="viewcode-block" id="get_inflection_point">
 <a class="viewcode-back" href="../../api.html#tippingpoint.math.get_inflection_point">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_inflection_point</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
 <span class="w">  </span><span class="sd">&quot;&quot;&quot;Calculates the inflection point where marginal return peaks (f&#39;&#39;(x) = 0).&quot;&quot;&quot;</span>
-  <span class="k">if</span> <span class="n">alpha</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span> <span class="k">return</span> <span class="mf">0.0</span>
-  <span class="k">return</span> <span class="n">K</span> <span class="o">*</span> <span class="p">(((</span><span class="n">alpha</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">alpha</span><span class="p">))</span></div>
+  <span class="k">if</span> <span class="n">alpha</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+    <span class="k">return</span> <span class="mf">0.0</span>
+  <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">K</span> <span class="o">*</span> <span class="p">(((</span><span class="n">alpha</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">))</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">alpha</span><span class="p">)))</span></div>
+
+
+<div class="viewcode-block" id="weibull_adstock">
+<a class="viewcode-back" href="../../api.html#tippingpoint.math.weibull_adstock">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">weibull_adstock</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">adstock_type</span><span class="o">=</span><span class="s2">&quot;pdf&quot;</span><span class="p">,</span> <span class="n">max_lag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Applies Weibull adstock transformation (PDF or CDF decay).</span>
+
+<span class="sd">  Args:</span>
+<span class="sd">    spend (array-like): 1D array of media spend over time.</span>
+<span class="sd">    shape (float): Weibull shape parameter (k &gt; 0). If k &gt; 1, peak effect is delayed.</span>
+<span class="sd">    scale (float): Weibull scale parameter (lambda &gt; 0), controls decay duration.</span>
+<span class="sd">    adstock_type (str): &#39;pdf&#39; (peaked/delayed decay) or &#39;cdf&#39; (cumulative retention).</span>
+<span class="sd">    max_lag (int, optional): Maximum lag window. Defaults to full length of spend.</span>
+
+<span class="sd">  Returns:</span>
+<span class="sd">    np.ndarray: Adstocked effective spend array.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">spend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+  <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">spend</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">N</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">shape</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">scale</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">spend</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+  <span class="n">L</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_lag</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="k">if</span> <span class="n">max_lag</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">N</span>
+  <span class="n">lags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">adstock_type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;pdf&quot;</span><span class="p">:</span>
+    <span class="c1"># Weibull PDF over discrete lags: (shape / scale) * (lag / scale)^(shape - 1) * exp(-(lag / scale)^shape)</span>
+    <span class="n">x_val</span> <span class="o">=</span> <span class="p">(</span><span class="n">lags</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="p">(</span><span class="n">shape</span> <span class="o">/</span> <span class="n">scale</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">x_val</span> <span class="o">**</span> <span class="p">(</span><span class="n">shape</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">x_val</span> <span class="o">**</span> <span class="n">shape</span><span class="p">))</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="c1"># Weibull CDF survival decay</span>
+    <span class="n">x_val</span> <span class="o">=</span> <span class="n">lags</span> <span class="o">/</span> <span class="n">scale</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">x_val</span> <span class="o">**</span> <span class="n">shape</span><span class="p">))</span>
+
+  <span class="n">weight_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">weight_sum</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span> <span class="o">/</span> <span class="n">weight_sum</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="n">weights</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+  <span class="n">adstocked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;full&#39;</span><span class="p">)[:</span><span class="n">N</span><span class="p">]</span>
+  <span class="k">return</span> <span class="n">adstocked</span></div>
+
 
 </pre></div>
         </article>

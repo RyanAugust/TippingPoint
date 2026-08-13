@@ -134,3 +134,11 @@ class TestMarketingReturnCurve:
     m_one = MarketingReturnCurve(beta=100, alpha=1.5, half_saturation_k=50, theta=1.0)
     assert m_one.summary()["parameters"]["adstock_half_life_days"] == float("inf")
 
+  def test_get_optimal_scaling_window(self):
+    """Test get_optimal_scaling_window calculation."""
+    min_s, max_s = self.s_curve.get_optimal_scaling_window(target_mroas=5.0)
+    assert min_s > 0
+    assert max_s is not None
+    assert max_s > min_s
+
+

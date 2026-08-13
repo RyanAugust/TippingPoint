@@ -235,10 +235,10 @@
 <h1>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading">¶</a></h1>
 <p>This section documents the public API of the Tipping Point module.</p>
 <section id="module-tippingpoint.models">
-<span id="model-interface"></span><h2>Model Interface<a class="headerlink" href="#module-tippingpoint.models" title="Link to this heading">¶</a></h2>
+<span id="single-channel-model-interface"></span><h2>Single-Channel Model Interface<a class="headerlink" href="#module-tippingpoint.models" title="Link to this heading">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="tippingpoint.models.MarketingReturnCurve">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">tippingpoint.models.</span></span><span class="sig-name descname"><span class="pre">MarketingReturnCurve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">half_saturation_k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Generic'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/models.html#MarketingReturnCurve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.models.MarketingReturnCurve" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">tippingpoint.models.</span></span><span class="sig-name descname"><span class="pre">MarketingReturnCurve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">half_saturation_k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Generic'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'geometric'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/models.html#MarketingReturnCurve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.models.MarketingReturnCurve" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A marketing intelligence tool to determine inflection points of a media response curve.</p>
 <p>Based on the Hill Function (Google Meridian methodology), this tool identifies
@@ -247,7 +247,7 @@ Returns (profitability floor).</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="tippingpoint.models.MarketingReturnCurve.adstock_spend">
 <span class="sig-name descname"><span class="pre">adstock_spend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_timeline</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/models.html#MarketingReturnCurve.adstock_spend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.models.MarketingReturnCurve.adstock_spend" title="Link to this definition">¶</a></dt>
-<dd><p>Applies the model’s fitted geometric adstock decay to a timeline of spends.</p>
+<dd><p>Applies the model’s fitted adstock decay (geometric or Weibull) to a timeline of spends.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -263,23 +263,29 @@ Returns (profitability floor).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tippingpoint.models.MarketingReturnCurve.fit_bayesian">
-<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">fit_bayesian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Generic'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">burn_in</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_fixed_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/models.html#MarketingReturnCurve.fit_bayesian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.models.MarketingReturnCurve.fit_bayesian" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">fit_bayesian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Generic'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">burn_in</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_fixed_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration_experiments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/models.html#MarketingReturnCurve.fit_bayesian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.models.MarketingReturnCurve.fit_bayesian" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tippingpoint.models.MarketingReturnCurve.from_historical_data">
-<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_historical_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Generic'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_fixed_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/models.html#MarketingReturnCurve.from_historical_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.models.MarketingReturnCurve.from_historical_data" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_historical_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Generic'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_fixed_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/models.html#MarketingReturnCurve.from_historical_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.models.MarketingReturnCurve.from_historical_data" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tippingpoint.models.MarketingReturnCurve.get_diminishing_returns_point">
-<span class="sig-name descname"><span class="pre">get_diminishing_returns_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_mroas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/models.html#MarketingReturnCurve.get_diminishing_returns_point"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.models.MarketingReturnCurve.get_diminishing_returns_point" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_diminishing_returns_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_mroas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warn_unreachable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/models.html#MarketingReturnCurve.get_diminishing_returns_point"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.models.MarketingReturnCurve.get_diminishing_returns_point" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tippingpoint.models.MarketingReturnCurve.get_minimal_marginal_cost_point">
 <span class="sig-name descname"><span class="pre">get_minimal_marginal_cost_point</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/models.html#MarketingReturnCurve.get_minimal_marginal_cost_point"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.models.MarketingReturnCurve.get_minimal_marginal_cost_point" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tippingpoint.models.MarketingReturnCurve.get_optimal_scaling_window">
+<span class="sig-name descname"><span class="pre">get_optimal_scaling_window</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_mroas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/models.html#MarketingReturnCurve.get_optimal_scaling_window"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.models.MarketingReturnCurve.get_optimal_scaling_window" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the tuple (min_spend, max_spend) defining the optimal scaling zone.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tippingpoint.models.MarketingReturnCurve.launch_dashboard">
@@ -304,7 +310,7 @@ Returns (profitability floor).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tippingpoint.models.MarketingReturnCurve.predict_incremental_return">
-<span class="sig-name descname"><span class="pre">predict_incremental_return</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/models.html#MarketingReturnCurve.predict_incremental_return"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.models.MarketingReturnCurve.predict_incremental_return" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">predict_incremental_return</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/models.html#MarketingReturnCurve.predict_incremental_return"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.models.MarketingReturnCurve.predict_incremental_return" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -319,14 +325,142 @@ Returns (profitability floor).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tippingpoint.models.MarketingReturnCurve.update_loss">
-<span class="sig-name descname"><span class="pre">update_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loss</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/models.html#MarketingReturnCurve.update_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.models.MarketingReturnCurve.update_loss" title="Link to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+<span class="sig-name descname"><span class="pre">update_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loss_val</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/models.html#MarketingReturnCurve.update_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.models.MarketingReturnCurve.update_loss" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-tippingpoint.mmm">
+<span id="hierarchical-multi-channel-mmm"></span><h2>Hierarchical Multi-Channel MMM<a class="headerlink" href="#module-tippingpoint.mmm" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tippingpoint.mmm.MultiChannelMMM">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">tippingpoint.mmm.</span></span><span class="sig-name descname"><span class="pre">MultiChannelMMM</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/mmm.html#MultiChannelMMM"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.mmm.MultiChannelMMM" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Meridian-Lite Hierarchical Bayesian Marketing Mix Model.</p>
+<dl class="simple">
+<dt>Jointly estimates:</dt><dd><p>Y_t = Baseline + sum_{m=1}^M Hill_m(Adstock_m(S_{m, 1:t})) + eps_t</p>
+</dd>
+<dt>Key Capabilities:</dt><dd><ul class="simple">
+<li><p>Hierarchical Bayesian Partial Pooling across channels &amp; geos.</p></li>
+<li><p>Joint simultaneous estimation of Carryover Adstock (theta), Hill Saturation (alpha, K),
+and Channel Return Coefficients (beta).</p></li>
+<li><p>Prevents cross-channel double-counting and omitted variable bias.</p></li>
+<li><p>Experimental calibration (lift studies, geo experiments) integration.</p></li>
+<li><p>Historical contribution decomposition, Share of Return, ROI with 90% credible intervals.</p></li>
+<li><p>Direct integration with PortfolioAllocator for global budget optimization.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="tippingpoint.mmm.MultiChannelMMM.decompose_historical_contributions">
+<span class="sig-name descname"><span class="pre">decompose_historical_contributions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_array</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/mmm.html#MultiChannelMMM.decompose_historical_contributions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.mmm.MultiChannelMMM.decompose_historical_contributions" title="Link to this definition">¶</a></dt>
+<dd><p>Computes comprehensive historical attribution, share of spend vs return, and channel ROI.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p>‘contributions_df’: pd.DataFrame with time-series breakdown of Baseline and all channels.</p></li>
+<li><dl class="simple">
+<dt>’summary_table’: pd.DataFrame with Channel, Total Spend, Total Contribution,</dt><dd><p>Share of Spend (%), Share of Return (%), ROI, and current mROAS.</p>
+</dd>
+</dl>
+</li>
+<li><p>’total_predicted’: np.ndarray of total model predictions.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict containing</p>
 </dd>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="tippingpoint.mmm.MultiChannelMMM.fit_bayesian">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">fit_bayesian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">burn_in</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hierarchical</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_fixed_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration_experiments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/mmm.html#MultiChannelMMM.fit_bayesian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.mmm.MultiChannelMMM.fit_bayesian" title="Link to this definition">¶</a></dt>
+<dd><p>Fits a Meridian-lite Hierarchical Bayesian Marketing Mix Model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tippingpoint.mmm.MultiChannelMMM.fit_hierarchical_bayesian">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">fit_hierarchical_bayesian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">burn_in</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hierarchical</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_fixed_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration_experiments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tippingpoint.mmm.MultiChannelMMM.fit_hierarchical_bayesian" title="Link to this definition">¶</a></dt>
+<dd><p>Fits a Meridian-lite Hierarchical Bayesian Marketing Mix Model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tippingpoint.mmm.MultiChannelMMM.from_historical_data">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_historical_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_fixed_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/mmm.html#MultiChannelMMM.from_historical_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.mmm.MultiChannelMMM.from_historical_data" title="Link to this definition">¶</a></dt>
+<dd><p>Fits a joint multi-channel MMM using Gradient Descent (MLE / Tinygrad Adam).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tippingpoint.mmm.MultiChannelMMM.get_allocator">
+<span class="sig-name descname"><span class="pre">get_allocator</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/mmm.html#MultiChannelMMM.get_allocator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.mmm.MultiChannelMMM.get_allocator" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a PortfolioAllocator configured with all fitted channel models.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tippingpoint.mmm.MultiChannelMMM.predict_channel_contributions">
+<span class="sig-name descname"><span class="pre">predict_channel_contributions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/mmm.html#MultiChannelMMM.predict_channel_contributions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.mmm.MultiChannelMMM.predict_channel_contributions" title="Link to this definition">¶</a></dt>
+<dd><p>Decomposes response into individual channel incremental contributions and baseline.</p>
+<p>Supports both single-period scalar spend queries and multi-period time-series arrays.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tippingpoint.mmm.MultiChannelMMM.predict_total_return">
+<span class="sig-name descname"><span class="pre">predict_total_return</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/mmm.html#MultiChannelMMM.predict_total_return"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.mmm.MultiChannelMMM.predict_total_return" title="Link to this definition">¶</a></dt>
+<dd><p>Predicts total response (baseline + all channel responses) given a dictionary of channel spends.</p>
+<p>Supports both single-period scalars and multi-period 1D numpy arrays.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tippingpoint.mmm.MultiChannelMMM.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/mmm.html#MultiChannelMMM.summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.mmm.MultiChannelMMM.summary" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a dictionary summarizing all channel curves, baseline, and MCMC diagnostics.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tippingpoint.mmm.fit_multichannel_bayesian_mcmc">
+<span class="sig-prename descclassname"><span class="pre">tippingpoint.mmm.</span></span><span class="sig-name descname"><span class="pre">fit_multichannel_bayesian_mcmc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">burn_in</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hierarchical</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_fixed_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration_experiments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tippingpoint.mmm.fit_multichannel_bayesian_mcmc" title="Link to this definition">¶</a></dt>
+<dd><p>Fits a Meridian-lite Hierarchical Bayesian Marketing Mix Model.</p>
+<dl class="simple">
+<dt>Features:</dt><dd><ol class="arabic simple">
+<li><p>Hierarchical shrinkage (partial pooling) across channels for capacity (beta),
+S-curve steepness (alpha), half-saturation (K), and carryover decay (theta).</p></li>
+<li><p>Optional Geo-level hierarchical partial pooling when geo/regional data is provided.</p></li>
+<li><p>Joint simultaneous MCMC estimation of carryover adstock, Hill saturation, baseline,
+and channel coefficients in transformed unconstrained parameter space.</p></li>
+<li><p>Experimental lift calibration seamlessly integrated into the joint log-likelihood.</p></li>
+<li><p>Convergence diagnostics including Gelman-Rubin R-hat and acceptance rates.</p></li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tippingpoint.mmm.fit_multichannel_gradient">
+<span class="sig-prename descclassname"><span class="pre">tippingpoint.mmm.</span></span><span class="sig-name descname"><span class="pre">fit_multichannel_gradient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_fixed_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/mmm.html#fit_multichannel_gradient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.mmm.fit_multichannel_gradient" title="Link to this definition">¶</a></dt>
+<dd><p>Fits a joint Multi-Channel Marketing Mix Model using Gradient Descent (Tinygrad Adam).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tippingpoint.mmm.fit_multichannel_hierarchical_bayesian">
+<span class="sig-prename descclassname"><span class="pre">tippingpoint.mmm.</span></span><span class="sig-name descname"><span class="pre">fit_multichannel_hierarchical_bayesian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">burn_in</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hierarchical</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_fixed_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration_experiments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/mmm.html#fit_multichannel_hierarchical_bayesian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.mmm.fit_multichannel_hierarchical_bayesian" title="Link to this definition">¶</a></dt>
+<dd><p>Fits a Meridian-lite Hierarchical Bayesian Marketing Mix Model.</p>
+<dl class="simple">
+<dt>Features:</dt><dd><ol class="arabic simple">
+<li><p>Hierarchical shrinkage (partial pooling) across channels for capacity (beta),
+S-curve steepness (alpha), half-saturation (K), and carryover decay (theta).</p></li>
+<li><p>Optional Geo-level hierarchical partial pooling when geo/regional data is provided.</p></li>
+<li><p>Joint simultaneous MCMC estimation of carryover adstock, Hill saturation, baseline,
+and channel coefficients in transformed unconstrained parameter space.</p></li>
+<li><p>Experimental lift calibration seamlessly integrated into the joint log-likelihood.</p></li>
+<li><p>Convergence diagnostics including Gelman-Rubin R-hat and acceptance rates.</p></li>
+</ol>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -361,6 +495,27 @@ keyed by channel_name.</p></li>
 </dd></dl>
 
 </section>
+<section id="module-tippingpoint.fitting.gradient">
+<span id="fitting-engines"></span><h2>Fitting Engines<a class="headerlink" href="#module-tippingpoint.fitting.gradient" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="tippingpoint.fitting.gradient.fit_mle_gradient">
+<span class="sig-prename descclassname"><span class="pre">tippingpoint.fitting.gradient.</span></span><span class="sig-name descname"><span class="pre">fit_mle_gradient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_fixed_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/fitting/gradient.html#fit_mle_gradient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.fitting.gradient.fit_mle_gradient" title="Link to this definition">¶</a></dt>
+<dd><p>Fits a Hill Curve to historical data using MLE (Adam optimizer), with optional adstock and baseline.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tippingpoint.fitting.gradient.tinygrad_geometric_adstock">
+<span class="sig-prename descclassname"><span class="pre">tippingpoint.fitting.gradient.</span></span><span class="sig-name descname"><span class="pre">tinygrad_geometric_adstock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/fitting/gradient.html#tinygrad_geometric_adstock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.fitting.gradient.tinygrad_geometric_adstock" title="Link to this definition">¶</a></dt>
+<dd><p>Applies geometric adstock decay in Tinygrad (vectorized Toeplitz weights).</p>
+</dd></dl>
+
+<dl class="py function" id="module-tippingpoint.fitting.bayesian">
+<dt class="sig sig-object py" id="tippingpoint.fitting.bayesian.fit_bayesian_mcmc">
+<span class="sig-prename descclassname"><span class="pre">tippingpoint.fitting.bayesian.</span></span><span class="sig-name descname"><span class="pre">fit_bayesian_mcmc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Generic'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">burn_in</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_fixed_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibration_experiments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/fitting/bayesian.html#fit_bayesian_mcmc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.fitting.bayesian.fit_bayesian_mcmc" title="Link to this definition">¶</a></dt>
+<dd><p>Fits a Hill Curve using Bayesian MCMC (Metropolis-Hastings in transformed space) with optional adstock, baseline, and experimental calibration.</p>
+</dd></dl>
+
+</section>
 <section id="module-tippingpoint.math">
 <span id="mathematical-core"></span><h2>Mathematical Core<a class="headerlink" href="#module-tippingpoint.math" title="Link to this heading">¶</a></h2>
 <dl class="py function">
@@ -392,7 +547,30 @@ keyed by channel_name.</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="tippingpoint.math.hill_function">
 <span class="sig-prename descclassname"><span class="pre">tippingpoint.math.</span></span><span class="sig-name descname"><span class="pre">hill_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">K</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/math.html#hill_function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.math.hill_function" title="Link to this definition">¶</a></dt>
-<dd><p>Calculates the Hill Function value: f(x) = (beta * x^alpha) / (K^alpha + x^alpha).</p>
+<dd><p>Calculates the Hill Function value: f(x) = (beta * (x/K)^alpha) / (1 + (x/K)^alpha).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tippingpoint.math.weibull_adstock">
+<span class="sig-prename descclassname"><span class="pre">tippingpoint.math.</span></span><span class="sig-name descname"><span class="pre">weibull_adstock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spend</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adstock_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pdf'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tippingpoint/math.html#weibull_adstock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tippingpoint.math.weibull_adstock" title="Link to this definition">¶</a></dt>
+<dd><p>Applies Weibull adstock transformation (PDF or CDF decay).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spend</strong> (<em>array-like</em>) – 1D array of media spend over time.</p></li>
+<li><p><strong>shape</strong> (<em>float</em>) – Weibull shape parameter (k &gt; 0). If k &gt; 1, peak effect is delayed.</p></li>
+<li><p><strong>scale</strong> (<em>float</em>) – Weibull scale parameter (lambda &gt; 0), controls decay duration.</p></li>
+<li><p><strong>adstock_type</strong> (<em>str</em>) – ‘pdf’ (peaked/delayed decay) or ‘cdf’ (cumulative retention).</p></li>
+<li><p><strong>max_lag</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum lag window. Defaults to full length of spend.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Adstocked effective spend array.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -492,7 +670,7 @@ keyed by channel_name.</p></li>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">API Reference</a><ul>
-<li><a class="reference internal" href="#module-tippingpoint.models">Model Interface</a><ul>
+<li><a class="reference internal" href="#module-tippingpoint.models">Single-Channel Model Interface</a><ul>
 <li><a class="reference internal" href="#tippingpoint.models.MarketingReturnCurve"><code class="docutils literal notranslate"><span class="pre">MarketingReturnCurve</span></code></a><ul>
 <li><a class="reference internal" href="#tippingpoint.models.MarketingReturnCurve.adstock_spend"><code class="docutils literal notranslate"><span class="pre">MarketingReturnCurve.adstock_spend()</span></code></a></li>
 <li><a class="reference internal" href="#tippingpoint.models.MarketingReturnCurve.calculate_tipping_points"><code class="docutils literal notranslate"><span class="pre">MarketingReturnCurve.calculate_tipping_points()</span></code></a></li>
@@ -501,6 +679,7 @@ keyed by channel_name.</p></li>
 <li><a class="reference internal" href="#tippingpoint.models.MarketingReturnCurve.from_historical_data"><code class="docutils literal notranslate"><span class="pre">MarketingReturnCurve.from_historical_data()</span></code></a></li>
 <li><a class="reference internal" href="#tippingpoint.models.MarketingReturnCurve.get_diminishing_returns_point"><code class="docutils literal notranslate"><span class="pre">MarketingReturnCurve.get_diminishing_returns_point()</span></code></a></li>
 <li><a class="reference internal" href="#tippingpoint.models.MarketingReturnCurve.get_minimal_marginal_cost_point"><code class="docutils literal notranslate"><span class="pre">MarketingReturnCurve.get_minimal_marginal_cost_point()</span></code></a></li>
+<li><a class="reference internal" href="#tippingpoint.models.MarketingReturnCurve.get_optimal_scaling_window"><code class="docutils literal notranslate"><span class="pre">MarketingReturnCurve.get_optimal_scaling_window()</span></code></a></li>
 <li><a class="reference internal" href="#tippingpoint.models.MarketingReturnCurve.launch_dashboard"><code class="docutils literal notranslate"><span class="pre">MarketingReturnCurve.launch_dashboard()</span></code></a></li>
 <li><a class="reference internal" href="#tippingpoint.models.MarketingReturnCurve.max_efficiency_point"><code class="docutils literal notranslate"><span class="pre">MarketingReturnCurve.max_efficiency_point</span></code></a></li>
 <li><a class="reference internal" href="#tippingpoint.models.MarketingReturnCurve.max_profit_point"><code class="docutils literal notranslate"><span class="pre">MarketingReturnCurve.max_profit_point</span></code></a></li>
@@ -513,11 +692,34 @@ keyed by channel_name.</p></li>
 </li>
 </ul>
 </li>
+<li><a class="reference internal" href="#module-tippingpoint.mmm">Hierarchical Multi-Channel MMM</a><ul>
+<li><a class="reference internal" href="#tippingpoint.mmm.MultiChannelMMM"><code class="docutils literal notranslate"><span class="pre">MultiChannelMMM</span></code></a><ul>
+<li><a class="reference internal" href="#tippingpoint.mmm.MultiChannelMMM.decompose_historical_contributions"><code class="docutils literal notranslate"><span class="pre">MultiChannelMMM.decompose_historical_contributions()</span></code></a></li>
+<li><a class="reference internal" href="#tippingpoint.mmm.MultiChannelMMM.fit_bayesian"><code class="docutils literal notranslate"><span class="pre">MultiChannelMMM.fit_bayesian()</span></code></a></li>
+<li><a class="reference internal" href="#tippingpoint.mmm.MultiChannelMMM.fit_hierarchical_bayesian"><code class="docutils literal notranslate"><span class="pre">MultiChannelMMM.fit_hierarchical_bayesian()</span></code></a></li>
+<li><a class="reference internal" href="#tippingpoint.mmm.MultiChannelMMM.from_historical_data"><code class="docutils literal notranslate"><span class="pre">MultiChannelMMM.from_historical_data()</span></code></a></li>
+<li><a class="reference internal" href="#tippingpoint.mmm.MultiChannelMMM.get_allocator"><code class="docutils literal notranslate"><span class="pre">MultiChannelMMM.get_allocator()</span></code></a></li>
+<li><a class="reference internal" href="#tippingpoint.mmm.MultiChannelMMM.predict_channel_contributions"><code class="docutils literal notranslate"><span class="pre">MultiChannelMMM.predict_channel_contributions()</span></code></a></li>
+<li><a class="reference internal" href="#tippingpoint.mmm.MultiChannelMMM.predict_total_return"><code class="docutils literal notranslate"><span class="pre">MultiChannelMMM.predict_total_return()</span></code></a></li>
+<li><a class="reference internal" href="#tippingpoint.mmm.MultiChannelMMM.summary"><code class="docutils literal notranslate"><span class="pre">MultiChannelMMM.summary()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#tippingpoint.mmm.fit_multichannel_bayesian_mcmc"><code class="docutils literal notranslate"><span class="pre">fit_multichannel_bayesian_mcmc()</span></code></a></li>
+<li><a class="reference internal" href="#tippingpoint.mmm.fit_multichannel_gradient"><code class="docutils literal notranslate"><span class="pre">fit_multichannel_gradient()</span></code></a></li>
+<li><a class="reference internal" href="#tippingpoint.mmm.fit_multichannel_hierarchical_bayesian"><code class="docutils literal notranslate"><span class="pre">fit_multichannel_hierarchical_bayesian()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#module-tippingpoint.portfolio">Portfolio Optimization</a><ul>
 <li><a class="reference internal" href="#tippingpoint.portfolio.PortfolioAllocator"><code class="docutils literal notranslate"><span class="pre">PortfolioAllocator</span></code></a><ul>
 <li><a class="reference internal" href="#tippingpoint.portfolio.PortfolioAllocator.allocate_budget"><code class="docutils literal notranslate"><span class="pre">PortfolioAllocator.allocate_budget()</span></code></a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-tippingpoint.fitting.gradient">Fitting Engines</a><ul>
+<li><a class="reference internal" href="#tippingpoint.fitting.gradient.fit_mle_gradient"><code class="docutils literal notranslate"><span class="pre">fit_mle_gradient()</span></code></a></li>
+<li><a class="reference internal" href="#tippingpoint.fitting.gradient.tinygrad_geometric_adstock"><code class="docutils literal notranslate"><span class="pre">tinygrad_geometric_adstock()</span></code></a></li>
+<li><a class="reference internal" href="#tippingpoint.fitting.bayesian.fit_bayesian_mcmc"><code class="docutils literal notranslate"><span class="pre">fit_bayesian_mcmc()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#module-tippingpoint.math">Mathematical Core</a><ul>
@@ -526,6 +728,7 @@ keyed by channel_name.</p></li>
 <li><a class="reference internal" href="#tippingpoint.math.get_inflection_point"><code class="docutils literal notranslate"><span class="pre">get_inflection_point()</span></code></a></li>
 <li><a class="reference internal" href="#tippingpoint.math.hill_first_derivative"><code class="docutils literal notranslate"><span class="pre">hill_first_derivative()</span></code></a></li>
 <li><a class="reference internal" href="#tippingpoint.math.hill_function"><code class="docutils literal notranslate"><span class="pre">hill_function()</span></code></a></li>
+<li><a class="reference internal" href="#tippingpoint.math.weibull_adstock"><code class="docutils literal notranslate"><span class="pre">weibull_adstock()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#module-tippingpoint.viz">Visualization</a><ul>

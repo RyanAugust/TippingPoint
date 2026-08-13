@@ -1,61 +1,67 @@
-.. Tipping Point documentation master file, created by
-   sphinx-quickstart on Thu May 28 18:42:58 2026.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. Tipping Point documentation master file.
 
 Tipping Point
 =============
 
-**Tipping Point** is a lightweight, high-performance marketing intelligence module that uses machine learning and calculus to determine the exact inflection points of a media response curve.
+**Tipping Point** is a lightweight, high-performance marketing intelligence and media mix modeling library that uses machine learning and calculus to determine the exact inflection points of media response curves.
 
-Inspired by the Google Meridian methodology, Tipping Point helps growth marketers make optimal, data-driven budget allocation and scaling decisions.
+Inspired by modern Marketing Mix Modeling (MMM) principles—specifically the methodologies popularized by Google Meridian—Tipping Point helps growth marketers make optimal, data-driven budget allocation and scaling decisions.
 
-Key Concepts
-============
+Architectural Modes
+===================
 
-1. **The Hill Function**
-   A S-shaped (or C-shaped) media response curve that maps media spend to incremental return.
+Tipping Point is structured into two distinct, decoupled modeling workflows:
 
-   .. math::
-      Return = \frac{\beta \cdot Spend^\alpha}{K^\alpha + Spend^\alpha}
+1. **Lightweight Single-Channel Analysis (:class:`tippingpoint.models.MarketingReturnCurve`)**:
+   Targeted, standalone saturation curves for individual marketing channels (e.g., YouTube, Paid Search, Paid Social). Supports fast gradient descent optimization (MLE via Tinygrad) and Bayesian MCMC sampling, customizable adstock decay, unobserved organic baseline estimation, and incrementality experiment calibration.
 
-2. **First Derivative (Marginal ROAS)**
-   Determines the marginal efficiency of the next dollar spent. Peak marginal efficiency occurs at the **Inflection Point**.
+2. **Hierarchical Multi-Channel MMM (:class:`tippingpoint.mmm.MultiChannelMMM`)**:
+   A *Meridian-lite* multi-channel MMM architecture. Jointly samples carryover adstock (:math:`\theta`), Hill saturation shape and half-saturation (:math:`\alpha, K`), channel scale capacity (:math:`\beta`), baseline (:math:`\beta_0`), and observation noise (:math:`\sigma_\epsilon`). Features hierarchical partial pooling across channels, geo/region-level random effects, multi-chain MCMC with Gelman-Rubin :math:`\hat{R}` diagnostics, and historical time-series attribution decomposition.
 
-3. **Tipping Points**
-   - **Peak Efficiency Point (Daily):** The inflection point ($f''(x) = 0$) where acquisition cost is minimized.
-   - **Stop Scaling Point (Daily/Annualized):** The point of diminishing returns where Marginal ROAS falls below your profitability threshold (default 1.0).
+Key Mathematical Concepts
+=========================
 
-4. **Geometric Adstock (Prior Decay Carryover)**
-   Accounts for lagged effects of prior spend on upcoming returns following a geometric decay model:
+1. **Media Saturation (The Hill Function)**
+   A flexible S-shaped or C-shaped response curve mapping media spend to incremental return:
 
    .. math::
-      S_{t\_adstocked} = S_t + \theta \cdot S_{t-1\_adstocked}
+      Return = \beta_0 + \frac{\beta \cdot S_{adstocked}^\alpha}{K^\alpha + S_{adstocked}^\alpha}
 
-   Tipping Point supports 4 adstock modes during training:
-   - **No Adstock:** Assumes immediate return.
-   - **Free Adstock Fit:** Automatically learns decay parameter $\theta \in (0, 1)$ from historical data.
-   - **Bounded Adstock Fit:** Constrains the learned half-life decay to a specified day interval $[x, y]$.
-   - **Fixed Adstock:** Directly enforces a user-defined decay half-life in days.
+   - **Beta (:math:`\beta`):** Channel return capacity / asymptote.
+   - **Alpha (:math:`\alpha`):** Shape parameter (:math:`\alpha > 1` for S-curve with initial warm-up; :math:`\alpha \le 1` for C-curve with concave returns).
+   - **K (:math:`K`):** Half-saturation spend level.
+   - **Baseline (:math:`\beta_0`):** Organic, non-media baseline demand.
 
-5. **Portfolio Optimization (Cross-Channel Scenario Planning)**
-   Tipping Point scales from single-channel analysis to a full scenario planning engine. The `PortfolioAllocator` class takes multiple fitted `MarketingReturnCurve` models and utilizes `scipy` optimization (SLSQP algorithm) to find the exact budget allocation that maximizes total incremental return for a given total budget constraint, ensuring marginal ROAS is balanced across all valid channels.
+2. **Marginal ROAS & Tipping Points**
+   - **First Derivative (:math:`f'(x)`):** Marginal ROAS—the efficiency of the next dollar invested.
+   - **Peak Efficiency Point (:math:`f''(x) = 0`):** The inflection point where marginal cost is lowest and return acceleration peaks.
+   - **Stop Scaling Point (:math:`f'(x) = Target\_mROAS`):** The point of diminishing returns where scaling ceases to meet your hurdle rate.
+   - **Optimal Scaling Window:** The high-efficiency zone between the inflection point and the stop scaling point.
+
+3. **Adstock Transformations (Memory & Carryover)**
+   - **Geometric Adstock:** Exponential decay parameterized by retention rate :math:`\theta \in [0, 1)`:
+
+     .. math::
+        S_{t\_adstocked} = S_t + \theta \cdot S_{t-1\_adstocked}
+
+   - **Weibull Adstock:** Delayed peak effects via Weibull PDF or flexible S/C decay via Weibull CDF with shape :math:`k` and scale :math:`\lambda`.
+
+4. **Incrementality Experiment Calibration**
+   Integrate causal lift studies (geo-experiments, conversion lift) directly into single-channel or multi-channel curve fitting to anchor Bayesian posteriors to empirically validated truths.
+
+5. **Historical Contribution Decomposition**
+   Multi-channel models decompose observed revenue over time into organic baseline and per-channel adstocked contributions, computing historical ROI, spend share, and current marginal ROAS.
+
+6. **Portfolio Optimization (Cross-Channel Scenario Planning)**
+   The :class:`tippingpoint.portfolio.PortfolioAllocator` ingests multiple fitted channel curves and uses Sequential Least Squares Programming (SLSQP) to find the budget allocation that equalizes marginal ROAS across channels, maximizing total portfolio revenue under global and per-channel spend constraints.
 
 Interactive Dashboard
 =====================
 
-Tipping Point includes a fully interactive Streamlit dashboard allowing web-based exploration, separated into two powerful stages:
+Tipping Point includes an interactive Streamlit dashboard launched via ``tipp dashboard``:
 
-**Stage 1: Channel Configuration**
-- **Dynamic Stacking:** Users can upload custom CSV data or input manual parameters to fit and stack multiple independent channels.
-- **Value Denomination:** Optional conversion value multipliers turn raw conversions (leads, installs) into revenue-denominated curves before fitting.
-- **Deep Dive Analysis:** Provides a channel-by-channel view of the Plotly saturation curve, marginal efficiency metrics, and an **Adstock Carryover** timeline displaying raw vs. accumulated spend.
-
-**Stage 2: Portfolio Optimization**
-- **Scenario Planning:** Input a total portfolio budget and optionally set hard constraints (min/max limits) on specific channels.
-- **Optimal Cross-Channel Allocation:** Instantly calculates the most efficient distribution of funds across your configured channels.
-- **Visual Benchmarking:** Overlays all configured saturation curves on a single Plotly axis, cleanly marking the "setpoint" for each channel (solid line for funded spend, dashed line for untapped potential).
-- **Scale Mix:** A beautiful stacked area plot showing how your optimal channel mix expands, bottlenecks, and shifts weighting as your total investment ceiling increases.
+- **Stage 1: Channel Configuration:** Dynamically fit, configure, and stack multiple channels. Features conversion value multipliers and interactive Adstock carryover timelines.
+- **Stage 2: Portfolio Optimization:** Set global budgets and constraints. Generates optimal scale mix (stacked area) plots and cross-channel saturation overlays.
 
 .. toctree::
    :maxdepth: 2
