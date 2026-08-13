@@ -52,3 +52,32 @@ class TestModels:
         with pytest.warns(UserWarning, match="is mathematically unreachable"):
             max_spend = model.get_diminishing_returns_point(target_mroas=10.0)
             assert max_spend is None
+
+    def test_weibull_adstock_spend(self):
+        model_pdf = MarketingReturnCurve(
+            beta=10000, alpha=1.2, half_saturation_k=5000,
+            adstock_type="weibull_pdf",
+            adstock_params={"shape": 2.0, "scale": 3.0}
+        )
+        spends = np.array([100.0, 100.0, 100.0, 100.0])
+        adstocked = model_pdf.adstock_spend(spends)
+        assert len(adstocked) == 4
+        assert np.all(adstocked >= 0)
+
+        model_cdf = MarketingReturnCurve(
+            beta=10000, alpha=1.2, half_saturation_k=5000,
+            adstock_type="weibull_cdf",
+            adstock_params={"shape": 2.0, "scale": 3.0}
+        )
+        adstocked_cdf = model_cdf.adstock_spend(spends)
+        assert len(adstocked_cdf) == 4
+
+    def test_summary_and_update_loss(self):
+        model = MarketingReturnCurve(beta=25000, alpha=1.3, half_saturation_k=4000, theta=0.5, baseline=1200)
+        model.update_loss(1234.5)
+        s = model.summary()
+        assert s["loss"] == 1234.5
+        assert s["parameters"]["baseline"] == 1200
+        assert s["parameters"]["theta"] == 0.5
+        assert "adstock_half_life_days" in s["parameters"]
+
