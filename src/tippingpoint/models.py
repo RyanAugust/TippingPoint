@@ -13,44 +13,62 @@ class MarketingReturnCurve:
   Returns (profitability floor).
   """
 
-  def __init__(self, beta, alpha, half_saturation_k, theta=0.0, channel_name="Generic", posterior_samples=None):
+  def __init__(self, beta, alpha, half_saturation_k, theta=0.0, channel_name="Generic", posterior_samples=None, baseline=0.0, adstock_type="geometric", adstock_params=None):
     self.beta = float(beta)
     self.alpha = float(alpha)
     self.K = float(half_saturation_k)
     self.theta = float(theta)
+    self.baseline = float(baseline)
     self.channel_name = channel_name
     self.posterior_samples = posterior_samples
-    self.loss = 0
+    self.adstock_type = adstock_type
+    self.adstock_params = adstock_params or {}
+    self.loss = 0.0
     self.tipping_points = {}
     self.calculate_tipping_points()
 
   @classmethod
-  def fit_bayesian(cls, spend_array, return_array, channel_name="Generic", priors=None, n_samples=2000, chains=4, burn_in=1000, adstock_type="none", adstock_bounds=None, adstock_fixed_days=None):
+  def fit_bayesian(cls, spend_array, return_array, channel_name="Generic", priors=None, n_samples=2000, chains=4, burn_in=1000, adstock_type="none", adstock_bounds=None, adstock_fixed_days=None, calibration_experiments=None, fit_baseline=False):
     beta, alpha, K, theta, samples = fit_bayesian_mcmc(
         spend_array, return_array, channel_name, priors, n_samples, chains, burn_in,
-        adstock_type=adstock_type, adstock_bounds=adstock_bounds, adstock_fixed_days=adstock_fixed_days
+        adstock_type=adstock_type, adstock_bounds=adstock_bounds, adstock_fixed_days=adstock_fixed_days,
+        calibration_experiments=calibration_experiments, fit_baseline=fit_baseline
     )
     print(f"[{channel_name}] Bayesian fit complete. Samples: {len(samples['beta'])}")
-    return cls(beta, alpha, K, theta, channel_name, posterior_samples=samples)
+    baseline_val = float(np.mean(samples['baseline'])) if fit_baseline and 'baseline' in samples else 0.0
+    return cls(beta, alpha, K, theta, channel_name, posterior_samples=samples, baseline=baseline_val)
 
   @classmethod
-  def from_historical_data(cls, spend_array, return_array, channel_name="Generic", epochs=5000, lr=0.05, adstock_type="none", adstock_bounds=None, adstock_fixed_days=None):
-    beta, alpha, K, theta, loss = fit_mle_gradient(
+  def from_historical_data(cls, spend_array, return_array, channel_name="Generic", epochs=5000, lr=0.05, adstock_type="none", adstock_bounds=None, adstock_fixed_days=None, fit_baseline=False):
+    res = fit_mle_gradient(
         spend_array, return_array, epochs, lr,
-        adstock_type=adstock_type, adstock_bounds=adstock_bounds, adstock_fixed_days=adstock_fixed_days
+        adstock_type=adstock_type, adstock_bounds=adstock_bounds, adstock_fixed_days=adstock_fixed_days,
+        fit_baseline=fit_baseline
     )
+    if fit_baseline and len(res) == 6:
+      beta, alpha, K, theta, loss, baseline_val = res
+    else:
+      beta, alpha, K, theta, loss = res[:5]
+      baseline_val = 0.0
+
     print(f"[{channel_name}] Curve fit complete. Loss: {loss:.4f} (Theta: {theta:.4f})")
-    model = cls(beta, alpha, K, theta, channel_name)
+    model = cls(beta, alpha, K, theta, channel_name, baseline=baseline_val)
     model.update_loss(loss)
     return model
 
   def adstock_spend(self, spend_timeline):
-    """Applies the model's fitted geometric adstock decay to a timeline of spends."""
+    """Applies the model's fitted adstock decay (geometric or Weibull) to a timeline of spends."""
+    if self.adstock_type in ["weibull_pdf", "weibull_cdf"]:
+      from .math import weibull_adstock
+      shape = self.adstock_params.get("shape", 1.5)
+      scale = self.adstock_params.get("scale", 7.0)
+      w_type = "pdf" if self.adstock_type == "weibull_pdf" else "cdf"
+      return weibull_adstock(spend_timeline, shape=shape, scale=scale, adstock_type=w_type)
     from .math import geometric_adstock
     return geometric_adstock(spend_timeline, self.theta)
 
   def update_loss(self, loss: float) -> None:
-    self.loss = loss
+    self.loss = float(loss)
 
   def calculate_tipping_points(self):
     """Pre-computes and caches key strategic inflection points."""
@@ -80,19 +98,26 @@ class MarketingReturnCurve:
         "alpha": self.alpha,
         "K": self.K,
         "theta": self.theta,
+        "baseline": self.baseline,
+        "adstock_type": self.adstock_type,
+        "adstock_params": self.adstock_params,
         "adstock_half_life_days": half_life
       },
       "tipping_points": self.tipping_points,
       "current_mroas_at_max_profit": self.predict_marginal_return(self.max_profit_point) if self.max_profit_point is not None else None
     }
 
-  def predict_incremental_return(self, spend, use_samples=False):
+  def predict_incremental_return(self, spend, use_samples=False, include_baseline=False):
     if use_samples and self.posterior_samples:
       beta = self.posterior_samples['beta'][:, np.newaxis]
       alpha = self.posterior_samples['alpha'][:, np.newaxis]
       K = self.posterior_samples['K'][:, np.newaxis]
-      return hill_function(spend, beta, alpha, K)
-    return hill_function(spend, self.beta, self.alpha, self.K)
+      ret = hill_function(spend, beta, alpha, K)
+    else:
+      ret = hill_function(spend, self.beta, self.alpha, self.K)
+    if include_baseline:
+      ret = ret + self.baseline
+    return ret
 
   def predict_marginal_return(self, spend, use_samples=False):
     if use_samples and self.posterior_samples:
@@ -191,3 +216,85 @@ class MarketingReturnCurve:
 
     sys.argv = ["streamlit", "run", dashboard_path]
     stcli.main()
+
+
+class MultiChannelMMM:
+  """Joint multi-channel marketing mix model decomposing total returns across channels.
+
+  Fits simultaneously:
+    Y_t = Baseline + sum_{m=1}^M Hill_m(Adstock_m(S_{m, 1:t})) + eps_t
+
+  Prevents omitted variable bias and cross-channel double-counting.
+  """
+
+  def __init__(self, channels, baseline=0.0, loss=0.0, posterior_samples=None):
+    """
+    Args:
+      channels (dict or list): Dict mapping channel_name -> MarketingReturnCurve or list of models.
+      baseline (float): Shared organic / baseline non-media return.
+      loss (float): Final fitting loss.
+      posterior_samples (dict, optional): Joint MCMC posterior samples.
+    """
+    if isinstance(channels, list):
+      self.channels = {m.channel_name: m for m in channels}
+    elif isinstance(channels, dict):
+      self.channels = channels
+    else:
+      raise ValueError("channels must be a list of MarketingReturnCurve or a dict of {name: model}.")
+    self.baseline = float(baseline)
+    self.loss = float(loss)
+    self.posterior_samples = posterior_samples
+
+  @classmethod
+  def from_historical_data(cls, spend_data, return_array, channel_names=None, epochs=5000, lr=0.05, fit_baseline=True, adstock_types=None, adstock_bounds=None, adstock_fixed_days=None):
+    """Fits a joint multi-channel MMM using Gradient Descent (MLE / Tinygrad Adam)."""
+    from .fitting.gradient import fit_multichannel_gradient
+    models_dict, baseline, loss = fit_multichannel_gradient(
+      spend_data=spend_data, return_array=return_array, channel_names=channel_names,
+      epochs=epochs, lr=lr, fit_baseline=fit_baseline,
+      adstock_types=adstock_types, adstock_bounds=adstock_bounds,
+      adstock_fixed_days=adstock_fixed_days
+    )
+    return cls(channels=models_dict, baseline=baseline, loss=loss)
+
+  @classmethod
+  def fit_bayesian(cls, spend_data, return_array, channel_names=None, n_samples=2000, chains=4, burn_in=1000, fit_baseline=True, adstock_types=None, adstock_bounds=None, adstock_fixed_days=None, calibration_experiments=None):
+    """Fits a joint multi-channel MMM using Bayesian MCMC with optional experimental calibration."""
+    from .fitting.bayesian import fit_multichannel_bayesian_mcmc
+    models_dict, baseline, samples = fit_multichannel_bayesian_mcmc(
+      spend_data=spend_data, return_array=return_array, channel_names=channel_names,
+      n_samples=n_samples, chains=chains, burn_in=burn_in, fit_baseline=fit_baseline,
+      adstock_types=adstock_types, adstock_bounds=adstock_bounds,
+      adstock_fixed_days=adstock_fixed_days,
+      calibration_experiments=calibration_experiments
+    )
+    return cls(channels=models_dict, baseline=baseline, posterior_samples=samples)
+
+  def predict_total_return(self, spend_dict):
+    """Predicts total response (baseline + all channel responses) given a dictionary of channel spends."""
+    total = self.baseline
+    for cname, spend in spend_dict.items():
+      if cname in self.channels:
+        total += self.channels[cname].predict_incremental_return(spend)
+    return total
+
+  def predict_channel_contributions(self, spend_dict):
+    """Decomposes response into individual channel incremental contributions and baseline."""
+    contributions = {"Baseline": self.baseline}
+    for cname, spend in spend_dict.items():
+      if cname in self.channels:
+        contributions[cname] = self.channels[cname].predict_incremental_return(spend)
+    return contributions
+
+  def get_allocator(self):
+    """Returns a PortfolioAllocator configured with all fitted channel models."""
+    from .portfolio import PortfolioAllocator
+    return PortfolioAllocator(list(self.channels.values()))
+
+  def summary(self):
+    return {
+      "baseline": self.baseline,
+      "loss": self.loss,
+      "channels": {cname: m.summary() for cname, m in self.channels.items()}
+    }
+
