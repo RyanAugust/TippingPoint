@@ -56,7 +56,7 @@ class MarketingReturnCurve:
     """Pre-computes and caches key strategic inflection points."""
     self.tipping_points = {
       "max_efficiency_point": self.get_minimal_marginal_cost_point(),
-      "max_profit_point": self.get_diminishing_returns_point(target_mroas=1.0)
+      "max_profit_point": self.get_diminishing_returns_point(target_mroas=1.0, warn_unreachable=False)
     }
 
   @property
@@ -68,7 +68,11 @@ class MarketingReturnCurve:
     return self.tipping_points.get("max_profit_point")
 
   def summary(self):
-    half_life = -np.log(2) / np.log(self.theta) if self.theta > 0 else 0.0
+    half_life = 0.0
+    if 0.0 < self.theta < 1.0:
+      half_life = float(-np.log(2) / np.log(self.theta))
+    elif self.theta >= 1.0:
+      half_life = float('inf')
     return {
       "channel": self.channel_name,
       "parameters": {
@@ -79,7 +83,7 @@ class MarketingReturnCurve:
         "adstock_half_life_days": half_life
       },
       "tipping_points": self.tipping_points,
-      "current_mroas_at_max_profit": self.predict_marginal_return(self.max_profit_point) if self.max_profit_point else None
+      "current_mroas_at_max_profit": self.predict_marginal_return(self.max_profit_point) if self.max_profit_point is not None else None
     }
 
   def predict_incremental_return(self, spend, use_samples=False):
@@ -101,36 +105,64 @@ class MarketingReturnCurve:
   def get_minimal_marginal_cost_point(self):
     return get_inflection_point(self.alpha, self.K)
 
-  def get_diminishing_returns_point(self, target_mroas=1.0, tol=1e-5, max_iter=100):
-    inflection = max(self.get_minimal_marginal_cost_point(), 1e-5)
-    max_mroas = self.predict_marginal_return(inflection)
-    if target_mroas >= max_mroas:
-      warnings.warn(f"Target mROAS ({target_mroas}) is mathematically unreachable.\nMax possible mROAS is {max_mroas:.2f}.")
+  def get_diminishing_returns_point(self, target_mroas=1.0, tol=1e-5, max_iter=100, warn_unreachable=True):
+    if target_mroas <= 0:
+      if warn_unreachable:
+        warnings.warn(f"Target mROAS ({target_mroas}) must be strictly positive.")
       return None
-    lower_bound = inflection
-    upper_bound = inflection + self.K
-    while self.predict_marginal_return(upper_bound) > target_mroas:
-      upper_bound += self.K
-      if upper_bound > self.K * 1000:
-        warnings.warn("Could not find an upper bound for the target mROAS.")
+
+    if self.alpha > 1.0:
+      inflection = self.get_minimal_marginal_cost_point()
+      max_mroas = self.predict_marginal_return(inflection)
+      if target_mroas >= max_mroas:
+        if warn_unreachable:
+          warnings.warn(f"Target mROAS ({target_mroas}) is mathematically unreachable.\nMax possible mROAS is {max_mroas:.2f}.")
         return None
+      lower_bound = inflection
+    elif self.alpha == 1.0:
+      max_mroas = self.beta / self.K
+      if target_mroas >= max_mroas:
+        if warn_unreachable:
+          warnings.warn(f"Target mROAS ({target_mroas}) is mathematically unreachable.\nMax possible mROAS is {max_mroas:.2f}.")
+        return None
+      lower_bound = 0.0
+    else:
+      lower_bound = 0.0
+
+    # Exponential bracket expansion to find upper bound
+    upper_bound = max(lower_bound + self.K, self.K, 1.0)
+    while self.predict_marginal_return(upper_bound) > target_mroas:
+      upper_bound *= 2.0
+      if upper_bound > 1e15:
+        if warn_unreachable:
+          warnings.warn("Could not find an upper bound for the target mROAS.")
+        return None
+
+    # Binary search (Bisection)
     for _ in range(max_iter):
       midpoint = (lower_bound + upper_bound) / 2.0
       mroas_at_mid = self.predict_marginal_return(midpoint)
-      if abs(mroas_at_mid - target_mroas) < tol: return midpoint
-      if mroas_at_mid > target_mroas: lower_bound = midpoint
-      else: upper_bound = midpoint
-    return (lower_bound + upper_bound) / 2.0
+      if abs(mroas_at_mid - target_mroas) < tol:
+        return float(midpoint)
+      if mroas_at_mid > target_mroas:
+        lower_bound = midpoint
+      else:
+        upper_bound = midpoint
+
+    return float((lower_bound + upper_bound) / 2.0)
 
   def evaluate_current_budget(self, current_spend, target_mroas=1.0):
     min_spend = self.get_minimal_marginal_cost_point()
-    max_spend = self.get_diminishing_returns_point(target_mroas)
+    max_spend = self.get_diminishing_returns_point(target_mroas, warn_unreachable=False)
     mroas = self.predict_marginal_return(current_spend)
     print(f"--- Budget Evaluation: {self.channel_name} ---")
     print(f"Current Spend: ${current_spend:,.2f} | Current mROAS: {mroas:.2f}")
-    if current_spend < min_spend: print(f"Status: WARMING UP (Inefficient)\nRecommendation: Increase spend to at least ${min_spend:,.2f} to reach peak acquisition efficiency.")
-    elif max_spend is not None and current_spend > max_spend: print(f"Status: OVER-SATURATED (Unprofitable Marginal Growth)\n Recommendation: Scale back spend to ${max_spend:,.2f} to maintain target unit economics.")
-    else: print("Status: OPTIMAL SCALING ZONE.\nRecommendation: You are operating within the highly efficient growth window.")
+    if min_spend > 0 and current_spend < min_spend:
+      print(f"Status: WARMING UP (Inefficient)\nRecommendation: Increase spend to at least ${min_spend:,.2f} to reach peak acquisition efficiency.")
+    elif max_spend is not None and current_spend > max_spend:
+      print(f"Status: OVER-SATURATED (Unprofitable Marginal Growth)\n Recommendation: Scale back spend to ${max_spend:,.2f} to maintain target unit economics.")
+    else:
+      print("Status: OPTIMAL SCALING ZONE.\nRecommendation: You are operating within the highly efficient growth window.")
 
   def plot_response_curve(self, target_mroas=1.0, current_spend=None, show_intervals=True, scatter=None, show=True):
     fig = CurveVisualizer.plot_response_curve(self, target_mroas, current_spend, show_intervals, scatter)
