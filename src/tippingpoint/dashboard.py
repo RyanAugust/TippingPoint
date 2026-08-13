@@ -19,10 +19,12 @@ def fit_in_subprocess(spends, returns, epochs, lr, channel_name, adstock_type="n
   with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as f_out:
     out_path = f_out.name
 
+  src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
   code = f"""
 import pickle
 import sys
-sys.path.append('src')
+if {repr(src_dir)} not in sys.path:
+  sys.path.insert(0, {repr(src_dir)})
 from tippingpoint import MarketingReturnCurve
 
 with open({repr(in_path)}, 'rb') as f:
@@ -63,9 +65,7 @@ def create_plotly_plot(model, target_mroas, scatter=None):
   scatter_spend = None
   if scatter is not None:
     scatter_spend, scatter_return = scatter
-    if model.theta > 0:
-      from tippingpoint.math import geometric_adstock
-      scatter_spend = geometric_adstock(scatter_spend, model.theta)
+    scatter_spend = model.adstock_spend(scatter_spend)
 
   plot_limit = (max_spend * 1.5) if max_spend else (min_spend * 4 or 100000)
   if scatter_spend is not None and len(scatter_spend) > 0:
