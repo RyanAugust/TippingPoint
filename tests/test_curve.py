@@ -99,3 +99,38 @@ class TestMarketingReturnCurve:
       mock_show.assert_called_once()
     except Exception as e:
       pytest.fail(f"plot_response_curve raised an exception: {e}")
+
+  def test_zero_spend_behavior(self):
+    """Test that zero spend produces zero incremental return."""
+    assert self.s_curve.predict_incremental_return(0.0) == 0.0
+    assert self.c_curve.predict_incremental_return(0.0) == 0.0
+
+  def test_large_scale_numerical_stability(self):
+    """Test that extreme budget scales and powers do not overflow."""
+    large_curve = MarketingReturnCurve(beta=1e8, alpha=4.0, half_saturation_k=1e6)
+    ret = large_curve.predict_incremental_return(5e6)
+    assert not np.isnan(ret)
+    assert not np.isinf(ret)
+    assert ret > 0
+
+    mroas = large_curve.predict_marginal_return(5e6)
+    assert not np.isnan(mroas)
+    assert not np.isinf(mroas)
+
+  def test_c_curve_reachable_mroas(self):
+    """Test that for alpha < 1, high target mROAS is reachable."""
+    high_target = 50.0
+    spend = self.c_curve.get_diminishing_returns_point(high_target)
+    assert spend is not None
+    assert spend > 0
+    actual_mroas = self.c_curve.predict_marginal_return(spend)
+    assert actual_mroas == pytest.approx(high_target, rel=1e-2)
+
+  def test_summary_boundary_theta(self):
+    """Test summary with theta = 0.0 and theta = 1.0."""
+    m_zero = MarketingReturnCurve(beta=100, alpha=1.5, half_saturation_k=50, theta=0.0)
+    assert m_zero.summary()["parameters"]["adstock_half_life_days"] == 0.0
+
+    m_one = MarketingReturnCurve(beta=100, alpha=1.5, half_saturation_k=50, theta=1.0)
+    assert m_one.summary()["parameters"]["adstock_half_life_days"] == float("inf")
+
