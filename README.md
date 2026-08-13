@@ -4,13 +4,13 @@
 [![PyPI Downloads](https://img.shields.io/pypi/dm/tippingpt.svg?label=PyPI%20downloads)](
 https://pypi.org/project/tippingpt/)
 
-A lightweight, high-performance marketing intelligence module that uses machine learning and calculus to determine the exact inflection points of a media response curve.
+A lightweight, marketing intelligence module that assists in identifying media response curves and determining the inflection points.
 
-Growth marketers and media buyers constantly ask two questions: *"When are we out of the inefficient learning phase?"* and *"When should we stop scaling spend?"* By fitting historical performance data to a continuous mathematical curve, this tool identifies the **Minimal Marginal Cost Point** (where efficiency peaks) and the **Point of Diminishing Returns** (where scaling is no longer profitable), defining your exact **Optimal Scaling Zone**.
+Growth marketers and media buyers ask two questions: *"When are we out of the inefficient learning phase?"* and *"When should we stop scaling spend?"* By fitting historical performance data to a continuous curve, this tool identifies the **Minimal Marginal Cost Point** (where efficiency peaks) and the **Point of Diminishing Returns** (where scaling is no longer profitable), defining your exact **Optimal Scaling Zone**.
 
-Tipping Point scales from single-channel analysis to a full scenario planning engine. Using the included `PortfolioAllocator`, advertisers can instantly calculate the exact budget distribution that maximizes total return across multiple channels.
+Tipping Point focuses on single-channel analysis, but contains the necessary tools to run full scenario planning across multiple channels—using the included `PortfolioAllocator`, advertisers can calculate the budget distribution that maximizes total return across channels.
 
-## 🧠 Methodology
+## Methodology
 
 This project leverages the mathematical foundations of modern Marketing Mix Modeling (MMM)—specifically the techniques popularized by [Google’s Meridian](https://github.com/google/meridian).
 
@@ -36,7 +36,7 @@ Using exact calculus, the module provides strategic recommendations:
 *   **Peak Efficiency ($f''(x) = 0$):** The inflection point. Spend *at least* this much to exit the warm-up phase.
 *   **Stop Scaling Point ($f'(x) = Target\_mROAS$):** The exact spend level where efficiency drops below your baseline unit economics.
 
-## 🚀 Installation & Prerequisites
+## Installation & Prerequisites
 
 This module uses **tinygrad** for ultra-lightweight GPU-accelerated gradient descent, **scipy** for portfolio optimization, and **plotly/streamlit** for visualization.
 
@@ -44,7 +44,7 @@ This module uses **tinygrad** for ultra-lightweight GPU-accelerated gradient des
 pip install tippingpt
 ```
 
-## 💻 Usage
+## Usage
 
 ### 1. Fitting from Historical Data
 Pass raw `Spend` and `Return` arrays directly into the module.
@@ -111,7 +111,7 @@ Explore your models and run cross-channel portfolio optimization interactively u
 tipp dashboard
 ```
 
-## 🛠 Integrating with existing MMMs (Meridian)
+## Integrating with existing MMMs (Meridian)
 If you already run Google Meridian, you can extract the posterior mean parameters and initialize the class without refitting:
 
 ```python
