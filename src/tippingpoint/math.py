@@ -61,3 +61,45 @@ def get_inflection_point(alpha, K):
   if alpha <= 1.0:
     return 0.0
   return float(K * (((alpha - 1.0) / (alpha + 1.0)) ** (1.0 / alpha)))
+
+def weibull_adstock(spend, shape, scale, adstock_type="pdf", max_lag=None):
+  """Applies Weibull adstock transformation (PDF or CDF decay).
+
+  Args:
+    spend (array-like): 1D array of media spend over time.
+    shape (float): Weibull shape parameter (k > 0). If k > 1, peak effect is delayed.
+    scale (float): Weibull scale parameter (lambda > 0), controls decay duration.
+    adstock_type (str): 'pdf' (peaked/delayed decay) or 'cdf' (cumulative retention).
+    max_lag (int, optional): Maximum lag window. Defaults to full length of spend.
+
+  Returns:
+    np.ndarray: Adstocked effective spend array.
+  """
+  spend = np.array(spend, dtype=float)
+  N = len(spend)
+  if N == 0:
+    return np.array([], dtype=float)
+  if shape <= 0 or scale <= 0:
+    return spend.copy()
+
+  L = min(max_lag, N) if max_lag is not None else N
+  lags = np.arange(L, dtype=float)
+
+  if adstock_type.lower() == "pdf":
+    # Weibull PDF over discrete lags: (shape / scale) * (lag / scale)^(shape - 1) * exp(-(lag / scale)^shape)
+    x_val = (lags + 1.0) / scale
+    weights = (shape / scale) * (x_val ** (shape - 1.0)) * np.exp(-(x_val ** shape))
+  else:
+    # Weibull CDF survival decay
+    x_val = lags / scale
+    weights = np.exp(-(x_val ** shape))
+
+  weight_sum = np.sum(weights)
+  if weight_sum > 0:
+    weights = weights / weight_sum
+  else:
+    weights[0] = 1.0
+
+  adstocked = np.convolve(spend, weights, mode='full')[:N]
+  return adstocked
+
