@@ -34,15 +34,15 @@ $$ S_{t\_adstocked} = S_t + \theta \cdot S_{t-1\_adstocked} $$
 
 Tipping Point supports 4 adstock optimization modes: `none`, `free` (fully optimized $\theta$), `bounded` (constrained half-life), and `fixed` (explicit decay days).
 
-### 3. The Calculus Engine
-Using exact calculus, the module provides strategic recommendations:
+### 3. Margin Focused
+Using marginal costs and returnes instead of the average, the module provides strategic recommendations:
 *   **Marginal ROAS ($f'(x)$):** The efficiency of the *next* dollar spent.
 *   **Peak Efficiency ($f''(x) = 0$):** The inflection point. Spend *at least* this much to exit the warm-up phase.
 *   **Stop Scaling Point ($f'(x) = Target\_mROAS$):** The exact spend level where efficiency drops below your baseline unit economics.
 
 ## Installation & Prerequisites
 
-This module uses **tinygrad** for ultra-lightweight GPU-accelerated gradient descent, **scipy** for portfolio optimization, and **plotly/streamlit** for visualization.
+This module uses **tinygrad** for ultra-lightweight GPU-accelerated gradient descent, **scipy** for portfolio optimization, and **plotly/streamlit** for visualization. Additionally saturation curves can be fit using bootstrapped bayesian MCMC for scenarios with sparse data and informed priors.
 
 ```bash
 pip install tippingpt
