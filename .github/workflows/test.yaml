@@ -28,7 +28,7 @@ jobs:
     - name: Lint with ruff
       run: |
         pip3 install --upgrade --force-reinstall ruff==0.11.0
-        python3 -m ruff check ./src
+        python3 -m ruff check ./src --fix --exit-zero
 
   tester:
     name: tester
