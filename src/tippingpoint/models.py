@@ -85,13 +85,16 @@ class MarketingReturnCurve:
   def max_profit_point(self):
     return self.tipping_points.get("max_profit_point")
 
+  def update_loss(self, loss_val):
+    self.loss = float(loss_val)
+
   def summary(self):
     half_life = 0.0
     if 0.0 < self.theta < 1.0:
       half_life = float(-np.log(2) / np.log(self.theta))
     elif self.theta >= 1.0:
       half_life = float('inf')
-    return {
+    res = {
       "channel": self.channel_name,
       "parameters": {
         "beta": self.beta,
@@ -106,6 +109,16 @@ class MarketingReturnCurve:
       "tipping_points": self.tipping_points,
       "current_mroas_at_max_profit": self.predict_marginal_return(self.max_profit_point) if self.max_profit_point is not None else None
     }
+    if hasattr(self, "loss"):
+      res["loss"] = self.loss
+    return res
+
+  def get_optimal_scaling_window(self, target_mroas=1.0):
+    """Returns the tuple (min_spend, max_spend) defining the optimal scaling zone."""
+    min_spend = self.get_minimal_marginal_cost_point()
+    max_spend = self.get_diminishing_returns_point(target_mroas, warn_unreachable=False)
+    return (min_spend, max_spend)
+
 
   def predict_incremental_return(self, spend, use_samples=False, include_baseline=False):
     if use_samples and self.posterior_samples:
