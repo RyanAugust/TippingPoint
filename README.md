@@ -42,7 +42,7 @@ During single-channel training, adstock can be set to `none`, `fixed` (explicit 
 Using marginal rates of change rather than historical blended averages, the module calculates:
 *   **Marginal ROAS ($f'(x)$):** The efficiency of the *next* dollar spent.
 *   **Peak Efficiency Point ($f''(x) = 0$):** The inflection point. Spend at least this much to exit the warm-up phase.
-*   **Stop Scaling Point ($f'(x) = \text{Target\_mROAS}$):** The exact spend level where marginal return drops below your baseline unit economics.
+*   **Stop Scaling Point ($f'(x) = \text{Target mROAS}$):** The exact spend level where marginal return drops below your baseline unit economics.
 *   **Optimal Scaling Zone:** The high-velocity growth window between the Peak Efficiency Point and the Stop Scaling Point.
 
 ---
