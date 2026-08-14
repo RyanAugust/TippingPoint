@@ -136,12 +136,13 @@ print(scenario["allocation"])
 print(f"Expected Portfolio Return: ${scenario['expected_total_return']:,.2f}")
 ```
 
-### 5. Interactive Dashboard & Walkthrough Notebook
+### 5. Interactive Dashboard & Example Notebooks
 *   **Web App Dashboard:** Launch the built-in Streamlit app to explore single-channel curves, adstock carryover timelines, and cross-channel allocation simulations:
     ```bash
     tipp dashboard
     ```
-*   **Step-by-Step Walkthrough:** See [`examples/tippingpoint_walkthrough.ipynb`](examples/tippingpoint_walkthrough.ipynb) for a comprehensive guide on loading CSVs with pandas, configuring assumptions, and visualizing how brand/consideration video shifts response curves upward.
+*   **Single-Channel YouTube Saturation Example:** See [`examples/single_channel_youtube_branded_search.ipynb`](examples/single_channel_youtube_branded_search.ipynb) for a concise, step-by-step engineering tutorial on fitting daily YouTube video spend to Attributed Branded Search volume, calculating the geometric carryover half-life, locating Peak Efficiency ($f''(x) = 0$), and identifying the Stop Scaling Point against a $12.00 target CPA.
+*   **Multi-Channel Stacked Walkthrough:** See [`examples/tippingpoint_walkthrough.ipynb`](examples/tippingpoint_walkthrough.ipynb) for an end-to-end tutorial on multi-channel budget allocation and visualizing how brand consideration campaigns shift response curves upward.
 
 ---
 
