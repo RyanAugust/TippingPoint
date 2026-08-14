@@ -60,7 +60,7 @@ This module uses **tinygrad** for ultra-lightweight GPU-accelerated gradient des
 ## Single-Channel Usage
 
 ### 1. Fitting Curves from Historical Data
-Pass raw `Spend` and `Return` arrays directly into the module. You can fit using **Gradient Descent (MLE)** or **Bayesian MCMC**:
+Pass raw `Spend` and `Return` arrays directly into the module. You can fit using **Gradient Descent (MLE)**, **Frequentist Non-Linear Least Squares (NLS)**, or **Bayesian MCMC**:
 
 ```python
 import numpy as np
@@ -69,16 +69,35 @@ from tippingpoint import MarketingReturnCurve
 spends = np.array([1200, 5000, 15000, 25000, 40000])
 returns = np.array([200, 1500, 12000, 22000, 28000])
 
-# Fit with Gradient Descent (MLE) & bounded adstock (1-14 days half-life)
-model = MarketingReturnCurve.from_historical_data(
+# 1. Fit with Gradient Descent (MLE) & bounded adstock (1-14 days half-life)
+model_mle = MarketingReturnCurve.from_historical_data(
     spend_array=spends,
     return_array=returns,
     channel_name="YouTube Performance",
-    method="gradient",
+    adstock_type="bounded",
+    adstock_bounds=(1.0, 14.0)
+)
+
+# 2. Fit with Frequentist NLS (includes standard errors & 95% confidence intervals)
+model_freq = MarketingReturnCurve.fit_frequentist(
+    spend_array=spends,
+    return_array=returns,
+    channel_name="YouTube Performance",
+    adstock_type="bounded",
+    adstock_bounds=(1.0, 14.0),
+    confidence_level=0.95
+)
+
+# 3. Fit with Bayesian MCMC (includes posterior distributions & experimental calibration)
+model_bayes = MarketingReturnCurve.fit_bayesian(
+    spend_array=spends,
+    return_array=returns,
+    channel_name="YouTube Performance",
     adstock_type="bounded",
     adstock_bounds=(1.0, 14.0)
 )
 ```
+
 
 ### 2. Extracting Intelligence & Inflection Points
 

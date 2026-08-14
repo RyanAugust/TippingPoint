@@ -3,6 +3,7 @@ import warnings
 from .math import hill_function, hill_first_derivative, get_inflection_point
 from .fitting.bayesian import fit_bayesian_mcmc
 from .fitting.gradient import fit_mle_gradient
+from .fitting.frequentist import fit_frequentist_nls
 from .viz import CurveVisualizer
 
 class MarketingReturnCurve:
@@ -13,7 +14,21 @@ class MarketingReturnCurve:
   Returns (profitability floor).
   """
 
-  def __init__(self, beta, alpha, half_saturation_k, theta=0.0, channel_name="Generic", posterior_samples=None, baseline=0.0, adstock_type="geometric", adstock_params=None):
+  def __init__(
+      self,
+      beta,
+      alpha,
+      half_saturation_k,
+      theta=0.0,
+      channel_name="Generic",
+      posterior_samples=None,
+      baseline=0.0,
+      adstock_type="geometric",
+      adstock_params=None,
+      standard_errors=None,
+      confidence_intervals=None,
+      covariance_matrix=None
+  ):
     self.beta = float(beta)
     self.alpha = float(alpha)
     self.K = float(half_saturation_k)
@@ -23,6 +38,9 @@ class MarketingReturnCurve:
     self.posterior_samples = posterior_samples
     self.adstock_type = adstock_type
     self.adstock_params = adstock_params or {}
+    self.standard_errors = standard_errors
+    self.confidence_intervals = confidence_intervals
+    self.covariance_matrix = covariance_matrix
     self.loss = 0.0
     self.tipping_points = {}
     self.calculate_tipping_points()
@@ -37,6 +55,44 @@ class MarketingReturnCurve:
     print(f"[{channel_name}] Bayesian fit complete. Samples: {len(samples['beta'])}")
     baseline_val = float(np.mean(samples['baseline'])) if fit_baseline and 'baseline' in samples else 0.0
     return cls(beta, alpha, K, theta, channel_name, posterior_samples=samples, baseline=baseline_val)
+
+  @classmethod
+  def fit_frequentist(
+      cls,
+      spend_array,
+      return_array,
+      channel_name="Generic",
+      adstock_type="none",
+      adstock_bounds=None,
+      adstock_fixed_days=None,
+      fit_baseline=False,
+      confidence_level=0.95
+  ):
+    """Fits a Hill Curve to historical data using Frequentist Non-Linear Least Squares (NLS)."""
+    res = fit_frequentist_nls(
+        spend_array,
+        return_array,
+        channel_name=channel_name,
+        adstock_type=adstock_type,
+        adstock_bounds=adstock_bounds,
+        adstock_fixed_days=adstock_fixed_days,
+        fit_baseline=fit_baseline,
+        confidence_level=confidence_level
+    )
+    print(f"[{channel_name}] Frequentist NLS fit complete. Loss: {res['loss']:.4f} (Theta: {res['theta']:.4f})")
+    model = cls(
+        beta=res["beta"],
+        alpha=res["alpha"],
+        half_saturation_k=res["K"],
+        theta=res["theta"],
+        channel_name=channel_name,
+        baseline=res["baseline"],
+        standard_errors=res["standard_errors"],
+        confidence_intervals=res["confidence_intervals"],
+        covariance_matrix=res["covariance_matrix"]
+    )
+    model.update_loss(res["loss"])
+    return model
 
   @classmethod
   def from_historical_data(cls, spend_array, return_array, channel_name="Generic", epochs=5000, lr=0.05, adstock_type="none", adstock_bounds=None, adstock_fixed_days=None, fit_baseline=False):
@@ -73,8 +129,8 @@ class MarketingReturnCurve:
   def calculate_tipping_points(self):
     """Pre-computes and caches key strategic inflection points."""
     self.tipping_points = {
-      "max_efficiency_point": self.get_minimal_marginal_cost_point(),
-      "max_profit_point": self.get_diminishing_returns_point(target_mroas=1.0, warn_unreachable=False)
+        "max_efficiency_point": self.get_minimal_marginal_cost_point(),
+        "max_profit_point": self.get_diminishing_returns_point(target_mroas=1.0, warn_unreachable=False)
     }
 
   @property
@@ -85,9 +141,6 @@ class MarketingReturnCurve:
   def max_profit_point(self):
     return self.tipping_points.get("max_profit_point")
 
-  def update_loss(self, loss_val):
-    self.loss = float(loss_val)
-
   def summary(self):
     half_life = 0.0
     if 0.0 < self.theta < 1.0:
@@ -95,22 +148,26 @@ class MarketingReturnCurve:
     elif self.theta >= 1.0:
       half_life = float('inf')
     res = {
-      "channel": self.channel_name,
-      "parameters": {
-        "beta": self.beta,
-        "alpha": self.alpha,
-        "K": self.K,
-        "theta": self.theta,
-        "baseline": self.baseline,
-        "adstock_type": self.adstock_type,
-        "adstock_params": self.adstock_params,
-        "adstock_half_life_days": half_life
-      },
-      "tipping_points": self.tipping_points,
-      "current_mroas_at_max_profit": self.predict_marginal_return(self.max_profit_point) if self.max_profit_point is not None else None
+        "channel": self.channel_name,
+        "parameters": {
+            "beta": self.beta,
+            "alpha": self.alpha,
+            "K": self.K,
+            "theta": self.theta,
+            "baseline": self.baseline,
+            "adstock_type": self.adstock_type,
+            "adstock_params": self.adstock_params,
+            "adstock_half_life_days": half_life
+        },
+        "tipping_points": self.tipping_points,
+        "current_mroas_at_max_profit": self.predict_marginal_return(self.max_profit_point) if self.max_profit_point is not None else None
     }
     if hasattr(self, "loss"):
       res["loss"] = self.loss
+    if self.standard_errors is not None:
+      res["standard_errors"] = self.standard_errors
+    if self.confidence_intervals is not None:
+      res["confidence_intervals"] = self.confidence_intervals
     return res
 
   def get_optimal_scaling_window(self, target_mroas=1.0):
@@ -118,7 +175,6 @@ class MarketingReturnCurve:
     min_spend = self.get_minimal_marginal_cost_point()
     max_spend = self.get_diminishing_returns_point(target_mroas, warn_unreachable=False)
     return (min_spend, max_spend)
-
 
   def predict_incremental_return(self, spend, use_samples=False, include_baseline=False):
     if use_samples and self.posterior_samples:
@@ -229,5 +285,3 @@ class MarketingReturnCurve:
 
     sys.argv = ["streamlit", "run", dashboard_path]
     stcli.main()
-
-
