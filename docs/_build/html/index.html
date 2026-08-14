@@ -233,18 +233,28 @@
         <article role="main" id="furo-main-content">
           <section id="tipping-point">
 <h1>Tipping Point<a class="headerlink" href="#tipping-point" title="Link to this heading">¶</a></h1>
-<p><strong>Tipping Point</strong> is a lightweight, high-performance marketing intelligence and media mix modeling library that uses machine learning and calculus to determine the exact inflection points of media response curves.</p>
+<p><strong>Tipping Point</strong> is a lightweight, high-performance marketing intelligence library that uses machine learning and calculus to determine the exact inflection points of media response curves.</p>
 <p>Inspired by modern Marketing Mix Modeling (MMM) principles—specifically the methodologies popularized by Google Meridian—Tipping Point helps growth marketers make optimal, data-driven budget allocation and scaling decisions.</p>
 </section>
-<section id="architectural-modes">
-<h1>Architectural Modes<a class="headerlink" href="#architectural-modes" title="Link to this heading">¶</a></h1>
-<p>Tipping Point is structured into two distinct, decoupled modeling workflows:</p>
+<section id="primary-focus-single-channel-curves-portfolio-allocation">
+<h1>Primary Focus: Single-Channel Curves &amp; Portfolio Allocation<a class="headerlink" href="#primary-focus-single-channel-curves-portfolio-allocation" title="Link to this heading">¶</a></h1>
+<p>Tipping Point focuses primarily on <strong>single-channel saturation curve fitting</strong> and <strong>cross-channel portfolio planning</strong>:</p>
 <ol class="arabic simple">
 <li><p><strong>Lightweight Single-Channel Analysis (:class:`tippingpoint.models.MarketingReturnCurve`)</strong>:
 Targeted, standalone saturation curves for individual marketing channels (e.g., YouTube, Paid Search, Paid Social). Supports fast gradient descent optimization (MLE via Tinygrad) and Bayesian MCMC sampling, customizable adstock decay, unobserved organic baseline estimation, and incrementality experiment calibration.</p></li>
-<li><p><strong>Hierarchical Multi-Channel MMM (:class:`tippingpoint.mmm.MultiChannelMMM`)</strong>:
-A <em>Meridian-lite</em> multi-channel MMM architecture. Jointly samples carryover adstock (<span class="math notranslate nohighlight">\(\theta\)</span>), Hill saturation shape and half-saturation (<span class="math notranslate nohighlight">\(\alpha, K\)</span>), channel scale capacity (<span class="math notranslate nohighlight">\(\beta\)</span>), baseline (<span class="math notranslate nohighlight">\(\beta_0\)</span>), and observation noise (<span class="math notranslate nohighlight">\(\sigma_\epsilon\)</span>). Features hierarchical partial pooling across channels, geo/region-level random effects, multi-chain MCMC with Gelman-Rubin <span class="math notranslate nohighlight">\(\hat{R}\)</span> diagnostics, and historical time-series attribution decomposition.</p></li>
+<li><p><strong>Cross-Channel Portfolio Allocation (:class:`tippingpoint.portfolio.PortfolioAllocator`)</strong>:
+Ingests multiple fitted channel curves and uses Sequential Least Squares Programming (SLSQP) to find the budget allocation that equalizes marginal ROAS across channels, maximizing total portfolio revenue under global and per-channel spend constraints.</p></li>
 </ol>
+</section>
+<section id="exploratory-multi-channel-dynamics-tippingpoint-mmm-multichannelmmm">
+<h1>Exploratory Multi-Channel Dynamics (<a class="reference internal" href="api.html#tippingpoint.mmm.MultiChannelMMM" title="tippingpoint.mmm.MultiChannelMMM"><code class="xref py py-class docutils literal notranslate"><span class="pre">tippingpoint.mmm.MultiChannelMMM</span></code></a>)<a class="headerlink" href="#exploratory-multi-channel-dynamics-tippingpoint-mmm-multichannelmmm" title="Link to this heading">¶</a></h1>
+<p>While Tipping Point is built around lightweight single-channel curve fitting and portfolio allocation, it also provides a <em>Meridian-lite</em> multi-channel MMM class (<a class="reference internal" href="api.html#tippingpoint.mmm.MultiChannelMMM" title="tippingpoint.mmm.MultiChannelMMM"><code class="xref py py-class docutils literal notranslate"><span class="pre">tippingpoint.mmm.MultiChannelMMM</span></code></a>) to help users explore how individual channels interact.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>Not a Substitute for Full MMM:</strong>
+<a class="reference internal" href="api.html#tippingpoint.mmm.MultiChannelMMM" title="tippingpoint.mmm.MultiChannelMMM"><code class="xref py py-class docutils literal notranslate"><span class="pre">tippingpoint.mmm.MultiChannelMMM</span></code></a> is a lightweight, exploratory tool designed to help users examine joint adstock carryover, saturation, and preliminary historical attribution across channels. It does not provide a full, production-grade Marketing Mix Model.</p>
+<p>A full MMM—such as <a class="reference external" href="https://github.com/google/meridian">Google Meridian</a>—incorporates rich macroeconomic controls, pricing/promotions, non-media baseline variables, reach and frequency transformations, and comprehensive prior elicitation. For enterprise budget decisions, causal attribution, and complete cross-media measurement, Google Meridian should always be used to produce robust results.</p>
+</div>
 </section>
 <section id="key-mathematical-concepts">
 <h1>Key Mathematical Concepts<a class="headerlink" href="#key-mathematical-concepts" title="Link to this heading">¶</a></h1>
