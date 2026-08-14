@@ -3,20 +3,31 @@
 Tipping Point
 =============
 
-**Tipping Point** is a lightweight, high-performance marketing intelligence and media mix modeling library that uses machine learning and calculus to determine the exact inflection points of media response curves.
+**Tipping Point** is a lightweight, high-performance marketing intelligence library that uses machine learning and calculus to determine the exact inflection points of media response curves.
 
 Inspired by modern Marketing Mix Modeling (MMM) principles—specifically the methodologies popularized by Google Meridian—Tipping Point helps growth marketers make optimal, data-driven budget allocation and scaling decisions.
 
-Architectural Modes
-===================
+Primary Focus: Single-Channel Curves & Portfolio Allocation
+===========================================================
 
-Tipping Point is structured into two distinct, decoupled modeling workflows:
+Tipping Point focuses primarily on **single-channel saturation curve fitting** and **cross-channel portfolio planning**:
 
 1. **Lightweight Single-Channel Analysis (:class:`tippingpoint.models.MarketingReturnCurve`)**:
    Targeted, standalone saturation curves for individual marketing channels (e.g., YouTube, Paid Search, Paid Social). Supports fast gradient descent optimization (MLE via Tinygrad) and Bayesian MCMC sampling, customizable adstock decay, unobserved organic baseline estimation, and incrementality experiment calibration.
 
-2. **Hierarchical Multi-Channel MMM (:class:`tippingpoint.mmm.MultiChannelMMM`)**:
-   A *Meridian-lite* multi-channel MMM architecture. Jointly samples carryover adstock (:math:`\theta`), Hill saturation shape and half-saturation (:math:`\alpha, K`), channel scale capacity (:math:`\beta`), baseline (:math:`\beta_0`), and observation noise (:math:`\sigma_\epsilon`). Features hierarchical partial pooling across channels, geo/region-level random effects, multi-chain MCMC with Gelman-Rubin :math:`\hat{R}` diagnostics, and historical time-series attribution decomposition.
+2. **Cross-Channel Portfolio Allocation (:class:`tippingpoint.portfolio.PortfolioAllocator`)**:
+   Ingests multiple fitted channel curves and uses Sequential Least Squares Programming (SLSQP) to find the budget allocation that equalizes marginal ROAS across channels, maximizing total portfolio revenue under global and per-channel spend constraints.
+
+Exploratory Multi-Channel Dynamics (:class:`tippingpoint.mmm.MultiChannelMMM`)
+=================================================================================
+
+While Tipping Point is built around lightweight single-channel curve fitting and portfolio allocation, it also provides a *Meridian-lite* multi-channel MMM class (:class:`tippingpoint.mmm.MultiChannelMMM`) to help users explore how individual channels interact.
+
+.. note::
+   **Not a Substitute for Full MMM:**
+   :class:`tippingpoint.mmm.MultiChannelMMM` is a lightweight, exploratory tool designed to help users examine joint adstock carryover, saturation, and preliminary historical attribution across channels. It does not provide a full, production-grade Marketing Mix Model.
+
+   A full MMM—such as `Google Meridian <https://github.com/google/meridian>`_—incorporates rich macroeconomic controls, pricing/promotions, non-media baseline variables, reach and frequency transformations, and comprehensive prior elicitation. For enterprise budget decisions, causal attribution, and complete cross-media measurement, Google Meridian should always be used to produce robust results.
 
 Key Mathematical Concepts
 =========================
