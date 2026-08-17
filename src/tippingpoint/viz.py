@@ -28,20 +28,19 @@ class CurveVisualizer:
       max_x = max_spend * 3.0
 
     x_vals = np.linspace(0, max_x, 500)
+    has_intervals = False
+    interval_label = "Uncertainty Interval"
+
     if show_intervals and model.posterior_samples:
-      y_returns_dist = np.nan_to_num(model.predict_incremental_return(x_vals, use_samples=True), nan=0.0)
-      y_return = np.mean(y_returns_dist, axis=0)
-      y_return_low = np.percentile(y_returns_dist, 5, axis=0)
-      y_return_high = np.percentile(y_returns_dist, 95, axis=0)
-
-      y_mroas_raw = model.predict_marginal_return(x_vals, use_samples=True)
-      finite_mask = np.isfinite(y_mroas_raw)
-      max_finite = float(np.max(y_mroas_raw[finite_mask])) if np.any(finite_mask) else 1.0
-      y_mroas_dist = np.nan_to_num(y_mroas_raw, nan=0.0, posinf=max_finite, neginf=0.0)
-
-      y_mroas = np.mean(y_mroas_dist, axis=0)
-      y_mroas_low = np.percentile(y_mroas_dist, 5, axis=0)
-      y_mroas_high = np.percentile(y_mroas_dist, 95, axis=0)
+      y_return, y_return_low, y_return_high = model.predict_incremental_return(x_vals, return_interval=True, confidence_level=0.90)
+      y_mroas, y_mroas_low, y_mroas_high = model.predict_marginal_return(x_vals, return_interval=True, confidence_level=0.90)
+      has_intervals = True
+      interval_label = "90% Credible Interval"
+    elif show_intervals and model.covariance_matrix is not None:
+      y_return, y_return_low, y_return_high = model.predict_incremental_return(x_vals, return_interval=True, confidence_level=0.95)
+      y_mroas, y_mroas_low, y_mroas_high = model.predict_marginal_return(x_vals, return_interval=True, confidence_level=0.95)
+      has_intervals = True
+      interval_label = "95% Confidence Interval"
     else:
       y_return = model.predict_incremental_return(x_vals)
       y_mroas = model.predict_marginal_return(x_vals)
@@ -54,8 +53,8 @@ class CurveVisualizer:
 
     # Primary Axis: Response Curve
     ax1.plot(x_vals, y_return, color=cls.G_BLUE, linewidth=3.5, label="Incremental Return", zorder=3)
-    if show_intervals and model.posterior_samples:
-      ax1.fill_between(x_vals, y_return_low, y_return_high, color=cls.G_BLUE, alpha=0.15, label="90% Credible Interval", zorder=2)
+    if has_intervals:
+      ax1.fill_between(x_vals, y_return_low, y_return_high, color=cls.G_BLUE, alpha=0.15, label=interval_label, zorder=2)
 
     ax1.set_xlabel('Spend', fontsize=11, color=cls.G_GRAY, fontweight='500', labelpad=10)
     ax1.set_ylabel('Incremental Return', color=cls.G_BLUE, fontsize=11, fontweight='500', labelpad=10)
@@ -64,7 +63,7 @@ class CurveVisualizer:
     # Secondary Axis: Marginal Return
     ax2 = ax1.twinx()
     ax2.plot(x_vals, y_mroas, color=cls.G_GRAY, linestyle=(0, (5, 2)), linewidth=1.5, label="Marginal ROAS", alpha=0.6, zorder=1)
-    if show_intervals and model.posterior_samples:
+    if has_intervals:
       ax2.fill_between(x_vals, y_mroas_low, y_mroas_high, color=cls.G_GRAY, alpha=0.05, zorder=0)
 
     ax2.set_ylabel('Marginal ROAS (mROAS)', color=cls.G_GRAY, fontsize=11, fontweight='500', labelpad=10)

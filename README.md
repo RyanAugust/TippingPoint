@@ -132,22 +132,38 @@ Status: OPTIMAL SCALING ZONE
 Recommendation: You are operating within the highly efficient growth window.
 ```
 
-### 3. Incrementality Experiment Calibration
-Incorporate causal lift test results (e.g. geo-experiments, conversion lift studies) directly into Bayesian curve fitting to ground parameters in empirical truth:
+### 3. Statistical Fit Evaluation & Goodness-of-Fit
+Assess the quality of fitted saturation and adstock curves with standard statistical diagnostic metrics ($R^2$, Adjusted $R^2$, RMSE, MAE, MAPE, AIC, BIC):
 
 ```python
-model = MarketingReturnCurve.fit(
-    spend_array=spends,
-    return_array=returns,
-    channel_name="YouTube",
-    method="bayesian",
-    calibration_experiments=[
-        {"spend": 15000, "lift": 11500, "se": 800}
-    ]
-)
+# Compute and print goodness-of-fit metrics
+metrics = model.evaluate_fit(verbose=True)
+print(f"R²: {metrics['r_squared']:.4f} | RMSE: {metrics['rmse']:,.2f} | MAPE: {metrics['mape']:.2f}%")
 ```
 
-### 4. Cross-Channel Portfolio Optimization (Scenario Planning)
+### 4. Predictive Uncertainty & Confidence Intervals
+Generate point predictions and statistical uncertainty intervals using the **Frequentist Delta Method** or **Bayesian Posterior Samples**:
+
+```python
+# Returns (point_prediction, lower_ci, upper_ci)
+pred, low, high = model.predict_incremental_return(spend=15000, return_interval=True, confidence_level=0.95)
+print(f"Expected Incremental Return: {pred:,.1f} (95% CI: [{low:,.1f}, {high:,.1f}])")
+```
+
+### 5. Standalone Incrementality Experiment Validation
+Score and validate any fitted response curve against real-world holdout tests, conversion lift studies, or geo-experiments:
+
+```python
+# Validate model against one or more causal lift experiments
+validation = model.validate_experiments([
+    {"name": "GeoTest_Q1", "spend": 10000, "lift": 580, "se": 20},
+    {"name": "Holdout_Q2", "spend": 15000, "lift": 690, "ci": (645, 735)}
+], verbose=True)
+
+print(f"Alignment Status: {validation['verdict']} | 95% CI Coverage: {validation['ci_coverage_pct']:.1f}%")
+```
+
+### 6. Cross-Channel Portfolio Optimization (Scenario Planning)
 Once you have fitted single-channel curves, the `PortfolioAllocator` calculates the budget distribution that maximizes total portfolio return:
 
 ```python
