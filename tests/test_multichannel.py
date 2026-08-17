@@ -29,7 +29,7 @@ def multichannel_data():
 
 def test_multichannel_gradient_fit(multichannel_data):
     spend_dict, y_total = multichannel_data
-    mmm = MultiChannelMMM.from_historical_data(
+    mmm = MultiChannelMMM.fit_gradient_descent(
         spend_data=spend_dict,
         return_array=y_total,
         epochs=500,
@@ -83,7 +83,7 @@ def test_multichannel_dataframe_and_array_inputs(multichannel_data):
     df_spend = pd.DataFrame(spend_dict)
 
     # Test DataFrame input
-    mmm_df = MultiChannelMMM.from_historical_data(
+    mmm_df = MultiChannelMMM.fit_gradient_descent(
         spend_data=df_spend,
         return_array=y_total,
         epochs=100,
@@ -93,7 +93,7 @@ def test_multichannel_dataframe_and_array_inputs(multichannel_data):
 
     # Test 2D numpy array input
     mat_spend = df_spend.values
-    mmm_mat = MultiChannelMMM.from_historical_data(
+    mmm_mat = MultiChannelMMM.fit_gradient_descent(
         spend_data=mat_spend,
         return_array=y_total,
         channel_names=["ChA", "ChB", "ChC"],
@@ -147,7 +147,7 @@ def test_multichannel_init_variants():
 
 def test_multichannel_historical_decomposition(multichannel_data):
     spend_dict, y_total = multichannel_data
-    mmm = MultiChannelMMM.from_historical_data(
+    mmm = MultiChannelMMM.fit_gradient_descent(
         spend_data=spend_dict,
         return_array=y_total,
         epochs=100,
@@ -212,5 +212,20 @@ def test_multichannel_geo_hierarchical_bayesian():
     assert mmm_geo.posterior_samples is not None
     assert "diagnostics" in mmm_geo.posterior_samples
     assert mmm_geo.posterior_samples["diagnostics"]["is_geo"] is True
+
+def test_multichannel_unified_fit(multichannel_data):
+    spend_dict, y_total = multichannel_data
+    # Gradient method
+    mmm1 = MultiChannelMMM.fit(spend_dict, y_total, method="gradient", epochs=50)
+    assert len(mmm1.channels) == 3
+
+    # Bayesian method
+    mmm2 = MultiChannelMMM.fit(spend_dict, y_total, method="bayesian", n_samples=20, chains=1, burn_in=5)
+    assert len(mmm2.channels) == 3
+
+    # Invalid method
+    with pytest.raises(ValueError, match="Unknown multi-channel fitting method"):
+        MultiChannelMMM.fit(spend_dict, y_total, method="invalid_engine")
+
 
 

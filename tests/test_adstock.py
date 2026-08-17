@@ -27,7 +27,7 @@ class TestAdstock:
         returns = np.array([100, 300, 1000, 2500, 5000, 8000])
 
         # Fit with a 3-day fixed adstock decay
-        model = MarketingReturnCurve.from_historical_data(
+        model = MarketingReturnCurve.fit_gradient_descent(
             spend_array=spends,
             return_array=returns,
             adstock_type="fixed",
@@ -43,7 +43,7 @@ class TestAdstock:
         returns = np.array([100, 300, 1000, 2500, 5000, 8000])
 
         # Fit with fully free adstock
-        model = MarketingReturnCurve.from_historical_data(
+        model = MarketingReturnCurve.fit_gradient_descent(
             spend_array=spends,
             return_array=returns,
             adstock_type="free",
@@ -58,7 +58,7 @@ class TestAdstock:
 
         # Bounded between 1 and 7 days half-life
         min_days, max_days = 1.0, 7.0
-        model = MarketingReturnCurve.from_historical_data(
+        model = MarketingReturnCurve.fit_gradient_descent(
             spend_array=spends,
             return_array=returns,
             adstock_type="bounded",
@@ -75,19 +75,19 @@ class TestAdstock:
         returns = np.array([100, 300, 1000])
 
         # Fixed but no days given
-        m1 = MarketingReturnCurve.from_historical_data(spends, returns, adstock_type="fixed", epochs=5)
+        m1 = MarketingReturnCurve.fit_gradient_descent(spends, returns, adstock_type="fixed", epochs=5)
         assert m1.theta == 0.0
 
         # Bounded but no bounds given
-        m2 = MarketingReturnCurve.from_historical_data(spends, returns, adstock_type="bounded", epochs=5)
+        m2 = MarketingReturnCurve.fit_gradient_descent(spends, returns, adstock_type="bounded", epochs=5)
         assert 0.0 <= m2.theta <= 0.999
 
         # Bounded with negative bounds
-        m3 = MarketingReturnCurve.from_historical_data(spends, returns, adstock_type="bounded", adstock_bounds=(-1, -1), epochs=5)
+        m3 = MarketingReturnCurve.fit_gradient_descent(spends, returns, adstock_type="bounded", adstock_bounds=(-1, -1), epochs=5)
         assert m3.theta == 0.0
 
         # Fixed with negative days
-        m4 = MarketingReturnCurve.from_historical_data(spends, returns, adstock_type="fixed", adstock_fixed_days=-1, epochs=5)
+        m4 = MarketingReturnCurve.fit_gradient_descent(spends, returns, adstock_type="fixed", adstock_fixed_days=-1, epochs=5)
         assert m4.theta == 0.0
 
     def test_bayesian_fitting_types(self):
@@ -139,7 +139,7 @@ class TestAdstock:
         spends = np.array([1000, 2000, 5000, 10000, 15000, 25000])
         returns = np.array([1100, 1300, 2000, 3500, 6000, 9000])
 
-        model = MarketingReturnCurve.from_historical_data(
+        model = MarketingReturnCurve.fit_gradient_descent(
             spend_array=spends,
             return_array=returns,
             fit_baseline=True,
