@@ -630,7 +630,64 @@ class MultiChannelMMM:
     self.posterior_samples = posterior_samples
 
   @classmethod
-  def from_historical_data(cls, spend_data, return_array, channel_names=None, epochs=5000, lr=0.05,
+  def fit(
+      cls,
+      spend_data,
+      return_array,
+      channel_names=None,
+      method="auto",
+      epochs=5000,
+      lr=0.05,
+      fit_baseline=True,
+      adstock_types=None,
+      adstock_bounds=None,
+      adstock_fixed_days=None,
+      n_samples=2000,
+      chains=4,
+      burn_in=1000,
+      hierarchical=True,
+      calibration_experiments=None
+  ):
+    """Unified entry point for fitting multi-channel marketing mix models."""
+    method_norm = method.lower() if isinstance(method, str) else "auto"
+    if method_norm == "auto":
+      if calibration_experiments is not None:
+        method_norm = "bayesian"
+      else:
+        method_norm = "gradient"
+
+    if method_norm in ["gradient", "gradient_descent", "mle"]:
+      return cls.fit_gradient_descent(
+          spend_data=spend_data,
+          return_array=return_array,
+          channel_names=channel_names,
+          epochs=epochs,
+          lr=lr,
+          fit_baseline=fit_baseline,
+          adstock_types=adstock_types,
+          adstock_bounds=adstock_bounds,
+          adstock_fixed_days=adstock_fixed_days
+      )
+    elif method_norm in ["bayesian", "hierarchical_bayesian", "mcmc"]:
+      return cls.fit_bayesian(
+          spend_data=spend_data,
+          return_array=return_array,
+          channel_names=channel_names,
+          n_samples=n_samples,
+          chains=chains,
+          burn_in=burn_in,
+          fit_baseline=fit_baseline,
+          hierarchical=hierarchical,
+          adstock_types=adstock_types,
+          adstock_bounds=adstock_bounds,
+          adstock_fixed_days=adstock_fixed_days,
+          calibration_experiments=calibration_experiments
+      )
+    else:
+      raise ValueError(f"Unknown multi-channel fitting method: '{method}'")
+
+  @classmethod
+  def fit_gradient_descent(cls, spend_data, return_array, channel_names=None, epochs=5000, lr=0.05,
                            fit_baseline=True, adstock_types=None, adstock_bounds=None, adstock_fixed_days=None):
     """Fits a joint multi-channel MMM using Gradient Descent (MLE / Tinygrad Adam)."""
     models_dict, baseline, loss = fit_multichannel_gradient(
@@ -773,6 +830,20 @@ class MultiChannelMMM:
     from tippingpoint.portfolio import PortfolioAllocator
     return PortfolioAllocator(list(self.channels.values()))
 
+  def validate_experiments(self, experiments, spend_is_raw=True, verbose=False):
+    """Validates multi-channel MMM curves against a collection of channel-specific incrementality experiments.
+
+    Args:
+      experiments: List of experiment dicts, each specifying a 'channel' key.
+      spend_is_raw: If True, scales raw daily test spend by (1 - theta) to evaluate against effective adstock.
+      verbose: If True, prints a multi-channel validation summary to stdout.
+
+    Returns:
+      dict: Multi-channel validation summary with per-channel breakdown and global metrics.
+    """
+    from .validation import validate_multichannel_experiments
+    return validate_multichannel_experiments(self, experiments, spend_is_raw=spend_is_raw, verbose=verbose)
+
   def summary(self):
     """Returns a dictionary summarizing all channel curves, baseline, and MCMC diagnostics."""
     res = {
@@ -783,3 +854,4 @@ class MultiChannelMMM:
     if self.posterior_samples and 'diagnostics' in self.posterior_samples:
       res["diagnostics"] = self.posterior_samples['diagnostics']
     return res
+

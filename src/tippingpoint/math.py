@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.signal import lfilter
 
 def days_to_theta(days):
   """Converts half-life in days/periods to geometric decay rate theta.
@@ -10,17 +11,18 @@ def days_to_theta(days):
   return float(0.5 ** (1.0 / days))
 
 def geometric_adstock(spend, theta):
-  """Applies geometric adstock decay to a spend array.
+  """Applies geometric adstock decay to a spend array using a vectorized recursive filter.
 
   Formula: S_t_adstocked = S_t + theta * S_{t-1_adstocked}
   """
-  spend = np.array(spend, dtype=float)
-  adstocked = np.zeros_like(spend)
-  current = 0.0
-  for t in range(len(spend)):
-    current = spend[t] + theta * current
-    adstocked[t] = current
-  return adstocked
+  spend = np.asanyarray(spend, dtype=float)
+  if spend.size == 0:
+    return np.array([], dtype=float)
+  if theta <= 0.0:
+    return spend.copy()
+  if theta >= 1.0:
+    return np.cumsum(spend)
+  return lfilter([1.0], [1.0, -float(theta)], spend)
 
 def hill_function(spend, beta, alpha, K):
   """Calculates the Hill Function value: f(x) = (beta * (x/K)^alpha) / (1 + (x/K)^alpha)."""
@@ -98,8 +100,9 @@ def weibull_adstock(spend, shape, scale, adstock_type="pdf", max_lag=None):
   if weight_sum > 0:
     weights = weights / weight_sum
   else:
+    weights = np.zeros(L, dtype=float)
     weights[0] = 1.0
 
+  # Vectorized 1D convolution
   adstocked = np.convolve(spend, weights, mode='full')[:N]
   return adstocked
-

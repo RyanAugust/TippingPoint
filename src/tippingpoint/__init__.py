@@ -6,6 +6,5 @@ from .models import MarketingReturnCurve as MarketingReturnCurve
 from .portfolio import PortfolioAllocator as PortfolioAllocator
 from .mmm import MultiChannelMMM as MultiChannelMMM
 from .math import weibull_adstock as weibull_adstock
-
-
-
+from .validation import validate_curve_experiments as validate_curve_experiments
+from .validation import validate_multichannel_experiments as validate_multichannel_experiments

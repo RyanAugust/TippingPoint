@@ -73,7 +73,7 @@ class TestMarketingReturnCurve:
     spends = np.linspace(1000, 10000, 20)
     returns = (50000 * spends**1.5) / (4000**1.5 + spends**1.5) # Fake responses following roughly an S curve
     # Run with very few epochs just to verify the math/graph builds and executes properly
-    model = MarketingReturnCurve.from_historical_data( spend_array=spends, return_array=returns, epochs=10, lr=0.1)# Fast execution for test suite
+    model = MarketingReturnCurve.fit_gradient_descent(spend_array=spends, return_array=returns, epochs=10, lr=0.1) # Fast execution for test suite
 
     assert isinstance(model, MarketingReturnCurve)
     assert model.beta > 0
@@ -140,5 +140,35 @@ class TestMarketingReturnCurve:
     assert min_s > 0
     assert max_s is not None
     assert max_s > min_s
+
+  def test_unified_fit_auto_frequentist(self):
+    """Test unified fit method with auto selecting frequentist."""
+    spends = np.array([1000, 2000, 5000, 10000, 15000])
+    returns = np.array([100, 300, 1000, 2500, 5000])
+    model = MarketingReturnCurve.fit(spends, returns, method="auto")
+    assert isinstance(model, MarketingReturnCurve)
+    assert model.standard_errors is not None
+
+  def test_unified_fit_gradient(self):
+    """Test unified fit method specifying gradient descent."""
+    spends = np.array([1000, 2000, 5000, 10000, 15000])
+    returns = np.array([100, 300, 1000, 2500, 5000])
+    model = MarketingReturnCurve.fit(spends, returns, method="gradient_descent", epochs=10)
+    assert isinstance(model, MarketingReturnCurve)
+    assert model.beta > 0
+
+  def test_unified_fit_bayesian(self):
+    """Test unified fit method specifying bayesian."""
+    spends = np.array([1000, 2000, 5000])
+    returns = np.array([100, 300, 1000])
+    model = MarketingReturnCurve.fit(spends, returns, method="bayesian", n_samples=10, chains=1, burn_in=2)
+    assert isinstance(model, MarketingReturnCurve)
+    assert model.posterior_samples is not None
+
+  def test_unified_fit_invalid_method(self):
+    """Test unified fit raises ValueError for unknown method."""
+    with pytest.raises(ValueError, match="Unknown fitting method"):
+      MarketingReturnCurve.fit([100, 200], [10, 20], method="invalid_engine")
+
 
 

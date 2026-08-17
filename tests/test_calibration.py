@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from tippingpoint import MarketingReturnCurve, MultiChannelMMM
 from tippingpoint.math import hill_function
+from tippingpoint.validation import format_validation_report, format_multichannel_validation_report
 
 def test_bayesian_with_calibration_experiment():
     np.random.seed(42)
@@ -44,3 +45,109 @@ def test_model_with_baseline():
     # Summary includes baseline
     summary = model.summary()
     assert summary["parameters"]["baseline"] == 12000
+
+def test_standalone_incrementality_validation():
+    # Setup known curve: beta=1000, alpha=2.0, K=5000
+    model = MarketingReturnCurve(beta=1000.0, alpha=2.0, half_saturation_k=5000.0, theta=0.0, channel_name="YouTube")
+
+    # True lifts at 2000, 5000, 10000
+    l_2k = hill_function(2000.0, 1000.0, 2.0, 5000.0)   # 137.93
+    l_5k = hill_function(5000.0, 1000.0, 2.0, 5000.0)   # 500.0
+    l_10k = hill_function(10000.0, 1000.0, 2.0, 5000.0) # 800.0
+
+    exps = [
+        {"name": "GeoTest_2k", "spend": 2000.0, "lift": l_2k + 5.0, "se": 10.0},
+        {"name": "GeoTest_5k", "spend": 5000.0, "lift": l_5k - 10.0, "ci": (l_5k - 40.0, l_5k + 20.0)},
+        {"name": "GeoTest_10k", "spend": 10000.0, "lift": l_10k + 15.0, "se": 20.0}
+    ]
+
+    report = model.validate_experiments(exps, verbose=True)
+
+    assert report["channel"] == "YouTube"
+    assert report["num_experiments"] == 3
+    assert report["verdict"] in ["EXCELLENT", "ALIGNED"]
+    assert report["ci_coverage_pct"] == 100.0
+    assert report["chi2_reduced"] < 1.5
+    assert len(report["experiments"]) == 3
+
+    # Check individual experiment metrics
+    exp1 = report["experiments"][0]
+    assert exp1["name"] == "GeoTest_2k"
+    assert abs(exp1["error"] - (-5.0)) < 1e-3
+    assert exp1["in_95_ci"] is True
+    assert exp1["z_score"] is not None
+
+    # Test single experiment convenience method
+    single_rep = model.validate_experiment(exps[0])
+    assert single_rep["num_experiments"] == 1
+
+    # Test formatted report string
+    report_str = format_validation_report(report)
+    assert "GeoTest_2k" in report_str
+    assert "Overall Status" in report_str
+
+def test_validation_with_adstock_scaling():
+    # Model with adstock theta=0.5 -> effective spend is 2x raw daily spend
+    model = MarketingReturnCurve(beta=1000.0, alpha=2.0, half_saturation_k=10000.0, theta=0.5, channel_name="Video")
+
+    # Raw spend 5000 -> effective spend 10000 -> lift = 500
+    exp = {"spend": 5000.0, "lift": 500.0, "se": 15.0}
+
+    rep = model.validate_experiments(exp, spend_is_raw=True)
+    assert rep["experiments"][0]["effective_spend"] == pytest.approx(10000.0)
+    assert rep["experiments"][0]["predicted_lift"] == pytest.approx(500.0)
+    assert rep["verdict"] == "EXCELLENT"
+
+def test_multichannel_validation():
+    m1 = MarketingReturnCurve(beta=1000.0, alpha=2.0, half_saturation_k=5000.0, channel_name="Search")
+    m2 = MarketingReturnCurve(beta=2000.0, alpha=1.5, half_saturation_k=8000.0, channel_name="Social")
+    mmm = MultiChannelMMM({"Search": m1, "Social": m2})
+
+    l_search = hill_function(4000.0, 1000.0, 2.0, 5000.0)
+    l_social = hill_function(6000.0, 2000.0, 1.5, 8000.0)
+
+    exps = [
+        {"channel": "Search", "name": "Search_Q1", "spend": 4000.0, "lift": l_search, "se": 10.0},
+        {"channel": "Social", "name": "Social_Q2", "spend": 6000.0, "lift": l_social, "se": 20.0}
+    ]
+
+    report = mmm.validate_experiments(exps, verbose=True)
+
+    assert report["num_experiments"] == 2
+    assert "Search" in report["channels"]
+    assert "Social" in report["channels"]
+    assert report["verdict"] == "EXCELLENT"
+    assert report["ci_coverage_pct"] == 100.0
+
+    # Format multi-channel report
+    mc_str = format_multichannel_validation_report(report)
+    assert "Search_Q1" in mc_str
+    assert "Social_Q2" in mc_str
+
+def test_validation_error_handling():
+    model = MarketingReturnCurve(beta=500.0, alpha=1.0, half_saturation_k=1000.0)
+
+    # Empty list
+    with pytest.raises(ValueError, match="No experiments"):
+        model.validate_experiments([])
+
+    # Invalid type
+    with pytest.raises(TypeError):
+        model.validate_experiments("invalid")
+
+    # Missing spend key
+    with pytest.raises(KeyError, match="missing 'spend'"):
+        model.validate_experiments([{"lift": 100}])
+
+    # Missing lift key
+    with pytest.raises(KeyError, match="missing 'lift'"):
+        model.validate_experiments([{"spend": 100}])
+
+    # Multi-channel missing channel key
+    mmm = MultiChannelMMM({"Ch1": model})
+    with pytest.raises(KeyError, match="'channel' key"):
+        mmm.validate_experiments([{"spend": 100, "lift": 50}])
+
+    # Multi-channel unknown channel
+    with pytest.raises(ValueError, match="Channel 'Unknown' not found"):
+        mmm.validate_experiments([{"channel": "Unknown", "spend": 100, "lift": 50}])

@@ -30,7 +30,7 @@ from tippingpoint import MarketingReturnCurve
 with open({repr(in_path)}, 'rb') as f:
   spends, returns, epochs, lr, channel_name, adstock_type, adstock_bounds, adstock_fixed_days = pickle.load(f)
 
-model = MarketingReturnCurve.from_historical_data(
+model = MarketingReturnCurve.fit_gradient_descent(
   spend_array=spends,
   return_array=returns,
   channel_name=channel_name,

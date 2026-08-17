@@ -19,14 +19,14 @@ returns = np.array([200, 1500, 12000, 22000, 28000, 32000])
 
 # 1. Generic Hill Fit with Scatter
 print("Generating Hill Fit Image...")
-model1 = MarketingReturnCurve.from_historical_data(spends, returns, channel_name="Paid Social", epochs=100)
+model1 = MarketingReturnCurve.fit_gradient_descent(spends, returns, channel_name="Paid Social", epochs=100)
 fig1 = model1.plot_response_curve(target_mroas=1.0, show=False, scatter=(spends, returns))
 fig1.savefig(os.path.join(out_dir, 'hill_fit.png'), dpi=300, bbox_inches='tight')
 plt.close(fig1)
 
 # 2. Ad Stocking Plot
 print("Generating Adstock Image...")
-model2 = MarketingReturnCurve.from_historical_data(spends, returns, channel_name="Television", adstock_type="fixed", adstock_fixed_days=7.0, epochs=100)
+model2 = MarketingReturnCurve.fit_gradient_descent(spends, returns, channel_name="Television", adstock_type="fixed", adstock_fixed_days=7.0, epochs=100)
 fig2, ax2 = plt.subplots(figsize=(10, 5), facecolor='white')
 ax2.set_facecolor('white')
 timeline = np.arange(len(spends))
