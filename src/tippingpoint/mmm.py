@@ -830,6 +830,20 @@ class MultiChannelMMM:
     from tippingpoint.portfolio import PortfolioAllocator
     return PortfolioAllocator(list(self.channels.values()))
 
+  def validate_experiments(self, experiments, spend_is_raw=True, verbose=False):
+    """Validates multi-channel MMM curves against a collection of channel-specific incrementality experiments.
+
+    Args:
+      experiments: List of experiment dicts, each specifying a 'channel' key.
+      spend_is_raw: If True, scales raw daily test spend by (1 - theta) to evaluate against effective adstock.
+      verbose: If True, prints a multi-channel validation summary to stdout.
+
+    Returns:
+      dict: Multi-channel validation summary with per-channel breakdown and global metrics.
+    """
+    from .validation import validate_multichannel_experiments
+    return validate_multichannel_experiments(self, experiments, spend_is_raw=spend_is_raw, verbose=verbose)
+
   def summary(self):
     """Returns a dictionary summarizing all channel curves, baseline, and MCMC diagnostics."""
     res = {
@@ -840,3 +854,4 @@ class MultiChannelMMM:
     if self.posterior_samples and 'diagnostics' in self.posterior_samples:
       res["diagnostics"] = self.posterior_samples['diagnostics']
     return res
+

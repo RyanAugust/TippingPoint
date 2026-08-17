@@ -338,6 +338,26 @@ class MarketingReturnCurve:
     else:
       print("Status: OPTIMAL SCALING ZONE.\nRecommendation: You are operating within the highly efficient growth window.")
 
+  def validate_experiments(self, experiments, spend_is_raw=True, verbose=False):
+    """Validates this response curve against one or more incrementality experiments.
+
+    Args:
+      experiments: Single experiment dict or list of dicts containing 'spend', 'lift',
+                   and optional 'se' (standard error) or 'ci' (confidence interval).
+      spend_is_raw: If True and model has theta > 0, converts raw test spend to effective
+                    adstocked spend via S_eff = S_raw / (1 - theta).
+      verbose: If True, prints a formatted validation report to stdout.
+
+    Returns:
+      dict: Detailed validation metrics including errors, Z-scores, CI coverage, chi2, and verdict.
+    """
+    from .validation import validate_curve_experiments
+    return validate_curve_experiments(self, experiments, spend_is_raw=spend_is_raw, verbose=verbose)
+
+  def validate_experiment(self, experiment, spend_is_raw=True, verbose=False):
+    """Convenience alias for validating a single incrementality experiment."""
+    return self.validate_experiments(experiment, spend_is_raw=spend_is_raw, verbose=verbose)
+
   def plot_response_curve(self, target_mroas=1.0, current_spend=None, show_intervals=True, scatter=None, show=True):
     fig = CurveVisualizer.plot_response_curve(self, target_mroas, current_spend, show_intervals, scatter)
     if show:
