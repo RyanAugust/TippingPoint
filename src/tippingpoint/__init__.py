@@ -8,3 +8,5 @@ from .mmm import MultiChannelMMM as MultiChannelMMM
 from .math import weibull_adstock as weibull_adstock
 from .validation import validate_curve_experiments as validate_curve_experiments
 from .validation import validate_multichannel_experiments as validate_multichannel_experiments
+from .evaluation import evaluate_curve_fit as evaluate_curve_fit
+from .evaluation import format_fit_report as format_fit_report

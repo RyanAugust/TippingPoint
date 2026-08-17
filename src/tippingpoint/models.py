@@ -27,7 +27,9 @@ class MarketingReturnCurve:
       adstock_params=None,
       standard_errors=None,
       confidence_intervals=None,
-      covariance_matrix=None
+      covariance_matrix=None,
+      train_spend=None,
+      train_return=None
   ):
     self.beta = float(beta)
     self.alpha = float(alpha)
@@ -41,6 +43,8 @@ class MarketingReturnCurve:
     self.standard_errors = standard_errors
     self.confidence_intervals = confidence_intervals
     self.covariance_matrix = covariance_matrix
+    self._train_spend = np.asarray(train_spend, dtype=float) if train_spend is not None else None
+    self._train_return = np.asarray(train_return, dtype=float) if train_return is not None else None
     self.loss = 0.0
     self.tipping_points = {}
     self.calculate_tipping_points()
@@ -133,7 +137,17 @@ class MarketingReturnCurve:
     )
     print(f"[{channel_name}] Bayesian fit complete. Samples: {len(samples['beta'])}")
     baseline_val = float(np.mean(samples['baseline'])) if fit_baseline and 'baseline' in samples else 0.0
-    return cls(beta, alpha, K, theta, channel_name, posterior_samples=samples, baseline=baseline_val)
+    return cls(
+        beta=beta,
+        alpha=alpha,
+        half_saturation_k=K,
+        theta=theta,
+        channel_name=channel_name,
+        posterior_samples=samples,
+        baseline=baseline_val,
+        train_spend=spend_array,
+        train_return=return_array
+    )
 
   @classmethod
   def fit_frequentist(
@@ -168,7 +182,9 @@ class MarketingReturnCurve:
         baseline=res["baseline"],
         standard_errors=res["standard_errors"],
         confidence_intervals=res["confidence_intervals"],
-        covariance_matrix=res["covariance_matrix"]
+        covariance_matrix=res["covariance_matrix"],
+        train_spend=spend_array,
+        train_return=return_array
     )
     model.update_loss(res["loss"])
     return model
@@ -188,7 +204,16 @@ class MarketingReturnCurve:
       baseline_val = 0.0
 
     print(f"[{channel_name}] Curve fit complete. Loss: {loss:.4f} (Theta: {theta:.4f})")
-    model = cls(beta, alpha, K, theta, channel_name, baseline=baseline_val)
+    model = cls(
+        beta=beta,
+        alpha=alpha,
+        half_saturation_k=K,
+        theta=theta,
+        channel_name=channel_name,
+        baseline=baseline_val,
+        train_spend=spend_array,
+        train_return=return_array
+    )
     model.update_loss(loss)
     return model
 
@@ -250,31 +275,159 @@ class MarketingReturnCurve:
       res["confidence_intervals"] = self.confidence_intervals
     return res
 
+  def evaluate_fit(self, spend_array=None, return_array=None, verbose=False):
+    """Evaluates statistical goodness-of-fit metrics (R², Adj R², RMSE, MAE, MAPE, AIC, BIC)."""
+    from .evaluation import evaluate_curve_fit
+    if spend_array is None or return_array is None:
+      if self._train_spend is None or self._train_return is None:
+        raise ValueError("spend_array and return_array must be provided (no cached training data).")
+      x, y = self._train_spend, self._train_return
+    else:
+      x, y = spend_array, return_array
+    return evaluate_curve_fit(self, x, y, verbose=verbose)
+
   def get_optimal_scaling_window(self, target_mroas=1.0):
     """Returns the tuple (min_spend, max_spend) defining the optimal scaling zone."""
     min_spend = self.get_minimal_marginal_cost_point()
     max_spend = self.get_diminishing_returns_point(target_mroas, warn_unreachable=False)
     return (min_spend, max_spend)
 
-  def predict_incremental_return(self, spend, use_samples=False, include_baseline=False):
+  def _predict_delta_method(self, spend, is_derivative=False, confidence_level=0.95, include_baseline=False):
+    """Computes predictions and confidence intervals via the Delta Method on the parameter covariance matrix."""
+    spend_arr = np.asanyarray(spend, dtype=float)
+    is_scalar = spend_arr.ndim == 0
+
+    if is_derivative:
+      y_pred = hill_first_derivative(spend_arr, self.beta, self.alpha, self.K)
+    else:
+      y_pred = hill_function(spend_arr, self.beta, self.alpha, self.K)
+      if include_baseline:
+        y_pred = y_pred + self.baseline
+
+    if self.covariance_matrix is None:
+      if is_scalar:
+        return float(y_pred), float(y_pred), float(y_pred)
+      return y_pred, y_pred.copy(), y_pred.copy()
+
+    param_names = list(self.covariance_matrix.keys())
+    p_num = len(param_names)
+    cov_mat = np.zeros((p_num, p_num))
+    for i, n1 in enumerate(param_names):
+      for j, n2 in enumerate(param_names):
+        cov_mat[i, j] = self.covariance_matrix[n1].get(n2, 0.0)
+
+    p_current = {
+        "beta": self.beta,
+        "alpha": self.alpha,
+        "K": self.K,
+        "baseline": self.baseline,
+        "theta": self.theta
+    }
+
+    def eval_func(p_dict):
+      b = p_dict.get("beta", self.beta)
+      a = p_dict.get("alpha", self.alpha)
+      k = p_dict.get("K", self.K)
+      base = p_dict.get("baseline", self.baseline) if include_baseline else 0.0
+      if is_derivative:
+        return hill_first_derivative(spend_arr, b, a, k)
+      else:
+        return base + hill_function(spend_arr, b, a, k)
+
+    eps = 1e-5
+    spend_flat = np.atleast_1d(spend_arr)
+    n_pts = len(spend_flat)
+    G = np.zeros((n_pts, p_num))
+
+    for j, name in enumerate(param_names):
+      p_plus = dict(p_current)
+      p_minus = dict(p_current)
+      h = eps * (abs(p_current[name]) + 1e-4)
+      p_plus[name] += h
+      p_minus[name] -= h
+      val_plus = np.atleast_1d(eval_func(p_plus))
+      val_minus = np.atleast_1d(eval_func(p_minus))
+      G[:, j] = (val_plus - val_minus) / (2.0 * h)
+
+    var_pred = np.sum((G @ cov_mat) * G, axis=1)
+    se_pred = np.sqrt(np.maximum(0.0, var_pred))
+
+    from scipy.stats import norm
+    alpha_ci = 1.0 - confidence_level
+    z_crit = float(norm.ppf(1.0 - alpha_ci / 2.0))
+
+    y_low = np.atleast_1d(y_pred) - z_crit * se_pred
+    y_high = np.atleast_1d(y_pred) + z_crit * se_pred
+
+    if not is_derivative:
+      y_low = np.maximum(0.0, y_low)
+
+    if is_scalar:
+      return float(y_pred), float(y_low[0]), float(y_high[0])
+    return y_pred, y_low.reshape(spend_arr.shape), y_high.reshape(spend_arr.shape)
+
+  def predict_incremental_return(self, spend, return_interval=False, confidence_level=0.95, use_samples=False, include_baseline=False):
+    spend_arr = np.asanyarray(spend, dtype=float)
+    if return_interval:
+      if self.posterior_samples:
+        ret_dist = np.nan_to_num(self.predict_incremental_return(spend_arr, use_samples=True, include_baseline=include_baseline), nan=0.0)
+        alpha_ci = (1.0 - confidence_level) / 2.0
+        axis = 0 if spend_arr.ndim > 0 else None
+        point = np.mean(ret_dist, axis=axis)
+        low = np.percentile(ret_dist, alpha_ci * 100.0, axis=axis)
+        high = np.percentile(ret_dist, (1.0 - alpha_ci) * 100.0, axis=axis)
+        if spend_arr.ndim == 0:
+          return float(point), float(low), float(high)
+        return point, low, high
+      elif self.covariance_matrix is not None:
+        return self._predict_delta_method(spend_arr, is_derivative=False, confidence_level=confidence_level, include_baseline=include_baseline)
+      else:
+        pt = self.predict_incremental_return(spend_arr, use_samples=False, include_baseline=include_baseline)
+        if spend_arr.ndim == 0:
+          return float(pt), float(pt), float(pt)
+        return pt, pt.copy(), pt.copy()
+
     if use_samples and self.posterior_samples:
       beta = self.posterior_samples['beta'][:, np.newaxis]
       alpha = self.posterior_samples['alpha'][:, np.newaxis]
       K = self.posterior_samples['K'][:, np.newaxis]
-      ret = hill_function(spend, beta, alpha, K)
+      ret = hill_function(spend_arr, beta, alpha, K)
+      if include_baseline and 'baseline' in self.posterior_samples:
+        base = self.posterior_samples['baseline'][:, np.newaxis]
+        ret = ret + base
     else:
-      ret = hill_function(spend, self.beta, self.alpha, self.K)
-    if include_baseline:
-      ret = ret + self.baseline
+      ret = hill_function(spend_arr, self.beta, self.alpha, self.K)
+      if include_baseline:
+        ret = ret + self.baseline
     return ret
 
-  def predict_marginal_return(self, spend, use_samples=False):
+  def predict_marginal_return(self, spend, return_interval=False, confidence_level=0.95, use_samples=False):
+    spend_arr = np.asanyarray(spend, dtype=float)
+    if return_interval:
+      if self.posterior_samples:
+        mroas_dist = np.nan_to_num(self.predict_marginal_return(spend_arr, use_samples=True), nan=0.0)
+        alpha_ci = (1.0 - confidence_level) / 2.0
+        axis = 0 if spend_arr.ndim > 0 else None
+        point = np.mean(mroas_dist, axis=axis)
+        low = np.percentile(mroas_dist, alpha_ci * 100.0, axis=axis)
+        high = np.percentile(mroas_dist, (1.0 - alpha_ci) * 100.0, axis=axis)
+        if spend_arr.ndim == 0:
+          return float(point), float(low), float(high)
+        return point, low, high
+      elif self.covariance_matrix is not None:
+        return self._predict_delta_method(spend_arr, is_derivative=True, confidence_level=confidence_level)
+      else:
+        pt = self.predict_marginal_return(spend_arr, use_samples=False)
+        if spend_arr.ndim == 0:
+          return float(pt), float(pt), float(pt)
+        return pt, pt.copy(), pt.copy()
+
     if use_samples and self.posterior_samples:
       beta = self.posterior_samples['beta'][:, np.newaxis]
       alpha = self.posterior_samples['alpha'][:, np.newaxis]
       K = self.posterior_samples['K'][:, np.newaxis]
-      return hill_first_derivative(spend, beta, alpha, K)
-    return hill_first_derivative(spend, self.beta, self.alpha, self.K)
+      return hill_first_derivative(spend_arr, beta, alpha, K)
+    return hill_first_derivative(spend_arr, self.beta, self.alpha, self.K)
 
   def get_minimal_marginal_cost_point(self):
     return get_inflection_point(self.alpha, self.K)
