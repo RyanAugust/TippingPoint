@@ -407,7 +407,7 @@ def run_dashboard():
             if set_val:
               conversion_val = st.number_input("Conversion Value ($)", value=100.0, min_value=0.01, step=1.0)
 
-            if st.button("🚀 Fit Model from CSV"):
+            if st.button("Fit Model from CSV"):
               try:
                 with st.spinner("Fitting curve using tinygrad..."):
                   spends = df[spend_col].values
@@ -427,7 +427,7 @@ def run_dashboard():
 
       elif data_source == "Use Sample Data":
         st.markdown("**Sample Dataset:** Spends: `[1k, 5k, 15k, 25k, 40k, 60k]`, Returns: `[200, 1.5k, 12k, 22k, 28k, 32k]`")
-        if st.button("🚀 Fit Sample Model"):
+        if st.button("Fit Sample Model"):
           try:
             with st.spinner("Fitting sample curve..."):
               spends = np.array([1000, 5000, 15000, 25000, 40000, 60000])
@@ -450,7 +450,7 @@ def run_dashboard():
         k = m_col2.number_input("K (Half-Saturation)", value=20000.0, step=1000.0)
         theta = m_col2.number_input("Theta (Adstock Decay)", value=0.0, min_value=0.0, max_value=0.99, step=0.05)
 
-        if st.button("✅ Apply Parameters"):
+        if st.button("Apply Parameters"):
           model = MarketingReturnCurve(beta=beta, alpha=alpha, half_saturation_k=k, theta=theta, channel_name=new_channel_name)
           st.session_state.models[new_channel_name] = model
           st.rerun()
@@ -494,7 +494,7 @@ def run_dashboard():
           annual_spend_m = annual_spend / 1_000_000
           st.metric("Stop Scaling Point (Annualized)", f"${annual_spend_m:.2f}M")
 
-        st.info(f"💡 **Strategic Recommendation:** You should spend at least **${min_spend:,.2f}** per day to exit the inefficient warm-up phase (Peak Efficiency). \
+        st.info(f"**Strategic Recommendation:** You should spend at least **${min_spend:,.2f}** per day to exit the inefficient warm-up phase (Peak Efficiency). \
                 However, do not scale spend beyond **${max_spend:,.2f}** per day (or **${annual_spend_m:.2f}M** annualized), \
                 as any additional dollar spent beyond this threshold will return less than your target mROAS of **{target_mroas:.2f}**.")
       else:
@@ -503,7 +503,7 @@ def run_dashboard():
 
       if model.theta > 0:
         st.markdown("---")
-        st.subheader("🕰️ Adstock Carryover Analysis")
+        st.subheader("Adstock Carryover Analysis")
 
         col1, col2 = st.columns(2)
         with col1:
@@ -545,7 +545,7 @@ def run_dashboard():
               max_b = st.number_input(f"Max Spend ({cname})", value=total_budget, step=1000.0, key=f"max_{cname}")
               channel_bounds[cname] = (min_b, max_b)
 
-        run_opt = st.button("🚀 Run Portfolio Optimization", type="primary", use_container_width=True)
+        run_opt = st.button("Run Portfolio Optimization", type="primary", use_container_width=True)
 
       with opt_col2:
         if run_opt:
