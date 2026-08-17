@@ -69,8 +69,8 @@ from tippingpoint import MarketingReturnCurve
 spends = np.array([1200, 5000, 15000, 25000, 40000])
 returns = np.array([200, 1500, 12000, 22000, 28000])
 
-# 1. Fit with Gradient Descent (MLE) & bounded adstock (1-14 days half-life)
-model_mle = MarketingReturnCurve.from_historical_data(
+# 1. Unified Interface (Auto-selects best fitting method)
+model = MarketingReturnCurve.fit(
     spend_array=spends,
     return_array=returns,
     channel_name="YouTube Performance",
@@ -78,7 +78,18 @@ model_mle = MarketingReturnCurve.from_historical_data(
     adstock_bounds=(1.0, 14.0)
 )
 
-# 2. Fit with Frequentist NLS (includes standard errors & 95% confidence intervals)
+# Or explicitly choose an engine:
+
+# 1a. Gradient Descent (MLE)
+model_mle = MarketingReturnCurve.fit_gradient_descent(
+    spend_array=spends,
+    return_array=returns,
+    channel_name="YouTube Performance",
+    adstock_type="bounded",
+    adstock_bounds=(1.0, 14.0)
+)
+
+# 1b. Frequentist NLS (includes standard errors & 95% confidence intervals)
 model_freq = MarketingReturnCurve.fit_frequentist(
     spend_array=spends,
     return_array=returns,
@@ -88,7 +99,7 @@ model_freq = MarketingReturnCurve.fit_frequentist(
     confidence_level=0.95
 )
 
-# 3. Fit with Bayesian MCMC (includes posterior distributions & experimental calibration)
+# 1c. Bayesian MCMC (includes posterior distributions & experimental calibration)
 model_bayes = MarketingReturnCurve.fit_bayesian(
     spend_array=spends,
     return_array=returns,
@@ -125,13 +136,13 @@ Recommendation: You are operating within the highly efficient growth window.
 Incorporate causal lift test results (e.g. geo-experiments, conversion lift studies) directly into Bayesian curve fitting to ground parameters in empirical truth:
 
 ```python
-model = MarketingReturnCurve.from_historical_data(
+model = MarketingReturnCurve.fit(
     spend_array=spends,
     return_array=returns,
     channel_name="YouTube",
     method="bayesian",
-    lift_experiments=[
-        {"spend": 15000, "lift": 11500, "std_error": 800}
+    calibration_experiments=[
+        {"spend": 15000, "lift": 11500, "se": 800}
     ]
 )
 ```

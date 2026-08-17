@@ -46,6 +46,85 @@ class MarketingReturnCurve:
     self.calculate_tipping_points()
 
   @classmethod
+  def fit(
+      cls,
+      spend_array,
+      return_array,
+      channel_name="Generic",
+      method="auto",
+      adstock_type="none",
+      adstock_bounds=None,
+      adstock_fixed_days=None,
+      fit_baseline=False,
+      confidence_level=0.95,
+      priors=None,
+      n_samples=2000,
+      chains=4,
+      burn_in=1000,
+      calibration_experiments=None,
+      epochs=5000,
+      lr=0.05
+  ):
+    """Unified entry point for fitting saturation and adstock curves to historical media data.
+
+    Supported methods:
+    - 'auto': Selects 'bayesian' if calibration_experiments/priors are given, else 'frequentist'.
+    - 'frequentist' (or 'nls'): Non-Linear Least Squares with parameter standard errors and confidence intervals.
+    - 'gradient_descent' (or 'gradient', 'mle'): Gradient descent optimization via Tinygrad.
+    - 'bayesian' (or 'mcmc'): Metropolis-Hastings MCMC with posterior sampling and experimental calibration.
+    """
+    method_norm = method.lower() if isinstance(method, str) else "auto"
+
+    if method_norm == "auto":
+      if calibration_experiments is not None or priors is not None:
+        method_norm = "bayesian"
+      else:
+        method_norm = "frequentist"
+
+    if method_norm in ["frequentist", "nls"]:
+      return cls.fit_frequentist(
+          spend_array=spend_array,
+          return_array=return_array,
+          channel_name=channel_name,
+          adstock_type=adstock_type,
+          adstock_bounds=adstock_bounds,
+          adstock_fixed_days=adstock_fixed_days,
+          fit_baseline=fit_baseline,
+          confidence_level=confidence_level
+      )
+    elif method_norm in ["gradient", "gradient_descent", "mle"]:
+      return cls.fit_gradient_descent(
+          spend_array=spend_array,
+          return_array=return_array,
+          channel_name=channel_name,
+          epochs=epochs,
+          lr=lr,
+          adstock_type=adstock_type,
+          adstock_bounds=adstock_bounds,
+          adstock_fixed_days=adstock_fixed_days,
+          fit_baseline=fit_baseline
+      )
+    elif method_norm in ["bayesian", "mcmc"]:
+      return cls.fit_bayesian(
+          spend_array=spend_array,
+          return_array=return_array,
+          channel_name=channel_name,
+          priors=priors,
+          n_samples=n_samples,
+          chains=chains,
+          burn_in=burn_in,
+          adstock_type=adstock_type,
+          adstock_bounds=adstock_bounds,
+          adstock_fixed_days=adstock_fixed_days,
+          calibration_experiments=calibration_experiments,
+          fit_baseline=fit_baseline
+      )
+    else:
+      raise ValueError(
+          f"Unknown fitting method: '{method}'. Supported methods are: 'auto', 'frequentist', 'gradient_descent', 'bayesian'."
+      )
+
+  @classmethod
   def fit_bayesian(cls, spend_array, return_array, channel_name="Generic", priors=None, n_samples=2000, chains=4, burn_in=1000, adstock_type="none", adstock_bounds=None, adstock_fixed_days=None, calibration_experiments=None, fit_baseline=False):
     beta, alpha, K, theta, samples = fit_bayesian_mcmc(
         spend_array, return_array, channel_name, priors, n_samples, chains, burn_in,
@@ -95,7 +174,8 @@ class MarketingReturnCurve:
     return model
 
   @classmethod
-  def from_historical_data(cls, spend_array, return_array, channel_name="Generic", epochs=5000, lr=0.05, adstock_type="none", adstock_bounds=None, adstock_fixed_days=None, fit_baseline=False):
+  def fit_gradient_descent(cls, spend_array, return_array, channel_name="Generic", epochs=5000, lr=0.05, adstock_type="none", adstock_bounds=None, adstock_fixed_days=None, fit_baseline=False):
+    """Fits a Hill Curve to historical data using Gradient Descent (Tinygrad Adam)."""
     res = fit_mle_gradient(
         spend_array, return_array, epochs, lr,
         adstock_type=adstock_type, adstock_bounds=adstock_bounds, adstock_fixed_days=adstock_fixed_days,
