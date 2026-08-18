@@ -1,146 +1,148 @@
-# Stacked Analysis
+# Modular Stacking Architecture
 
-In response to customer questions and desired complexity, additionaly signal and analytical rigor should be added
+TippingPoint is designed around three distinct, modular analytical pathways that can be stacked progressively based on business needs, channel scope, and empirical data availability:
 
+1. **Pathway 1: Single-Channel Analysis**: Deep-dive modeling of an isolated channel (saturation curves, carryover adstock half-life, inflection points, and predictive confidence intervals).
+2. **Pathway 2: Multi-Channel & Portfolio Strategy**: Extends off multiple single-channel curves to model cross-channel interactions, attribution decomposition, and global portfolio budget optimization.
+3. **Pathway 3: Incrementality & Causal Calibration Stream**: A parallel validation stream where experimental data (conversion lift studies, holdout tests, geo-experiments) can be introduced at any point to validate or calibrate single-channel curves, joint MMMs, or portfolio allocations.
+
+---
+
+```mermaid
 graph TD
-    classDef foundation fill:#F8F9FA,stroke:#4285F4,stroke-width:2px,color:#202124;
-    classDef adstock fill:#F8F9FA,stroke:#34A853,stroke-width:2px,color:#202124;
-    classDef eval fill:#F8F9FA,stroke:#5F6368,stroke-width:2px,color:#202124;
-    classDef causal fill:#F8F9FA,stroke:#EA4335,stroke-width:2px,color:#202124;
+    classDef single fill:#F8F9FA,stroke:#4285F4,stroke-width:2px,color:#202124;
     classDef multi fill:#F8F9FA,stroke:#FBBC04,stroke-width:2px,color:#202124;
     classDef portfolio fill:#4285F4,stroke:#1A73E8,stroke-width:2px,color:#FFFFFF;
+    classDef causal fill:#F8F9FA,stroke:#EA4335,stroke-width:2px,stroke-dasharray: 5 5,color:#202124;
 
-    subgraph Level1["Level 1: Single-Channel Static Saturation"]
-        Q1["Question: At what spend level does an isolated channel exit warm-up and hit diminishing returns?"]
-        M1["Engine: Hill Function Saturation<br/>y = (beta * x^alpha) / (K^alpha + x^alpha)"]
-        O1["Output: Peak Efficiency Point (f''(x)=0) & Stop Scaling Point (f'(x)=Target mROAS)"]
-        Q1 --> M1 --> O1
+    subgraph SinglePathway["Pathway 1: Single-Channel Analysis"]
+        direction TB
+        S1["1A. Static Saturation Curve<br/>Hill Function f(x)<br/>Peak Efficiency & Diminishing Returns Points"]
+        S2["1B. Saturation with Adstock Carryover<br/>Geometric or Weibull Decay<br/>Half-Life & Steady-State Daily Headroom"]
+        S3["1C. Statistical Quality & Uncertainty<br/>Goodness-of-Fit (R², RMSE, AIC/BIC)<br/>Delta-Method 95% Confidence Intervals"]
+        S1 --> S2 --> S3
     end
 
-    subgraph Level2["Level 2: Saturation with Adstock Carryover"]
-        Q2["Question: How does brand memory and delayed conversion impact daily spend headroom?"]
-        M2["Engine: Vectorized Geometric / Weibull Adstock<br/>S_eff,t = S_t + theta * S_eff,t-1"]
-        O2["Output: Carryover Half-Life & Steady-State Daily Headroom: S_daily = S_eff * (1 - theta)"]
-        Q2 --> M2 --> O2
+    subgraph MultiPathway["Pathway 2: Multi-Channel & Portfolio Strategy (Extends from Multiple Single Channels)"]
+        direction TB
+        M1["2A. Multi-Channel Synergy & Attribution<br/>MultiChannelMMM Joint Estimation<br/>Historical Attribution & Curve-Shifting Synergy"]
+        M2["2B. Cross-Channel Portfolio Optimization<br/>PortfolioAllocator Non-Linear Optimizer<br/>Equalize Marginal ROAS across Channels"]
+        M1 --> M2
     end
 
-    subgraph Level3["Level 3: Statistical Assessment & Uncertainty"]
-        Q3["Question: How well does the model fit historical data, and what is the uncertainty band?"]
-        M3["Engine: Goodness-of-Fit & Delta Method<br/>R², Adj R², RMSE, AIC/BIC, Covariance Matrix"]
-        O3["Output: 95% Confidence Intervals (Frequentist) & 90% Credible Intervals (Bayesian)"]
-        Q3 --> M3 --> O3
+    subgraph CausalPathway["Pathway 3: Incrementality & Causal Lift Stream (Parallel Validation & Calibration)"]
+        direction TB
+        E0["Incrementality Data Stream<br/>Holdout Tests, Conversion Lift Studies, Geo-Experiments"]
+        E1["Single-Channel Calibration & Validation<br/>model.attach_experiments() / model.validate_experiments()<br/>Decouple Organic Baseline from Causal Lift"]
+        E2["Multi-Channel Parallel Calibration<br/>mmm.attach_experiments(dict_or_list)<br/>Joint Bayesian Likelihood Calibration across Channels"]
+        E3["Pre-Optimization Portfolio Audit<br/>allocator.validate_experiments() / get_calibration_summary()<br/>Verify Portfolio Causal Grounding before Budgeting"]
+        E0 --> E1
+        E0 --> E2
+        E0 --> E3
     end
 
-    subgraph Level4["Level 4: Incrementality Experiment Validation"]
-        Q4["Question: Is observational regression inflated by organic demand, and does it match causal tests?"]
-        M4["Engine: Incrementality Validation & Bayesian Holdout Anchoring<br/>Z-scores, Reduced Chi-Square, Organic Baseline beta_0"]
-        O4["Output: Decoupled Organic Baseline vs True Causal Lift & Calibrated Saturation Curves"]
-        Q4 --> M4 --> O4
-    end
+    %% Flow between single channels and multi-channel
+    S3 ==>|"Multiple Single Channels (Channel 1, Channel 2, ...)"| M1
+    S3 -.->|"Direct Portfolio Feed (Pre-fitted Curves)"| M2
 
-    subgraph Level5["Level 5: Multi-Channel Synergy & Attribution"]
-        Q5["Question: How do multiple channels interact, and how does upper-funnel brand lift shift lower-funnel ceilings?"]
-        M5["Engine: MultiChannelMMM Joint Estimation<br/>Y_t = Baseline + sum(Hill_m(Adstock_m(S_m,t)))"]
-        O5["Output: Historical Return Attribution & Curve-Shifting Synergy Analysis"]
-        Q5 --> M5 --> O5
-    end
+    %% Parallel Causal Connections
+    E1 <===>|"Calibrate / Validate Single Channel"| S1
+    E1 <===>|"Validate Adstocked Single Curve"| S2
+    E2 <===>|"Parallel Calibration across Channels"| M1
+    E3 <===>|"Audit / Validate Portfolio Channels"| M2
 
-    subgraph Level6["Level 6: Cross-Channel Portfolio Optimization"]
-        Q6["Question: Given a fixed total budget, what spend distribution maximizes total portfolio return?"]
-        M6["Engine: PortfolioAllocator Constrained Non-Linear Optimization<br/>Equalize Marginal ROAS across all channels"]
-        O6["Output: Mathematically Optimal Budget Split & Projected Portfolio Returns"]
-        Q6 --> M6 --> O6
-    end
+    class S1,S2,S3 single;
+    class M1 multi;
+    class M2 portfolio;
+    class E0,E1,E2,E3 causal;
+```
 
-    O1 --> Level2
-    O2 --> Level3
-    O3 --> Level4
-    O4 --> Level5
-    O5 --> Level6
+---
 
-    class Q1,M1,O1 foundation;
-    class Q2,M2,O2 adstock;
-    class Q3,M3,O3 eval;
-    class Q4,M4,O4 causal;
-    class Q5,M5,O5 multi;
-    class Q6,M6,O6 portfolio;
+## Pathway 1: Single-Channel Analysis
 
+Pathway 1 focuses on understanding the economics of an isolated marketing channel (e.g., YouTube Performance Video, Branded Search, or Connected TV).
 
-#### Level 1: Single-Channel Static Saturation
+### 1A. Static Saturation Curve
+* **Core Question**: *"At what spend level does an isolated channel exit warm-up and hit diminishing returns?"*
+* **Component**: [`MarketingReturnCurve`](../src/tippingpoint/models.py) fitting the Hill response function:
+  $$f(x) = \frac{\beta x^\alpha}{K^\alpha + x^\alpha}$$
+* **Strategic Outputs**:
+  * **Peak Efficiency Point ($f''(x) = 0$)**: Inflection point where marginal return peaks. Spend below this threshold is in the inefficient warm-up zone.
+  * **Stop Scaling Point ($f'(x) = \text{Target mROAS}$)**: The spend ceiling where marginal return drops below required unit economics.
+  * **Optimal Scaling Zone**: The operating window between peak acquisition efficiency and diminishing returns.
 
-  • Core Question: "Given immediate spend, what is my channel capacity, where is peak efficiency, and when do I hit diminishing returns?"
-  • Component: models.py fitting the Hill response function:
+### 1B. Saturation with Adstock Carryover
+* **Core Question**: *"How does advertising memory and delayed conversion carryover alter daily spend headroom?"*
+* **Component**: Vectorized geometric ($\theta$) or Weibull ($k, \lambda$) adstock transformations in [`src/tippingpoint/math.py`](../src/tippingpoint/math.py).
+* **Strategic Outputs**:
+  * **Carryover Half-Life**: $t_{1/2} = -\frac{\ln 2}{\ln \theta}$ days.
+  * **Steady-State Daily Scaling Limit**: Converts effective adstocked headroom ($S_{\text{effective}}$) into daily spend limits:
+    $$S_{\text{daily}} = S_{\text{effective}} \cdot (1 - \theta)$$
 
-             βxᵅ
-    f(x) = ───────
-           Kᵅ + xᵅ
+### 1C. Statistical Quality & Uncertainty
+* **Core Question**: *"How well does the curve fit observational data, and what is the margin of error on expected returns?"*
+* **Component**: Goodness-of-fit suite in [`src/tippingpoint/evaluation.py`](../src/tippingpoint/evaluation.py) and Frequentist Delta-Method in [`src/tippingpoint/models.py`](../src/tippingpoint/models.py).
+* **Strategic Outputs**:
+  * **Fit Diagnostics**: $R^2$, Adjusted $R^2$, RMSE, MAE, MAPE, AIC, and BIC via `model.evaluate_fit()`.
+  * **Predictive Uncertainty**: 95% Confidence Intervals or 90% Credible Intervals via `model.predict_incremental_return(spend, return_interval=True)`.
 
-  • Strategic Output:
-      • Peak Efficiency Point (f''(x) = 0): The inflection point where marginal return peaks. Spend below this threshold is in the inefficient warm-up zone.
-      • Stop Scaling Point (f'(x) = Target mROAS): The exact spend level where marginal return drops below the profitability hurdle rate.
-      • Optimal Scaling Zone: The operating window between peak efficiency and diminishing returns.
+---
 
-  ──────
-  #### Level 2: Saturation with Adstock Carryover
+## Pathway 2: Multi-Channel & Portfolio Strategy (Extending Off Single Channels)
 
-  • Core Question: "How does advertising memory and delayed conversion alter daily spend capacity?"
-  • Component: Vectorized geometric (θ) or Weibull (k,λ) adstock transformations in math.py.
-  • Strategic Output:
-      • Carryover Half-Life:
+Pathway 2 builds directly on top of multiple single-channel models ($M_1, M_2, \dots, M_k$) to evaluate cross-channel interactions, baseline attribution, and global budget allocation.
 
+### 2A. Multi-Channel Synergy & Attribution
+* **Core Question**: *"How do multiple media channels interact, how does upper-funnel brand consideration shift lower-funnel performance ceilings, and what drove historical returns?"*
+* **Component**: [`MultiChannelMMM`](../src/tippingpoint/mmm.py) joint estimation:
+  $$Y_t = \text{Baseline} + \sum_{m=1}^M \text{Hill}_m\left(\text{Adstock}_m(S_{m, t})\right) + \epsilon_t$$
+* **Strategic Outputs**:
+  * **Historical Contribution Decomposition**: Time-series attribution across organic baseline and individual paid media channels.
+  * **Synergistic Curve-Shifting**: Visualizes how brand consideration raises the maximum incremental capacity ($\beta$) of performance channels.
 
-             ln 2
-    t    = - ────
-     1/2     ln θ
+### 2B. Cross-Channel Portfolio Optimization
+* **Core Question**: *"Given a fixed total budget, what spend distribution maximizes total portfolio return across all channels?"*
+* **Component**: [`PortfolioAllocator`](../src/tippingpoint/portfolio.py) constrained non-linear solver.
+* **Strategic Outputs**:
+  * **Equalizing Marginal ROAS**: Reallocates spend away from saturated channel tails into channels with high marginal headroom.
+  * **Optimal Allocation Splits**: Returns exact dollar allocations for each channel subject to custom minimum/maximum business constraints.
 
-  days.
+---
 
-  • Steady-State Daily Scaling Limit: Converts effective adstocked headroom (
+## Pathway 3: Incrementality & Causal Lift Stream (Parallel Validation & Calibration)
 
-    S
-     effective
+Pathway 3 is a parallel stream where real-world causal test data (holdout studies, conversion lift tests, geo-experiments) can be brought in to **validate** or **calibrate** models at any point in Pathway 1 or Pathway 2.
 
-  ) into actionable daily spend limits:
+```
+       [ Causal Lift Data: Holdout Studies, Geo-Experiments, Conversion Lift ]
+                                      │
+          ┌───────────────────────────┼───────────────────────────┐
+          ▼                           ▼                           ▼
+  [ Single-Channel ]         [ Multi-Channel ]          [ Portfolio Allocator ]
+  model.attach_experiments() mmm.attach_experiments()   allocator.validate_experiments()
+  model.validate_experiments()mmm.validate_experiments()allocator.get_calibration_summary()
+```
 
-    S      = S         ·(1 - θ)
-     daily    effective
-  ──────
-  #### Level 3: Statistical Assessment & Uncertainty
+### 3A. Single-Channel Calibration & Validation
+* **Standalone Scoring**: Score any fitted single-channel curve against lift tests via `model.validate_experiments()` ($Z$-scores, 95% CI coverage, reduced $\chi^2$, and qualitative verdicts: `EXCELLENT`, `ALIGNED`, `MISALIGNED`).
+* **Causal Prior & Likelihood Anchoring**: Ground Bayesian single-channel fits in lift experiments (`MarketingReturnCurve.fit_bayesian(..., calibration_experiments=[...])`), preventing observational regression from over-attributing organic baseline volume ($\beta_0$) to paid media lift ($\beta$).
 
-  • Core Question: "Can I trust this curve, and what is the margin of error on expected returns?"
-  • Component: Goodness-of-fit suite in evaluation.py and Delta-method predictive variance in models.py.
-  • Strategic Output:
-      • Fit Diagnostics: R², Adjusted R², RMSE, MAE, MAPE, AIC, and BIC.
-      • Predictive Uncertainty Intervals: 95% Confidence Intervals (Frequentist NLS) or 90% Credible Intervals (Bayesian MCMC) surrounding both total return y and marginal ROAS f'(x).
+### 3B. Multi-Channel Parallel Calibration
+* **Parallel Experiment Association**: Attach experiments across multiple channels simultaneously using channel-mapped dictionaries (`mmm.attach_experiments({"YouTube": [exp1], "Paid Search": [exp2]})`).
+* **Joint Bayesian Likelihood Anchoring**: Anchors multi-channel parameter estimation simultaneously against empirical lift tests in the MCMC log-posterior.
 
-  ──────
-  #### Level 4: Incrementality Experiment Validation
+### 3C. Pre-Optimization Portfolio Auditing
+* **Pre-Budgeting Causal Health Check**: Audit calibration health across all channels in the portfolio allocator prior to running optimization scenarios via `allocator.get_calibration_summary()` and `allocator.validate_experiments()`.
 
-  • Core Question: "Is observational regression taking credit for organic brand demand, and does the fitted curve align with ground-truth lift tests?"
-  • Component: Standalone validation engine in validation.py and Bayesian prior calibration in bayesian.py.
-  • Strategic Output:
-      • Validation Scoring: Computes Z-scores, 95% CI coverage, and reduced χ² alignment statistics against user lift studies.
-      • Causal Calibration: Decouples non-paid organic baseline volume (β₀) from true paid media lift (β).
+---
 
-  ──────
-  #### Level 5: Multi-Channel Synergy & Attribution
+## Flexible Adoption Scenarios
 
-  • Core Question: "How do multiple channels interact, and how does upper-funnel brand awareness expand the saturation ceiling of lower-funnel performance channels?"
-  • Component: mmm.py joint estimation:
+Because Pathway 3 is orthogonal and parallel to Pathway 1 and Pathway 2, practitioners can tailor their analytical progression to their data availability:
 
-               M
-    Y  = β  +  ∑   Hill  ⎛Adstock  ⎛S   ⎞⎞ + ε
-     t    0   m=1      m ⎝       m ⎝ m,t⎠⎠    t
-
-  • Strategic Output:
-      • Historical Contribution Decomposition: Time-series attribution across Baseline, Paid Search, Paid Social, and YouTube.
-      • Curve-Shifting Synergy: Visualizes how brand consideration raises the maximum incremental capacity (β) of performance channels.
-
-  ──────
-  #### Level 6: Cross-Channel Portfolio Optimization
-
-  • Core Question: "Given a fixed total budget, what is the globally optimal spend split across all channels to maximize portfolio return?"
-  • Component: portfolio.py constrained non-linear solver.
-  • Strategic Output:
-      • Equalizing Marginal ROAS: Reallocates spend from saturated channel tails (mROAS < 1.0) into channels with high marginal headroom.
-      • Optimal Allocation Splits: Returns exact dollar allocations for each channel subject to custom minimum/maximum business constraints.
+| Scenario | Workflow | Ideal Customer Context |
+| :--- | :--- | :--- |
+| **Observational First** | Single Channel $\to$ Multi-Channel MMM $\to$ Portfolio Allocator $\to$ Validate with Lift Tests Later | Teams with historical observational data who want immediate cross-channel budget optimization before executing formal lift tests. |
+| **Causal Grounding First** | Single Channel + Lift Tests $\to$ Calibrated Single Curves $\to$ Calibrated Portfolio Allocator | Teams with rigorous testing programs (e.g., ongoing geo-experiments) who require causal validation before scaling budgets. |
+| **Selective Hybrid Calibration** | Multi-Channel MMM with Lift Tests on Core Channels (e.g., YouTube, Paid Search) + Observational Priors on Exploratory Channels | Enterprise marketers with holdout studies on high-spend core channels operating alongside newer, uncalibrated media channels. |

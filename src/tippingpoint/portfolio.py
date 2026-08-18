@@ -13,6 +13,66 @@ class PortfolioAllocator:
     # Ensure channel names are unique
     if len(set(self.channel_names)) != len(self.channel_names):
       raise ValueError("All models must have unique channel_names.")
+    self.channels = {m.channel_name: m for m in models}
+
+  def attach_experiments(self, experiments):
+    """Associates incrementality experiments in parallel across portfolio channels.
+
+    Args:
+      experiments: Dict mapping {channel_name: [exps] | exp} or flat list of dicts with 'channel' key.
+    """
+    from .validation import normalize_multichannel_experiments
+    mapping = normalize_multichannel_experiments(self, experiments)
+    for ch_name, exp_list in mapping.items():
+      if ch_name in self.channels:
+        self.channels[ch_name].attach_experiments(exp_list)
+    return self
+
+  def add_experiment(self, channel, spend, lift, se=None, ci=None, name=None):
+    """Convenience method to associate an incrementality test with a specific portfolio channel."""
+    if channel not in self.channels:
+      raise ValueError(f"Channel '{channel}' not found in portfolio channels: {self.channel_names}")
+    exp = {"channel": channel, "spend": float(spend), "lift": float(lift)}
+    if se is not None: exp["se"] = float(se)
+    if ci is not None: exp["ci"] = (float(ci[0]), float(ci[1]))
+    if name is not None: exp["name"] = str(name)
+    return self.attach_experiments(exp)
+
+  def validate_experiments(self, experiments=None, spend_is_raw=True, verbose=False):
+    """Validates all portfolio channels against associated or provided incrementality experiments in parallel.
+
+    Args:
+      experiments: Optional dictionary or list of experiments. If None, uses experiments attached to channel curves.
+      spend_is_raw: If True, converts raw daily spend to effective adstock where theta > 0.
+      verbose: If True, prints a formatted validation report.
+
+    Returns:
+      dict: Multi-channel validation summary.
+    """
+    from .validation import validate_multichannel_experiments
+    return validate_multichannel_experiments(self, experiments=experiments, spend_is_raw=spend_is_raw, verbose=verbose)
+
+  def get_calibration_summary(self):
+    """Returns a high-level summary of calibration alignment across all portfolio channels."""
+    summary = {}
+    for ch_name, model in self.channels.items():
+      exps = getattr(model, "calibration_experiments", None)
+      if exps:
+        val = model.validate_experiments(verbose=False)
+        summary[ch_name] = {
+            "num_experiments": val["num_experiments"],
+            "verdict": val["verdict"],
+            "mape": val["mape"],
+            "ci_coverage_pct": val["ci_coverage_pct"]
+        }
+      else:
+        summary[ch_name] = {
+            "num_experiments": 0,
+            "verdict": "UNTESTED",
+            "mape": None,
+            "ci_coverage_pct": None
+        }
+    return summary
 
   def allocate_budget(self, total_budget, channel_bounds=None):
     """

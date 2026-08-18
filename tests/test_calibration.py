@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from tippingpoint import MarketingReturnCurve, MultiChannelMMM
+from tippingpoint import MarketingReturnCurve, MultiChannelMMM, PortfolioAllocator
 from tippingpoint.math import hill_function
 from tippingpoint.validation import format_validation_report, format_multichannel_validation_report
 
@@ -31,6 +31,7 @@ def test_bayesian_with_calibration_experiment():
     pred_at_exp = model.predict_incremental_return(exp_spend)
     # With tight experimental SE=100, prediction should be extremely close to experiment lift
     assert abs(pred_at_exp - true_lift_at_exp) < 3000
+    assert len(model.calibration_experiments) == 1
 
 def test_model_with_baseline():
     model = MarketingReturnCurve(beta=50000, alpha=1.2, half_saturation_k=10000, baseline=12000)
@@ -86,6 +87,21 @@ def test_standalone_incrementality_validation():
     assert "GeoTest_2k" in report_str
     assert "Overall Status" in report_str
 
+def test_attach_experiments_and_validate_no_args():
+    model = MarketingReturnCurve(beta=1000.0, alpha=2.0, half_saturation_k=5000.0, channel_name="Paid Search")
+    l_5k = hill_function(5000.0, 1000.0, 2.0, 5000.0)
+
+    # Attach via add_experiment and attach_experiments
+    model.add_experiment(spend=5000.0, lift=l_5k, se=10.0, name="Search_Q1")
+    model.attach_experiments([{"spend": 8000.0, "lift": hill_function(8000.0, 1000.0, 2.0, 5000.0), "se": 15.0, "name": "Search_Q2"}])
+
+    assert len(model.calibration_experiments) == 2
+
+    # Validate without args
+    rep = model.validate_experiments()
+    assert rep["num_experiments"] == 2
+    assert rep["verdict"] == "EXCELLENT"
+
 def test_validation_with_adstock_scaling():
     # Model with adstock theta=0.5 -> effective spend is 2x raw daily spend
     model = MarketingReturnCurve(beta=1000.0, alpha=2.0, half_saturation_k=10000.0, theta=0.5, channel_name="Video")
@@ -98,20 +114,20 @@ def test_validation_with_adstock_scaling():
     assert rep["experiments"][0]["predicted_lift"] == pytest.approx(500.0)
     assert rep["verdict"] == "EXCELLENT"
 
-def test_multichannel_validation():
+def test_multichannel_validation_and_parallel_attachment():
     m1 = MarketingReturnCurve(beta=1000.0, alpha=2.0, half_saturation_k=5000.0, channel_name="Search")
     m2 = MarketingReturnCurve(beta=2000.0, alpha=1.5, half_saturation_k=8000.0, channel_name="Social")
-    mmm = MultiChannelMMM({"Search": m1, "Social": m2})
 
     l_search = hill_function(4000.0, 1000.0, 2.0, 5000.0)
     l_social = hill_function(6000.0, 2000.0, 1.5, 8000.0)
 
-    exps = [
-        {"channel": "Search", "name": "Search_Q1", "spend": 4000.0, "lift": l_search, "se": 10.0},
-        {"channel": "Social", "name": "Social_Q2", "spend": 6000.0, "lift": l_social, "se": 20.0}
-    ]
-
-    report = mmm.validate_experiments(exps, verbose=True)
+    # 1. Parallel validation via Dict format
+    mmm = MultiChannelMMM({"Search": m1, "Social": m2})
+    dict_exps = {
+        "Search": [{"name": "Search_Q1", "spend": 4000.0, "lift": l_search, "se": 10.0}],
+        "Social": {"name": "Social_Q2", "spend": 6000.0, "lift": l_social, "se": 20.0}
+    }
+    report = mmm.validate_experiments(dict_exps, verbose=True)
 
     assert report["num_experiments"] == 2
     assert "Search" in report["channels"]
@@ -124,6 +140,43 @@ def test_multichannel_validation():
     assert "Search_Q1" in mc_str
     assert "Social_Q2" in mc_str
 
+    # 2. Attach experiments in parallel to MMM
+    mmm.attach_experiments(dict_exps)
+    rep_attached = mmm.validate_experiments()
+    assert rep_attached["num_experiments"] == 2
+
+    # 3. Add single experiment to channel
+    mmm.add_experiment(channel="Search", spend=2000.0, lift=hill_function(2000.0, 1000.0, 2.0, 5000.0), se=8.0, name="Search_Small")
+    rep_updated = mmm.validate_experiments()
+    assert rep_updated["num_experiments"] == 3
+
+def test_portfolio_allocator_parallel_calibration():
+    m1 = MarketingReturnCurve(beta=1000.0, alpha=2.0, half_saturation_k=5000.0, channel_name="Search")
+    m2 = MarketingReturnCurve(beta=2000.0, alpha=1.5, half_saturation_k=8000.0, channel_name="Social")
+
+    l_search = hill_function(4000.0, 1000.0, 2.0, 5000.0)
+    m1.add_experiment(spend=4000.0, lift=l_search, se=10.0, name="Search_Exp")
+
+    allocator = PortfolioAllocator([m1, m2])
+
+    # Check calibration summary before m2 is calibrated
+    summary_initial = allocator.get_calibration_summary()
+    assert summary_initial["Search"]["verdict"] == "EXCELLENT"
+    assert summary_initial["Social"]["verdict"] == "UNTESTED"
+
+    # Attach experiment to Social in parallel via Allocator
+    l_social = hill_function(6000.0, 2000.0, 1.5, 8000.0)
+    allocator.add_experiment(channel="Social", spend=6000.0, lift=l_social, se=15.0, name="Social_Exp")
+
+    summary_after = allocator.get_calibration_summary()
+    assert summary_after["Search"]["verdict"] == "EXCELLENT"
+    assert summary_after["Social"]["verdict"] == "EXCELLENT"
+
+    # Validate portfolio across all channels
+    p_rep = allocator.validate_experiments()
+    assert p_rep["num_experiments"] == 2
+    assert p_rep["verdict"] == "EXCELLENT"
+
 def test_validation_error_handling():
     model = MarketingReturnCurve(beta=500.0, alpha=1.0, half_saturation_k=1000.0)
 
@@ -133,7 +186,7 @@ def test_validation_error_handling():
 
     # Invalid type
     with pytest.raises(TypeError):
-        model.validate_experiments("invalid")
+        model.validate_experiments(12345)
 
     # Missing spend key
     with pytest.raises(KeyError, match="missing 'spend'"):

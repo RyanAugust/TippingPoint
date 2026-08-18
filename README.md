@@ -150,17 +150,24 @@ pred, low, high = model.predict_incremental_return(spend=15000, return_interval=
 print(f"Expected Incremental Return: {pred:,.1f} (95% CI: [{low:,.1f}, {high:,.1f}])")
 ```
 
-### 5. Standalone Incrementality Experiment Validation
-Score and validate any fitted response curve against real-world holdout tests, conversion lift studies, or geo-experiments:
+### 5. Incrementality Experiment Calibration & Parallel Association
+Associate causal lift test results (e.g. geo-experiments, conversion lift studies) in parallel across individual channels, joint MMMs, or portfolio allocators:
 
 ```python
-# Validate model against one or more causal lift experiments
-validation = model.validate_experiments([
-    {"name": "GeoTest_Q1", "spend": 10000, "lift": 580, "se": 20},
-    {"name": "Holdout_Q2", "spend": 15000, "lift": 690, "ci": (645, 735)}
-], verbose=True)
+# 5a. Associate experiments directly on a single-channel model
+model_youtube.add_experiment(spend=15000, lift=11500, se=800, name="YT_Lift_Q1")
+model_youtube.validate_experiments(verbose=True)
 
-print(f"Alignment Status: {validation['verdict']} | 95% CI Coverage: {validation['ci_coverage_pct']:.1f}%")
+# 5b. Associate experiments in parallel across multiple channels in an MMM
+mmm.attach_experiments({
+    "YouTube": [{"name": "YT_Q1", "spend": 15000, "lift": 11500, "se": 800}],
+    "Paid Search": {"name": "Search_Q1", "spend": 25000, "lift": 38000, "se": 1200}
+})
+mmm_validation = mmm.validate_experiments(verbose=True)
+
+# 5c. Audit calibration across portfolio allocator channels before optimization
+allocator = PortfolioAllocator([model_search, model_youtube, model_social])
+calibration_audit = allocator.get_calibration_summary()
 ```
 
 ### 6. Cross-Channel Portfolio Optimization (Scenario Planning)
@@ -182,7 +189,7 @@ print(scenario["allocation"])
 print(f"Expected Portfolio Return: ${scenario['expected_total_return']:,.2f}")
 ```
 
-### 5. Interactive Dashboard & Example Notebooks
+### 7. Interactive Dashboard & Example Notebooks
 *   **Web App Dashboard:** Launch the built-in Streamlit app to explore single-channel curves, adstock carryover timelines, and cross-channel allocation simulations:
     ```bash
     tipp dashboard

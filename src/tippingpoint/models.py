@@ -29,7 +29,8 @@ class MarketingReturnCurve:
       confidence_intervals=None,
       covariance_matrix=None,
       train_spend=None,
-      train_return=None
+      train_return=None,
+      calibration_experiments=None
   ):
     self.beta = float(beta)
     self.alpha = float(alpha)
@@ -45,6 +46,8 @@ class MarketingReturnCurve:
     self.covariance_matrix = covariance_matrix
     self._train_spend = np.asarray(train_spend, dtype=float) if train_spend is not None else None
     self._train_return = np.asarray(train_return, dtype=float) if train_return is not None else None
+    from .validation import normalize_experiments_list
+    self.calibration_experiments = normalize_experiments_list(calibration_experiments, default_channel=channel_name) if calibration_experiments else []
     self.loss = 0.0
     self.tipping_points = {}
     self.calculate_tipping_points()
@@ -146,7 +149,8 @@ class MarketingReturnCurve:
         posterior_samples=samples,
         baseline=baseline_val,
         train_spend=spend_array,
-        train_return=return_array
+        train_return=return_array,
+        calibration_experiments=calibration_experiments
     )
 
   @classmethod
@@ -491,12 +495,32 @@ class MarketingReturnCurve:
     else:
       print("Status: OPTIMAL SCALING ZONE.\nRecommendation: You are operating within the highly efficient growth window.")
 
-  def validate_experiments(self, experiments, spend_is_raw=True, verbose=False):
+  def attach_experiments(self, experiments):
+    """Associates one or more incrementality experiments with this channel curve.
+
+    Args:
+      experiments: Dict or list of dicts with keys ('spend', 'lift', and optional 'se' / 'ci' / 'name').
+    """
+    from .validation import normalize_experiments_list
+    norm = normalize_experiments_list(experiments, default_channel=self.channel_name)
+    if self.calibration_experiments is None:
+      self.calibration_experiments = []
+    self.calibration_experiments.extend(norm)
+    return self
+
+  def add_experiment(self, spend, lift, se=None, ci=None, name=None):
+    """Convenience method to add a single incrementality experiment to this curve."""
+    exp = {"spend": float(spend), "lift": float(lift)}
+    if se is not None: exp["se"] = float(se)
+    if ci is not None: exp["ci"] = (float(ci[0]), float(ci[1]))
+    if name is not None: exp["name"] = str(name)
+    return self.attach_experiments(exp)
+
+  def validate_experiments(self, experiments=None, spend_is_raw=True, verbose=False):
     """Validates this response curve against one or more incrementality experiments.
 
     Args:
-      experiments: Single experiment dict or list of dicts containing 'spend', 'lift',
-                   and optional 'se' (standard error) or 'ci' (confidence interval).
+      experiments: Single experiment dict or list of dicts. If None, uses attached experiments.
       spend_is_raw: If True and model has theta > 0, converts raw test spend to effective
                     adstocked spend via S_eff = S_raw / (1 - theta).
       verbose: If True, prints a formatted validation report to stdout.
@@ -507,7 +531,7 @@ class MarketingReturnCurve:
     from .validation import validate_curve_experiments
     return validate_curve_experiments(self, experiments, spend_is_raw=spend_is_raw, verbose=verbose)
 
-  def validate_experiment(self, experiment, spend_is_raw=True, verbose=False):
+  def validate_experiment(self, experiment=None, spend_is_raw=True, verbose=False):
     """Convenience alias for validating a single incrementality experiment."""
     return self.validate_experiments(experiment, spend_is_raw=spend_is_raw, verbose=verbose)
 

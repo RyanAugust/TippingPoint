@@ -212,6 +212,20 @@ def fit_multichannel_hierarchical_bayesian(spend_data, return_array, channel_nam
     4. Experimental lift calibration seamlessly integrated into the joint log-likelihood.
     5. Convergence diagnostics including Gelman-Rubin R-hat and acceptance rates.
   """
+  # Normalize calibration experiments input (list, dict of lists, or dict of dicts)
+  if calibration_experiments:
+    norm_calib = []
+    if isinstance(calibration_experiments, dict):
+      for ch, exps in calibration_experiments.items():
+        if isinstance(exps, dict):
+          norm_calib.append(dict(exps, channel=ch))
+        elif isinstance(exps, (list, tuple)):
+          for e in exps:
+            norm_calib.append(dict(e, channel=ch))
+    elif isinstance(calibration_experiments, (list, tuple)):
+      norm_calib = list(calibration_experiments)
+    calibration_experiments = norm_calib
+
   parsed, channels, geos = _parse_spend_input(spend_data, channel_names)
   is_geo = geos is not None and len(geos) > 1
 
@@ -611,13 +625,14 @@ class MultiChannelMMM:
     - Direct integration with PortfolioAllocator for global budget optimization.
   """
 
-  def __init__(self, channels, baseline=0.0, loss=0.0, posterior_samples=None):
+  def __init__(self, channels, baseline=0.0, loss=0.0, posterior_samples=None, calibration_experiments=None):
     """
     Args:
       channels (dict or list): Dict mapping channel_name -> MarketingReturnCurve or list of models.
       baseline (float): Shared organic / baseline non-media return.
       loss (float): Final fitting loss.
       posterior_samples (dict, optional): Joint MCMC posterior samples.
+      calibration_experiments (list or dict, optional): Incrementality experiments associated with channels.
     """
     if isinstance(channels, list):
       self.channels = {m.channel_name: m for m in channels}
@@ -628,6 +643,13 @@ class MultiChannelMMM:
     self.baseline = float(baseline)
     self.loss = float(loss)
     self.posterior_samples = posterior_samples
+    self.calibration_experiments = []
+    if calibration_experiments:
+      self.attach_experiments(calibration_experiments)
+    else:
+      for m in self.channels.values():
+        if hasattr(m, "calibration_experiments") and m.calibration_experiments:
+          self.calibration_experiments.extend(m.calibration_experiments)
 
   @classmethod
   def fit(
@@ -710,7 +732,7 @@ class MultiChannelMMM:
       adstock_fixed_days=adstock_fixed_days,
       calibration_experiments=calibration_experiments
     )
-    return cls(channels=models_dict, baseline=baseline, posterior_samples=samples)
+    return cls(channels=models_dict, baseline=baseline, posterior_samples=samples, calibration_experiments=calibration_experiments)
 
   # Alias for explicit clarity
   fit_hierarchical_bayesian = fit_bayesian
@@ -830,11 +852,35 @@ class MultiChannelMMM:
     from tippingpoint.portfolio import PortfolioAllocator
     return PortfolioAllocator(list(self.channels.values()))
 
-  def validate_experiments(self, experiments, spend_is_raw=True, verbose=False):
+  def attach_experiments(self, experiments):
+    """Associates incrementality experiments in parallel across channels.
+
+    Args:
+      experiments: Dict mapping {channel_name: [exps] | exp} or flat list of dicts with 'channel' key.
+    """
+    from .validation import normalize_multichannel_experiments
+    mapping = normalize_multichannel_experiments(self, experiments)
+    for ch_name, exp_list in mapping.items():
+      if ch_name in self.channels:
+        self.channels[ch_name].attach_experiments(exp_list)
+      self.calibration_experiments.extend(exp_list)
+    return self
+
+  def add_experiment(self, channel, spend, lift, se=None, ci=None, name=None):
+    """Convenience method to associate an incrementality test with a specific channel."""
+    if channel not in self.channels:
+      raise ValueError(f"Channel '{channel}' not found in MMM model channels: {list(self.channels.keys())}")
+    exp = {"channel": channel, "spend": float(spend), "lift": float(lift)}
+    if se is not None: exp["se"] = float(se)
+    if ci is not None: exp["ci"] = (float(ci[0]), float(ci[1]))
+    if name is not None: exp["name"] = str(name)
+    return self.attach_experiments(exp)
+
+  def validate_experiments(self, experiments=None, spend_is_raw=True, verbose=False):
     """Validates multi-channel MMM curves against a collection of channel-specific incrementality experiments.
 
     Args:
-      experiments: List of experiment dicts, each specifying a 'channel' key.
+      experiments: List of experiment dicts, or dict keyed by channel name. If None, uses attached experiments.
       spend_is_raw: If True, scales raw daily test spend by (1 - theta) to evaluate against effective adstock.
       verbose: If True, prints a multi-channel validation summary to stdout.
 
