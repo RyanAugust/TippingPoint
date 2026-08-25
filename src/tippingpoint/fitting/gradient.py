@@ -1,7 +1,21 @@
+from contextlib import contextmanager
 import numpy as np
 from tinygrad.tensor import Tensor
 from tinygrad.nn.optim import Adam
 from tinygrad import dtypes
+
+@contextmanager
+def _training_context():
+  try:
+    from tinygrad.helpers import Context
+    with Context(TRAINING=1):
+      yield
+  except Exception:
+    if hasattr(Tensor, "train"):
+      with Tensor.train():
+        yield
+    else:
+      yield
 
 def tinygrad_geometric_adstock(spend, theta):
   """Applies geometric adstock decay in Tinygrad (vectorized Toeplitz weights)."""
@@ -29,7 +43,6 @@ def fit_mle_gradient(spend_array, return_array, epochs=5000, lr=0.05, adstock_ty
   return_scaled = return_arr / max_y
   median_x_scaled = float(np.median(spend_scaled[spend_scaled > 0])) if np.any(spend_scaled > 0) else 0.5
 
-  Tensor.training = True
   x = Tensor(spend_scaled, dtype=dtypes.float32)
   x.requires_grad = False
   y = Tensor(return_scaled, dtype=dtypes.float32)
@@ -77,9 +90,8 @@ def fit_mle_gradient(spend_array, return_array, epochs=5000, lr=0.05, adstock_ty
 
   optimizer = Adam(optimizable_params, lr=lr)
 
-  Tensor.training = True
   prev_loss = float('inf')
-  with Tensor.train():
+  with _training_context():
     for epoch in range(epochs):
       optimizer.zero_grad()
       beta = log_beta.exp()
@@ -111,7 +123,6 @@ def fit_mle_gradient(spend_array, return_array, epochs=5000, lr=0.05, adstock_ty
         if abs(prev_loss - curr_loss) < 1e-8:
           break
         prev_loss = curr_loss
-  Tensor.training = False
 
   beta_val = float(log_beta.exp().numpy().item() * max_y)
   alpha_val = float(log_alpha.exp().numpy().item())
