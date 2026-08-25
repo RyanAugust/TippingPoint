@@ -4,7 +4,7 @@ from tinygrad.tensor import Tensor
 from tinygrad.nn.optim import Adam
 from tinygrad import dtypes
 from tippingpoint.math import geometric_adstock, weibull_adstock, hill_function, hill_first_derivative
-from tippingpoint.fitting.gradient import tinygrad_geometric_adstock
+from tippingpoint.fitting.gradient import tinygrad_geometric_adstock, _training_context
 from tippingpoint.models import MarketingReturnCurve
 
 
@@ -132,9 +132,8 @@ def fit_multichannel_gradient(spend_data, return_array, channel_names=None, epoc
 
   optimizer = Adam(optimizable_params, lr=lr)
 
-  Tensor.training = True
   prev_loss = float('inf')
-  with Tensor.train():
+  with _training_context():
     for epoch in range(epochs):
       optimizer.zero_grad()
       y_pred = log_baseline.exp() if fit_baseline else Tensor([0.0], dtype=dtypes.float32)
@@ -167,8 +166,6 @@ def fit_multichannel_gradient(spend_data, return_array, channel_names=None, epoc
         if abs(prev_loss - curr_loss) < 1e-8:
           break
         prev_loss = curr_loss
-
-  Tensor.training = False
 
   baseline_val = float(log_baseline.exp().numpy().item() * max_y) if fit_baseline else 0.0
   final_loss = float(loss.numpy().item() * (max_y ** 2))
