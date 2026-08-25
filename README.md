@@ -194,6 +194,7 @@ print(f"Expected Portfolio Return: ${scenario['expected_total_return']:,.2f}")
     ```bash
     tipp dashboard
     ```
+*   **Practitioner's Single-Channel Starter Template:** See [`examples/practitioner_single_channel_template.ipynb`](examples/practitioner_single_channel_template.ipynb) for a production-ready boilerplate template for media science practitioners, featuring automated diagnostic fit callouts, causal experiment validation, and customized Matplotlib visualizations.
 *   **Single-Channel YouTube Saturation Example:** See [`examples/single_channel_youtube_branded_search.ipynb`](examples/single_channel_youtube_branded_search.ipynb) for a concise, step-by-step engineering tutorial on fitting daily YouTube video spend to Attributed Branded Search volume, calculating the geometric carryover half-life, locating Peak Efficiency ($f''(x) = 0$), and identifying the Stop Scaling Point against a $16.00 target CPA.
 *   **Causal Experiment Calibration Example:** See [`examples/single_channel_incrementality_calibration.ipynb`](examples/single_channel_incrementality_calibration.ipynb) for an engineering case study integrating holdout conversion lift studies via Bayesian MCMC to decouple organic baseline demand from paid media lift.
 *   **Multi-Channel Stacked Walkthrough:** See [`examples/tippingpoint_walkthrough.ipynb`](examples/tippingpoint_walkthrough.ipynb) for an end-to-end tutorial on multi-channel budget allocation and visualizing how brand consideration campaigns shift response curves upward.
