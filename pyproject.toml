@@ -61,6 +61,7 @@ vcs = true
 exclude = [
     "/.github",
     "/tests",
+    "/research",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -69,6 +70,7 @@ exclude = [
     "/.github",
     "/tests",
     "/.vscode",
+    "/research",
 ]
 
 pre-install-commands = ["pip install --upgrade pip",]
