@@ -898,7 +898,3 @@ class MultiChannelModel:
       res["diagnostics"] = self.posterior_samples['diagnostics']
     return res
 
-
-# Backward compatibility alias
-MultiChannelMMM = MultiChannelModel
-
