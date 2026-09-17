@@ -542,6 +542,62 @@ class MarketingReturnCurve:
       plt.show()
     return fig
 
+  def project_capacity(
+      self,
+      m_beta=None,
+      m_k=None,
+      tam_size=None,
+      current_reach=None,
+      target_reach=None,
+      current_reach_penetration=None,
+      target_reach_penetration=None,
+      current_frequency=None,
+      target_frequency=None,
+      reach_elasticity=0.65,
+      frequency_elasticity=0.50,
+      spend_reach_elasticity=0.75,
+      frequency_capacity_factor=0.15,
+      m_beta_product=None,
+      m_k_product=None,
+      current_funnel=None,
+      target_funnel=None,
+      funnel_multipliers=None,
+      vertical=None,
+      vertical_multipliers=None,
+      synergy_damping=0.85,
+      channel_name=None,
+  ):
+    """Projects scaling capacity and returns an augmented ProjectedReturnCurve.
+
+    Applies user-defined multipliers or derived Reach & Frequency / Funnel expansion
+    multipliers using the damped synergy formulation.
+    """
+    from .capacity import CapacityProjector
+    projector = CapacityProjector(
+        m_beta=m_beta,
+        m_k=m_k,
+        tam_size=tam_size,
+        current_reach=current_reach,
+        target_reach=target_reach,
+        current_reach_penetration=current_reach_penetration,
+        target_reach_penetration=target_reach_penetration,
+        current_frequency=current_frequency,
+        target_frequency=target_frequency,
+        reach_elasticity=reach_elasticity,
+        frequency_elasticity=frequency_elasticity,
+        spend_reach_elasticity=spend_reach_elasticity,
+        frequency_capacity_factor=frequency_capacity_factor,
+        m_beta_product=m_beta_product,
+        m_k_product=m_k_product,
+        current_funnel=current_funnel,
+        target_funnel=target_funnel,
+        funnel_multipliers=funnel_multipliers,
+        vertical=vertical,
+        vertical_multipliers=vertical_multipliers,
+        synergy_damping=synergy_damping,
+    )
+    return projector.project(self, channel_name=channel_name)
+
   def launch_dashboard(self):
     """Launches the interactive dashboard for this specific model instance."""
     import streamlit.web.cli as stcli
