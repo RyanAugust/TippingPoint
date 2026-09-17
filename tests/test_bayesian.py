@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from tippingpoint import MarketingReturnCurve
+from dxpoint import MarketingReturnCurve
 
 @pytest.fixture
 def synthetic_data():

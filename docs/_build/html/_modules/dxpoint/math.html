@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>tippingpoint.math - Tipping Point 0.0.2 documentation</title>
+        <title>dxpoint.math - dxpoint 0.5.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -160,7 +160,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">Tipping Point 0.0.2 documentation</div></a>
+      <a href="../../index.html"><div class="brand">dxpoint 0.5.2 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -181,7 +181,7 @@
 
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
 
-  <span class="sidebar-brand-text">Tipping Point 0.0.2 documentation</span>
+  <span class="sidebar-brand-text">dxpoint 0.5.2 documentation</span>
 
 </a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -224,11 +224,12 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <h1>Source code for tippingpoint.math</h1><div class="highlight"><pre>
+          <h1>Source code for dxpoint.math</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">lfilter</span>
 
 <div class="viewcode-block" id="days_to_theta">
-<a class="viewcode-back" href="../../api.html#tippingpoint.math.days_to_theta">[docs]</a>
+<a class="viewcode-back" href="../../api.html#dxpoint.math.days_to_theta">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">days_to_theta</span><span class="p">(</span><span class="n">days</span><span class="p">):</span>
 <span class="w">  </span><span class="sd">&quot;&quot;&quot;Converts half-life in days/periods to geometric decay rate theta.</span>
 
@@ -240,23 +241,24 @@
 
 
 <div class="viewcode-block" id="geometric_adstock">
-<a class="viewcode-back" href="../../api.html#tippingpoint.math.geometric_adstock">[docs]</a>
+<a class="viewcode-back" href="../../api.html#dxpoint.math.geometric_adstock">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">geometric_adstock</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
-<span class="w">  </span><span class="sd">&quot;&quot;&quot;Applies geometric adstock decay to a spend array.</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Applies geometric adstock decay to a spend array using a vectorized recursive filter.</span>
 
 <span class="sd">  Formula: S_t_adstocked = S_t + theta * S_{t-1_adstocked}</span>
 <span class="sd">  &quot;&quot;&quot;</span>
-  <span class="n">spend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-  <span class="n">adstocked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">spend</span><span class="p">)</span>
-  <span class="n">current</span> <span class="o">=</span> <span class="mf">0.0</span>
-  <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">spend</span><span class="p">)):</span>
-    <span class="n">current</span> <span class="o">=</span> <span class="n">spend</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">theta</span> <span class="o">*</span> <span class="n">current</span>
-    <span class="n">adstocked</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">current</span>
-  <span class="k">return</span> <span class="n">adstocked</span></div>
+  <span class="n">spend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asanyarray</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">spend</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">theta</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">spend</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+  <span class="k">if</span> <span class="n">theta</span> <span class="o">&gt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">spend</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">lfilter</span><span class="p">([</span><span class="mf">1.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="n">theta</span><span class="p">)],</span> <span class="n">spend</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="hill_function">
-<a class="viewcode-back" href="../../api.html#tippingpoint.math.hill_function">[docs]</a>
+<a class="viewcode-back" href="../../api.html#dxpoint.math.hill_function">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">hill_function</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
 <span class="w">  </span><span class="sd">&quot;&quot;&quot;Calculates the Hill Function value: f(x) = (beta * (x/K)^alpha) / (1 + (x/K)^alpha).&quot;&quot;&quot;</span>
   <span class="n">spend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asanyarray</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
@@ -274,7 +276,7 @@
 
 
 <div class="viewcode-block" id="hill_first_derivative">
-<a class="viewcode-back" href="../../api.html#tippingpoint.math.hill_first_derivative">[docs]</a>
+<a class="viewcode-back" href="../../api.html#dxpoint.math.hill_first_derivative">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">hill_first_derivative</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
 <span class="w">  </span><span class="sd">&quot;&quot;&quot;Calculates the first derivative of the Hill Function (Marginal ROAS).&quot;&quot;&quot;</span>
   <span class="n">spend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asanyarray</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
@@ -296,7 +298,7 @@
 
 
 <div class="viewcode-block" id="get_inflection_point">
-<a class="viewcode-back" href="../../api.html#tippingpoint.math.get_inflection_point">[docs]</a>
+<a class="viewcode-back" href="../../api.html#dxpoint.math.get_inflection_point">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_inflection_point</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
 <span class="w">  </span><span class="sd">&quot;&quot;&quot;Calculates the inflection point where marginal return peaks (f&#39;&#39;(x) = 0).&quot;&quot;&quot;</span>
   <span class="k">if</span> <span class="n">alpha</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
@@ -305,7 +307,7 @@
 
 
 <div class="viewcode-block" id="weibull_adstock">
-<a class="viewcode-back" href="../../api.html#tippingpoint.math.weibull_adstock">[docs]</a>
+<a class="viewcode-back" href="../../api.html#dxpoint.math.weibull_adstock">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">weibull_adstock</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">adstock_type</span><span class="o">=</span><span class="s2">&quot;pdf&quot;</span><span class="p">,</span> <span class="n">max_lag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">  </span><span class="sd">&quot;&quot;&quot;Applies Weibull adstock transformation (PDF or CDF decay).</span>
 
@@ -342,11 +344,12 @@
   <span class="k">if</span> <span class="n">weight_sum</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
     <span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span> <span class="o">/</span> <span class="n">weight_sum</span>
   <span class="k">else</span><span class="p">:</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
     <span class="n">weights</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
 
+  <span class="c1"># Vectorized 1D convolution</span>
   <span class="n">adstocked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;full&#39;</span><span class="p">)[:</span><span class="n">N</span><span class="p">]</span>
   <span class="k">return</span> <span class="n">adstocked</span></div>
-
 
 </pre></div>
         </article>
@@ -380,7 +383,7 @@
 
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=d58853b1"></script>
+</div><script src="../../_static/documentation_options.js?v=f909c4a4"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

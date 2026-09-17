@@ -1,11 +1,11 @@
 import pytest
 from unittest.mock import patch, MagicMock
 import sys
-from tippingpoint.cli import main, launch_dashboard
+from dxpoint.cli import main, launch_dashboard
 
 class TestCLI:
     @patch('sys.argv', ['tipp', 'dashboard'])
-    @patch('tippingpoint.cli.launch_dashboard')
+    @patch('dxpoint.cli.launch_dashboard')
     def test_main_dashboard(self, mock_launch):
         main()
         mock_launch.assert_called_once()

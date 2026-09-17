@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 import pytest
-from tippingpoint import MarketingReturnCurve, MultiChannelMMM
-from tippingpoint.math import hill_function
+from dxpoint import MarketingReturnCurve, MultiChannelModel
+from dxpoint.math import hill_function
 
 @pytest.fixture
 def multichannel_data():
@@ -29,7 +29,7 @@ def multichannel_data():
 
 def test_multichannel_gradient_fit(multichannel_data):
     spend_dict, y_total = multichannel_data
-    mmm = MultiChannelMMM.fit_gradient_descent(
+    mc_model = MultiChannelModel.fit_gradient_descent(
         spend_data=spend_dict,
         return_array=y_total,
         epochs=500,
@@ -37,20 +37,20 @@ def test_multichannel_gradient_fit(multichannel_data):
         fit_baseline=True
     )
 
-    assert "Search" in mmm.channels
-    assert "Social" in mmm.channels
-    assert "YouTube" in mmm.channels
-    assert mmm.baseline > 0
-    assert mmm.channels["Search"].beta > 0
+    assert "Search" in mc_model.channels
+    assert "Social" in mc_model.channels
+    assert "YouTube" in mc_model.channels
+    assert mc_model.baseline > 0
+    assert mc_model.channels["Search"].beta > 0
 
     # Decomposition
-    contribs = mmm.predict_channel_contributions({"Search": 5000, "Social": 10000, "YouTube": 4000})
+    contribs = mc_model.predict_channel_contributions({"Search": 5000, "Social": 10000, "YouTube": 4000})
     assert "Baseline" in contribs
     assert "Search" in contribs
-    assert contribs["Baseline"] == mmm.baseline
+    assert contribs["Baseline"] == mc_model.baseline
 
     # PortfolioAllocator integration
-    allocator = mmm.get_allocator()
+    allocator = mc_model.get_allocator()
     assert len(allocator.models) == 3
     result = allocator.allocate_budget(total_budget=30000)
     assert "allocation" in result
@@ -59,7 +59,7 @@ def test_multichannel_gradient_fit(multichannel_data):
 
 def test_multichannel_bayesian_fit(multichannel_data):
     spend_dict, y_total = multichannel_data
-    mmm = MultiChannelMMM.fit_bayesian(
+    mc_model = MultiChannelModel.fit_bayesian(
         spend_data=spend_dict,
         return_array=y_total,
         n_samples=100,
@@ -68,14 +68,14 @@ def test_multichannel_bayesian_fit(multichannel_data):
         fit_baseline=True
     )
 
-    assert mmm.baseline > 0
-    assert len(mmm.channels) == 3
-    for name, model in mmm.channels.items():
+    assert mc_model.baseline > 0
+    assert len(mc_model.channels) == 3
+    for name, model in mc_model.channels.items():
         assert model.posterior_samples is not None
         assert 'beta' in model.posterior_samples
 
-    total_pred = mmm.predict_total_return({"Search": 5000, "Social": 10000, "YouTube": 4000})
-    assert total_pred > mmm.baseline
+    total_pred = mc_model.predict_total_return({"Search": 5000, "Social": 10000, "YouTube": 4000})
+    assert total_pred > mc_model.baseline
 
 def test_multichannel_dataframe_and_array_inputs(multichannel_data):
     import pandas as pd
@@ -83,25 +83,25 @@ def test_multichannel_dataframe_and_array_inputs(multichannel_data):
     df_spend = pd.DataFrame(spend_dict)
 
     # Test DataFrame input
-    mmm_df = MultiChannelMMM.fit_gradient_descent(
+    mc_df = MultiChannelModel.fit_gradient_descent(
         spend_data=df_spend,
         return_array=y_total,
         epochs=100,
         adstock_types="none"
     )
-    assert len(mmm_df.channels) == 3
+    assert len(mc_df.channels) == 3
 
     # Test 2D numpy array input
     mat_spend = df_spend.values
-    mmm_mat = MultiChannelMMM.fit_gradient_descent(
+    mc_mat = MultiChannelModel.fit_gradient_descent(
         spend_data=mat_spend,
         return_array=y_total,
         channel_names=["ChA", "ChB", "ChC"],
         epochs=100
     )
-    assert "ChA" in mmm_mat.channels
-    assert "ChB" in mmm_mat.channels
-    assert "ChC" in mmm_mat.channels
+    assert "ChA" in mc_mat.channels
+    assert "ChB" in mc_mat.channels
+    assert "ChC" in mc_mat.channels
 
 def test_multichannel_adstock_and_calibration(multichannel_data):
     spend_dict, y_total = multichannel_data
@@ -116,7 +116,7 @@ def test_multichannel_adstock_and_calibration(multichannel_data):
         {"channel": "Social", "spend": 8000.0, "lift": 10000.0, "se": 400.0}
     ]
 
-    mmm = MultiChannelMMM.fit_bayesian(
+    mc_model = MultiChannelModel.fit_bayesian(
         spend_data=spend_dict,
         return_array=y_total,
         n_samples=50,
@@ -129,7 +129,7 @@ def test_multichannel_adstock_and_calibration(multichannel_data):
         calibration_experiments=calib_experiments
     )
 
-    summary = mmm.summary()
+    summary = mc_model.summary()
     assert "baseline" in summary
     assert "channels" in summary
     assert "Search" in summary["channels"]
@@ -138,16 +138,16 @@ def test_multichannel_init_variants():
     m1 = MarketingReturnCurve(beta=10000, alpha=1.2, half_saturation_k=3000, channel_name="M1")
     m2 = MarketingReturnCurve(beta=20000, alpha=1.4, half_saturation_k=5000, channel_name="M2")
 
-    mmm_list = MultiChannelMMM([m1, m2], baseline=1000.0)
-    assert len(mmm_list.channels) == 2
-    assert mmm_list.baseline == 1000.0
+    mc_list = MultiChannelModel([m1, m2], baseline=1000.0)
+    assert len(mc_list.channels) == 2
+    assert mc_list.baseline == 1000.0
 
     with pytest.raises(ValueError):
-        MultiChannelMMM(channels="invalid_type")
+        MultiChannelModel(channels="invalid_type")
 
 def test_multichannel_historical_decomposition(multichannel_data):
     spend_dict, y_total = multichannel_data
-    mmm = MultiChannelMMM.fit_gradient_descent(
+    mc_model = MultiChannelModel.fit_gradient_descent(
         spend_data=spend_dict,
         return_array=y_total,
         epochs=100,
@@ -155,17 +155,17 @@ def test_multichannel_historical_decomposition(multichannel_data):
     )
 
     # Test time-series array predictions
-    pred_ts = mmm.predict_total_return(spend_dict)
+    pred_ts = mc_model.predict_total_return(spend_dict)
     assert len(pred_ts) == len(y_total)
     assert np.all(pred_ts > 0)
 
-    contrib_ts = mmm.predict_channel_contributions(spend_dict)
+    contrib_ts = mc_model.predict_channel_contributions(spend_dict)
     assert "Baseline" in contrib_ts
     assert len(contrib_ts["Baseline"]) == len(y_total)
     assert "Search" in contrib_ts
 
     # Test full historical attribution table
-    decomp = mmm.decompose_historical_contributions(spend_dict, return_array=y_total)
+    decomp = mc_model.decompose_historical_contributions(spend_dict, return_array=y_total)
     assert "contributions_df" in decomp
     assert "summary_table" in decomp
     assert "total_predicted" in decomp
@@ -199,7 +199,7 @@ def test_multichannel_geo_hierarchical_bayesian():
     df_geo = pd.DataFrame(geo_data)
     y_geo = df_geo["revenue"].values
 
-    mmm_geo = MultiChannelMMM.fit_bayesian(
+    mc_geo = MultiChannelModel.fit_bayesian(
         spend_data=df_geo,
         return_array=y_geo,
         n_samples=30,
@@ -208,24 +208,24 @@ def test_multichannel_geo_hierarchical_bayesian():
         hierarchical=True
     )
 
-    assert len(mmm_geo.channels) == 2
-    assert mmm_geo.posterior_samples is not None
-    assert "diagnostics" in mmm_geo.posterior_samples
-    assert mmm_geo.posterior_samples["diagnostics"]["is_geo"] is True
+    assert len(mc_geo.channels) == 2
+    assert mc_geo.posterior_samples is not None
+    assert "diagnostics" in mc_geo.posterior_samples
+    assert mc_geo.posterior_samples["diagnostics"]["is_geo"] is True
 
 def test_multichannel_unified_fit(multichannel_data):
     spend_dict, y_total = multichannel_data
     # Gradient method
-    mmm1 = MultiChannelMMM.fit(spend_dict, y_total, method="gradient", epochs=50)
-    assert len(mmm1.channels) == 3
+    mc_model1 = MultiChannelModel.fit(spend_dict, y_total, method="gradient", epochs=50)
+    assert len(mc_model1.channels) == 3
 
     # Bayesian method
-    mmm2 = MultiChannelMMM.fit(spend_dict, y_total, method="bayesian", n_samples=20, chains=1, burn_in=5)
-    assert len(mmm2.channels) == 3
+    mc_model2 = MultiChannelModel.fit(spend_dict, y_total, method="bayesian", n_samples=20, chains=1, burn_in=5)
+    assert len(mc_model2.channels) == 3
 
     # Invalid method
     with pytest.raises(ValueError, match="Unknown multi-channel fitting method"):
-        MultiChannelMMM.fit(spend_dict, y_total, method="invalid_engine")
+        MultiChannelModel.fit(spend_dict, y_total, method="invalid_engine")
 
 
 

@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from unittest.mock import patch, MagicMock
-from tippingpoint import MarketingReturnCurve
+from dxpoint import MarketingReturnCurve
 
 class TestModels:
     def test_adstock_spend(self):

@@ -1,31 +1,31 @@
-.. Tipping Point documentation master file.
+.. dxpoint documentation master file.
 
-Tipping Point
-=============
+dxpoint
+=======
 
-**Tipping Point** is a lightweight, high-performance marketing intelligence library that uses machine learning and calculus to determine the exact inflection points of media response curves.
+**dxpoint** is a lightweight, high-performance marketing intelligence library that uses machine learning and calculus to determine the exact inflection points of media response curves.
 
-Inspired by modern Marketing Mix Modeling (MMM) principles—specifically the methodologies popularized by Google Meridian—Tipping Point helps growth marketers make optimal, data-driven budget allocation and scaling decisions.
+dxpoint helps growth marketers, media scientists, and econometrics practitioners make optimal, data-driven budget allocation and scaling decisions.
 
 Primary Focus: Single-Channel Curves & Portfolio Allocation
 ===========================================================
 
-Tipping Point focuses primarily on **single-channel saturation curve fitting** and **cross-channel portfolio planning**:
+dxpoint focuses primarily on **single-channel saturation curve fitting** and **cross-channel portfolio planning**:
 
-1. **Lightweight Single-Channel Analysis (:class:`tippingpoint.models.MarketingReturnCurve`)**:
+1. **Lightweight Single-Channel Analysis (:class:`dxpoint.models.MarketingReturnCurve`)**:
    Targeted, standalone saturation curves for individual marketing channels (e.g., YouTube, Paid Search, Paid Social). Supports fast gradient descent optimization (MLE via Tinygrad) and Bayesian MCMC sampling, customizable adstock decay, unobserved organic baseline estimation, and incrementality experiment calibration.
 
-2. **Cross-Channel Portfolio Allocation (:class:`tippingpoint.portfolio.PortfolioAllocator`)**:
+2. **Cross-Channel Portfolio Allocation (:class:`dxpoint.portfolio.PortfolioAllocator`)**:
    Ingests multiple fitted channel curves and uses Sequential Least Squares Programming (SLSQP) to find the budget allocation that equalizes marginal ROAS across channels, maximizing total portfolio revenue under global and per-channel spend constraints.
 
-Exploratory Multi-Channel Dynamics (:class:`tippingpoint.mmm.MultiChannelMMM`)
-=================================================================================
+Multi-Channel Response Curves (:class:`dxpoint.multichannel.MultiChannelModel`)
+================================================================================
 
-While Tipping Point is built around lightweight single-channel curve fitting and portfolio allocation, it also provides a *Meridian-lite* multi-channel MMM class (:class:`tippingpoint.mmm.MultiChannelMMM`) to help users explore how individual channels interact.
+While dxpoint is built around lightweight single-channel curve fitting and portfolio allocation, it also provides a joint multi-channel class (:class:`dxpoint.multichannel.MultiChannelModel`) to help users explore how individual channels interact.
 
 .. note::
-   **Not a Substitute for Full MMM:**
-   :class:`tippingpoint.mmm.MultiChannelMMM` is a lightweight, exploratory tool designed to help users examine joint adstock carryover, saturation, and preliminary historical attribution across channels. It does not provide a full, production-grade Marketing Mix Model.
+   **Multi-Channel Response Curves vs. Full MMM:**
+   :class:`dxpoint.multichannel.MultiChannelModel` is a lightweight tool designed to help users examine joint adstock carryover, saturation, and preliminary historical attribution across channels. It does not provide a full, production-grade Marketing Mix Model.
 
    A full MMM—such as `Google Meridian <https://github.com/google/meridian>`_—incorporates rich macroeconomic controls, pricing/promotions, non-media baseline variables, reach and frequency transformations, and comprehensive prior elicitation. For enterprise budget decisions, causal attribution, and complete cross-media measurement, Google Meridian should always be used to produce robust results.
 
@@ -64,12 +64,12 @@ Key Mathematical Concepts
    Multi-channel models decompose observed revenue over time into organic baseline and per-channel adstocked contributions, computing historical ROI, spend share, and current marginal ROAS.
 
 6. **Portfolio Optimization (Cross-Channel Scenario Planning)**
-   The :class:`tippingpoint.portfolio.PortfolioAllocator` ingests multiple fitted channel curves and uses Sequential Least Squares Programming (SLSQP) to find the budget allocation that equalizes marginal ROAS across channels, maximizing total portfolio revenue under global and per-channel spend constraints.
+   The :class:`dxpoint.portfolio.PortfolioAllocator` ingests multiple fitted channel curves and uses Sequential Least Squares Programming (SLSQP) to find the budget allocation that equalizes marginal ROAS across channels, maximizing total portfolio revenue under global and per-channel spend constraints.
 
 Interactive Dashboard
 =====================
 
-Tipping Point includes an interactive Streamlit dashboard launched via ``tipp dashboard``:
+dxpoint includes an interactive Streamlit dashboard launched via ``dxpoint dashboard``:
 
 - **Stage 1: Channel Configuration:** Dynamically fit, configure, and stack multiple channels. Features conversion value multipliers and interactive Adstock carryover timelines.
 - **Stage 2: Portfolio Optimization:** Set global budgets and constraints. Generates optimal scale mix (stacked area) plots and cross-channel saturation overlays.

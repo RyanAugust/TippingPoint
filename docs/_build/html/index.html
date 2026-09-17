@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="API Reference" href="api.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Tipping Point 0.0.2 documentation</title>
+        <title>dxpoint 0.5.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -161,7 +161,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="#"><div class="brand">Tipping Point 0.0.2 documentation</div></a>
+      <a href="#"><div class="brand">dxpoint 0.5.2 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -182,7 +182,7 @@
 
       <div class="sidebar-sticky"><a class="sidebar-brand" href="#">
 
-  <span class="sidebar-brand-text">Tipping Point 0.0.2 documentation</span>
+  <span class="sidebar-brand-text">dxpoint 0.5.2 documentation</span>
 
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -231,28 +231,28 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="tipping-point">
-<h1>Tipping Point<a class="headerlink" href="#tipping-point" title="Link to this heading">¶</a></h1>
-<p><strong>Tipping Point</strong> is a lightweight, high-performance marketing intelligence library that uses machine learning and calculus to determine the exact inflection points of media response curves.</p>
-<p>Inspired by modern Marketing Mix Modeling (MMM) principles—specifically the methodologies popularized by Google Meridian—Tipping Point helps growth marketers make optimal, data-driven budget allocation and scaling decisions.</p>
+          <section id="dxpoint">
+<h1>dxpoint<a class="headerlink" href="#dxpoint" title="Link to this heading">¶</a></h1>
+<p><strong>dxpoint</strong> is a lightweight, high-performance marketing intelligence library that uses machine learning and calculus to determine the exact inflection points of media response curves.</p>
+<p>dxpoint helps growth marketers, media scientists, and econometrics practitioners make optimal, data-driven budget allocation and scaling decisions.</p>
 </section>
 <section id="primary-focus-single-channel-curves-portfolio-allocation">
 <h1>Primary Focus: Single-Channel Curves &amp; Portfolio Allocation<a class="headerlink" href="#primary-focus-single-channel-curves-portfolio-allocation" title="Link to this heading">¶</a></h1>
-<p>Tipping Point focuses primarily on <strong>single-channel saturation curve fitting</strong> and <strong>cross-channel portfolio planning</strong>:</p>
+<p>dxpoint focuses primarily on <strong>single-channel saturation curve fitting</strong> and <strong>cross-channel portfolio planning</strong>:</p>
 <ol class="arabic simple">
-<li><p><strong>Lightweight Single-Channel Analysis (:class:`tippingpoint.models.MarketingReturnCurve`)</strong>:
+<li><p><strong>Lightweight Single-Channel Analysis (:class:`dxpoint.models.MarketingReturnCurve`)</strong>:
 Targeted, standalone saturation curves for individual marketing channels (e.g., YouTube, Paid Search, Paid Social). Supports fast gradient descent optimization (MLE via Tinygrad) and Bayesian MCMC sampling, customizable adstock decay, unobserved organic baseline estimation, and incrementality experiment calibration.</p></li>
-<li><p><strong>Cross-Channel Portfolio Allocation (:class:`tippingpoint.portfolio.PortfolioAllocator`)</strong>:
+<li><p><strong>Cross-Channel Portfolio Allocation (:class:`dxpoint.portfolio.PortfolioAllocator`)</strong>:
 Ingests multiple fitted channel curves and uses Sequential Least Squares Programming (SLSQP) to find the budget allocation that equalizes marginal ROAS across channels, maximizing total portfolio revenue under global and per-channel spend constraints.</p></li>
 </ol>
 </section>
-<section id="exploratory-multi-channel-dynamics-tippingpoint-mmm-multichannelmmm">
-<h1>Exploratory Multi-Channel Dynamics (<a class="reference internal" href="api.html#tippingpoint.mmm.MultiChannelMMM" title="tippingpoint.mmm.MultiChannelMMM"><code class="xref py py-class docutils literal notranslate"><span class="pre">tippingpoint.mmm.MultiChannelMMM</span></code></a>)<a class="headerlink" href="#exploratory-multi-channel-dynamics-tippingpoint-mmm-multichannelmmm" title="Link to this heading">¶</a></h1>
-<p>While Tipping Point is built around lightweight single-channel curve fitting and portfolio allocation, it also provides a <em>Meridian-lite</em> multi-channel MMM class (<a class="reference internal" href="api.html#tippingpoint.mmm.MultiChannelMMM" title="tippingpoint.mmm.MultiChannelMMM"><code class="xref py py-class docutils literal notranslate"><span class="pre">tippingpoint.mmm.MultiChannelMMM</span></code></a>) to help users explore how individual channels interact.</p>
+<section id="multi-channel-response-curves-dxpoint-multichannel-multichannelmodel">
+<h1>Multi-Channel Response Curves (<a class="reference internal" href="api.html#dxpoint.multichannel.MultiChannelModel" title="dxpoint.multichannel.MultiChannelModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">dxpoint.multichannel.MultiChannelModel</span></code></a>)<a class="headerlink" href="#multi-channel-response-curves-dxpoint-multichannel-multichannelmodel" title="Link to this heading">¶</a></h1>
+<p>While dxpoint is built around lightweight single-channel curve fitting and portfolio allocation, it also provides a joint multi-channel class (<a class="reference internal" href="api.html#dxpoint.multichannel.MultiChannelModel" title="dxpoint.multichannel.MultiChannelModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">dxpoint.multichannel.MultiChannelModel</span></code></a>) to help users explore how individual channels interact.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p><strong>Not a Substitute for Full MMM:</strong>
-<a class="reference internal" href="api.html#tippingpoint.mmm.MultiChannelMMM" title="tippingpoint.mmm.MultiChannelMMM"><code class="xref py py-class docutils literal notranslate"><span class="pre">tippingpoint.mmm.MultiChannelMMM</span></code></a> is a lightweight, exploratory tool designed to help users examine joint adstock carryover, saturation, and preliminary historical attribution across channels. It does not provide a full, production-grade Marketing Mix Model.</p>
+<p><strong>Multi-Channel Response Curves vs. Full MMM:</strong>
+<a class="reference internal" href="api.html#dxpoint.multichannel.MultiChannelModel" title="dxpoint.multichannel.MultiChannelModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">dxpoint.multichannel.MultiChannelModel</span></code></a> is a lightweight tool designed to help users examine joint adstock carryover, saturation, and preliminary historical attribution across channels. It does not provide a full, production-grade Marketing Mix Model.</p>
 <p>A full MMM—such as <a class="reference external" href="https://github.com/google/meridian">Google Meridian</a>—incorporates rich macroeconomic controls, pricing/promotions, non-media baseline variables, reach and frequency transformations, and comprehensive prior elicitation. For enterprise budget decisions, causal attribution, and complete cross-media measurement, Google Meridian should always be used to produce robust results.</p>
 </div>
 </section>
@@ -294,12 +294,12 @@ Integrate causal lift studies (geo-experiments, conversion lift) directly into s
 <li><p><strong>Historical Contribution Decomposition</strong>
 Multi-channel models decompose observed revenue over time into organic baseline and per-channel adstocked contributions, computing historical ROI, spend share, and current marginal ROAS.</p></li>
 <li><p><strong>Portfolio Optimization (Cross-Channel Scenario Planning)</strong>
-The <a class="reference internal" href="api.html#tippingpoint.portfolio.PortfolioAllocator" title="tippingpoint.portfolio.PortfolioAllocator"><code class="xref py py-class docutils literal notranslate"><span class="pre">tippingpoint.portfolio.PortfolioAllocator</span></code></a> ingests multiple fitted channel curves and uses Sequential Least Squares Programming (SLSQP) to find the budget allocation that equalizes marginal ROAS across channels, maximizing total portfolio revenue under global and per-channel spend constraints.</p></li>
+The <a class="reference internal" href="api.html#dxpoint.portfolio.PortfolioAllocator" title="dxpoint.portfolio.PortfolioAllocator"><code class="xref py py-class docutils literal notranslate"><span class="pre">dxpoint.portfolio.PortfolioAllocator</span></code></a> ingests multiple fitted channel curves and uses Sequential Least Squares Programming (SLSQP) to find the budget allocation that equalizes marginal ROAS across channels, maximizing total portfolio revenue under global and per-channel spend constraints.</p></li>
 </ol>
 </section>
 <section id="interactive-dashboard">
 <h1>Interactive Dashboard<a class="headerlink" href="#interactive-dashboard" title="Link to this heading">¶</a></h1>
-<p>Tipping Point includes an interactive Streamlit dashboard launched via <code class="docutils literal notranslate"><span class="pre">tipp</span> <span class="pre">dashboard</span></code>:</p>
+<p>dxpoint includes an interactive Streamlit dashboard launched via <code class="docutils literal notranslate"><span class="pre">dxpoint</span> <span class="pre">dashboard</span></code>:</p>
 <ul class="simple">
 <li><p><strong>Stage 1: Channel Configuration:</strong> Dynamically fit, configure, and stack multiple channels. Features conversion value multipliers and interactive Adstock carryover timelines.</p></li>
 <li><p><strong>Stage 2: Portfolio Optimization:</strong> Set global budgets and constraints. Generates optimal scale mix (stacked area) plots and cross-channel saturation overlays.</p></li>
@@ -308,12 +308,15 @@ The <a class="reference internal" href="api.html#tippingpoint.portfolio.Portfoli
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.models">Single-Channel Model Interface</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.mmm">Hierarchical Multi-Channel MMM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.portfolio">Portfolio Optimization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.fitting.gradient">Fitting Engines</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.math">Mathematical Core</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-tippingpoint.viz">Visualization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-dxpoint.models">Single-Channel Model Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-dxpoint.multichannel">Multi-Channel Response Modeling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-dxpoint.portfolio">Portfolio Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-dxpoint.capacity">Capacity Projection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-dxpoint.validation">Validation &amp; Calibration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-dxpoint.evaluation">Evaluation &amp; Diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-dxpoint.fitting.gradient">Fitting Engines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-dxpoint.math">Mathematical Core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-dxpoint.viz">Visualization</a></li>
 </ul>
 </li>
 </ul>
@@ -367,7 +370,7 @@ The <a class="reference internal" href="api.html#tippingpoint.portfolio.Portfoli
 
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=d58853b1"></script>
+</div><script src="_static/documentation_options.js?v=f909c4a4"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

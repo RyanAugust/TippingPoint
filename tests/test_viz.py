@@ -1,10 +1,9 @@
 import numpy as np
-import pytest
 import matplotlib
 matplotlib.use('Agg')  # Non-interactive backend for testing
 import matplotlib.pyplot as plt
-from tippingpoint import MarketingReturnCurve
-from tippingpoint.viz import CurveVisualizer
+from dxpoint import MarketingReturnCurve
+from dxpoint.viz import CurveVisualizer
 
 def test_plot_response_curve_basic():
   model = MarketingReturnCurve(beta=25000.0, alpha=1.5, half_saturation_k=5000.0, channel_name="TestChannel")
@@ -55,5 +54,16 @@ def test_plot_response_curve_c_curve():
   # Alpha <= 1.0 (pure concave, no inflection point)
   model = MarketingReturnCurve(beta=100000.0, alpha=0.8, half_saturation_k=20000.0, channel_name="ConcaveChannel")
   fig = model.plot_response_curve(target_mroas=0.5, show=False)
+  assert fig is not None
+  plt.close(fig)
+
+def test_plot_response_curve_with_baseline():
+  model = MarketingReturnCurve(
+      beta=50000.0, alpha=1.5, half_saturation_k=10000.0,
+      baseline=5000.0, channel_name="BaselineChannel"
+  )
+  spend = np.array([1000, 2000, 3000, 4000, 5000])
+  ret = model.predict_incremental_return(spend, include_baseline=True)
+  fig = model.plot_response_curve(target_mroas=1.0, scatter=(spend, ret), show=False, include_baseline=True)
   assert fig is not None
   plt.close(fig)
