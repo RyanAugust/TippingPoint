@@ -1,16 +1,16 @@
-# Tipping Point: Optimizing Media Scaling through Empirical Saturation Modeling
+# dxpoint: Optimizing Media Scaling through Empirical Saturation Modeling
 
 ## Abstract
 
-**Tipping Point** is an advanced marketing intelligence and media mix modeling library designed to help advertisers identify the optimal scaling zones for their media investments. By leveraging historical performance data, GPU-accelerated gradient descent optimization (via Tinygrad), Markov Chain Monte Carlo (MCMC) Bayesian inference, and rigorous calculus, the module determines the precise mathematical "tipping points"—specifically, the point of peak marginal efficiency and the point of diminishing marginal returns (profitability floor).
+**dxpoint** is an advanced marketing intelligence and media response modeling library designed to help advertisers identify the optimal scaling zones for their media investments. By leveraging historical performance data, GPU-accelerated gradient descent optimization (via Tinygrad), Markov Chain Monte Carlo (MCMC) Bayesian inference, and rigorous calculus, the module determines the precise mathematical "tipping points"—specifically, the point of peak marginal efficiency and the point of diminishing marginal returns (profitability floor).
 
-The library supports both **lightweight single-channel curve fitting** and a full **Hierarchical Bayesian Media Mix Model (Meridian-lite)** that jointly estimates adstock carryover, Hill saturation, baseline organic demand, and channel scale with partial pooling and geo-level hierarchy. This white paper outlines the underlying methodology, its conceptual alignment with Google Meridian, and the strategic implications, benefits, and applications for modern growth marketing.
+The library supports both **lightweight single-channel curve fitting** and a joint **Hierarchical Bayesian Multi-Channel Model** that estimates adstock carryover, Hill saturation, baseline organic demand, and channel scale with partial pooling and geo-level hierarchy. This white paper outlines the underlying methodology, its mathematical formulations, and the strategic implications, benefits, and applications for modern growth marketing.
 
 ---
 
 ## 1. Methodology: The Mathematics of Media Response
 
-The Tipping Point module relies on established econometric principles to model the relationship between media spend and incremental returns. Central to this approach are the concepts of Media Saturation and Adstock (lagged effects), drawing heavily from the open-source methodologies pioneered by Google Meridian.
+The dxpoint module relies on established econometric principles to model the relationship between media spend and incremental returns. Central to this approach are the concepts of Media Saturation and Adstock (lagged effects).
 
 ### 1.1 Media Saturation (The Hill Function & Baseline Demand)
 
@@ -18,7 +18,7 @@ In plain terms, media saturation is the mathematical expression of "diminishing 
 
 From a social science and psychological perspective, this phenomenon is deeply rooted in concepts like **habituation** and **cognitive wear-out**. When consumers are repeatedly exposed to the same stimulus, their response naturally dampens over time. Similarly, economic theory dictates a law of diminishing marginal utility—the first few exposures are highly persuasive, but subsequent exposures yield progressively less impact as the most receptive audience members convert first, leaving behind a more resistant pool of non-buyers.
 
-To model this complex psychological reality, industry-standard MMMs (including Google Meridian) employ the **Hill Function** augmented with an unobserved or observed **organic baseline demand** ($\beta_0$):
+To model this complex psychological reality, response curve models employ the **Hill Function** augmented with an unobserved or observed **organic baseline demand** ($\beta_0$):
 
 $$ Return = \beta_0 + \frac{\beta \cdot Spend_{adstocked}^\alpha}{K^\alpha + Spend_{adstocked}^\alpha} $$
 
@@ -27,7 +27,7 @@ $$ Return = \beta_0 + \frac{\beta \cdot Spend_{adstocked}^\alpha}{K^\alpha + Spe
 *   **$\alpha$ (Alpha - Shape):** Dictates the learning curve. An $\alpha > 1$ creates an **S-curve**, indicating an initial "warm-up" phase where frequency builds trust before saturation sets in. An $\alpha \le 1$ creates a **C-curve**, implying that the very first dollar spent is the most efficient, with returns diminishing immediately thereafter.
 *   **$K$ (Half-Saturation):** The specific spend level at which the channel achieves exactly half of its absolute maximum incremental capacity ($\beta$).
 
-Within the Tipping Point module, we don't just fit this curve; we analyze its rate of change. By calculating the **first derivative** (the Marginal ROAS), Tipping Point identifies two critical zones for the advertiser:
+Within the dxpoint module, we don't just fit this curve; we analyze its rate of change. By calculating the **first derivative** (the Marginal ROAS), dxpoint identifies two critical zones for the advertiser:
 1.  **Peak Efficiency Point:** The mathematical inflection point ($f''(x) = 0$). This marks the exact moment the "warm-up" phase ends and the curve is steepest, representing the cheapest acquisition cost.
 2.  **Stop Scaling Point:** The boundary where the Marginal ROAS drops below the advertiser's target profitability threshold (e.g., a return of exactly $1.00 for every $1.00 spent). Spending beyond this point is mathematically unprofitable.
 
@@ -39,7 +39,7 @@ In simple terms, "adstock" is the memory or the "echo effect" of advertising. If
 
 In cognitive psychology, this aligns with the principles of **cognitive persistence** and the **Ebbinghaus forgetting curve**. When a brand message is encoded into a consumer's memory, it doesn't vanish immediately when the ad stops playing; instead, it decays gradually over time. If a consumer is repeatedly exposed to the brand, this residual memory accumulates, building a stronger underlying predisposition to buy.
 
-To account for delayed impact, Tipping Point provides two primary adstock modeling engines:
+To account for delayed impact, dxpoint provides two primary adstock modeling engines:
 
 #### 1. Geometric Adstock
 Calculates exponential decay of media weight over time:
@@ -51,11 +51,11 @@ Where $\theta$ is the retention rate between $0$ and $1$.
 *   A **lower $\theta$** indicates a highly transient impact that is forgotten quickly (e.g., a direct-response search ad or a fleeting social media banner).
 
 #### 2. Weibull Adstock (PDF & CDF)
-For channels with delayed peak response (e.g., consideration video or influencer marketing where peak engagement occurs days after launch), Tipping Point supports **Weibull PDF** and **Weibull CDF** transformations parameterized by shape $k$ and scale $\lambda$:
+For channels with delayed peak response (e.g., consideration video or influencer marketing where peak engagement occurs days after launch), dxpoint supports **Weibull PDF** and **Weibull CDF** transformations parameterized by shape $k$ and scale $\lambda$:
 
 $$ w(l; k, \lambda) = \frac{k}{\lambda} \left( \frac{l}{\lambda} \right)^{k-1} \exp\left( - \left(\frac{l}{\lambda}\right)^k \right) $$
 
-**How they interact:** Within the Tipping Point module, these two models—Adstock and the Hill Function—do not exist in isolation; they are deeply intertwined. The model first applies the Adstock decay to understand the true, accumulated "weight" of the media in the consumer's mind. It then feeds this *adstocked spend* directly into the Hill Function. This means the module understands that you can hit "Media Saturation" (diminishing returns) not just by spending too much today, but because you spent so heavily yesterday that the consumer's memory is already completely saturated.
+**How they interact:** Within the dxpoint module, these two models—Adstock and the Hill Function—do not exist in isolation; they are deeply intertwined. The model first applies the Adstock decay to understand the true, accumulated "weight" of the media in the consumer's mind. It then feeds this *adstocked spend* directly into the Hill Function. This means the module understands that you can hit "Media Saturation" (diminishing returns) not just by spending too much today, but because you spent so heavily yesterday that the consumer's memory is already completely saturated.
 
 ![Geometric Adstock Carryover Timeline](images/adstock.png)
 
@@ -63,7 +63,7 @@ $$ w(l; k, \lambda) = \frac{k}{\lambda} \left( \frac{l}{\lambda} \right)^{k-1} \
 
 ## 2. Hierarchical Bayesian Modeling & Joint Estimation
 
-In multi-channel settings, estimating adstock and saturation in sequential isolation leads to suboptimal, biased parameter recovery. Tipping Point implements a **Meridian-lite Hierarchical Bayesian MMM** (`MultiChannelMMM`) featuring:
+In multi-channel settings, estimating adstock and saturation in sequential isolation leads to suboptimal, biased parameter recovery. dxpoint implements a **Hierarchical Bayesian Multi-Channel Model** (`MultiChannelModel`) featuring:
 
 ### 2.1 Joint Parameter Estimation
 Rather than pre-filtering adstock or fitting curves sequentially in stages, the model jointly estimates:
@@ -75,7 +75,7 @@ Rather than pre-filtering adstock or fitting curves sequentially in stages, the 
 Sampling is conducted simultaneously on unconstrained parameter spaces ($\mathbb{R}^D$) using Gaussian random-walk Metropolis-Hastings with adaptive burn-in tuning and Gelman-Rubin $\hat{R}$ multi-chain convergence diagnostics.
 
 ### 2.2 Hierarchical Partial Pooling Across Channels
-To stabilize parameters for channels with limited historical spend or noisy observations, Tipping Point introduces population hyperpriors:
+To stabilize parameters for channels with limited historical spend or noisy observations, dxpoint introduces population hyperpriors:
 
 $$ \beta_m \sim \text{LogNormal}(\mu_\beta, \sigma_\beta^2), \quad \alpha_m \sim \text{LogNormal}(\mu_\alpha, \sigma_\alpha^2), \quad \theta_m \sim \text{LogitNormal}(\mu_\theta, \sigma_\theta^2) $$
 
@@ -105,7 +105,7 @@ The `PortfolioAllocator` utilizes the **Sequential Least SQuares Programming (SL
 $$ \frac{\partial Return_1}{\partial S_1} = \frac{\partial Return_2}{\partial S_2} = \dots = \frac{\partial Return_M}{\partial S_M} = \lambda^* $$
 
 ### 3.2 Historical Contribution Decomposition
-For post-campaign analysis, `MultiChannelMMM.decompose_historical_contributions()` decomposes observed time-series performance into baseline and channel-specific incremental returns, calculating historical ROI, share of spend, share of return, and current marginal efficiency.
+For post-campaign analysis, `MultiChannelModel.decompose_historical_contributions()` decomposes observed time-series performance into baseline and channel-specific incremental returns, calculating historical ROI, share of spend, share of return, and current marginal efficiency.
 
 ---
 
@@ -124,4 +124,4 @@ For post-campaign analysis, `MultiChannelMMM.decompose_historical_contributions(
 
 ## Conclusion
 
-The Tipping Point module democratizes access to sophisticated, Google Meridian-style media saturation, adstock modeling, and hierarchical Bayesian media mix analysis. By anchoring its calculus in empirical data and causal incrementality tests, it provides robust, actionable guidance for growth marketers seeking to maximize portfolio capital efficiency.
+The dxpoint library democratizes access to sophisticated media saturation, adstock modeling, and hierarchical Bayesian multi-channel response analysis. By anchoring its calculus in empirical data and causal incrementality tests, it provides robust, actionable guidance for growth marketers seeking to maximize portfolio capital efficiency.

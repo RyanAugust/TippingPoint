@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>tippingpoint.mmm - Tipping Point 0.0.2 documentation</title>
+        <title>dxpoint.multichannel - dxpoint 0.5.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -160,7 +160,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../index.html"><div class="brand">Tipping Point 0.0.2 documentation</div></a>
+      <a href="../../index.html"><div class="brand">dxpoint 0.5.2 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -181,7 +181,7 @@
 
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
 
-  <span class="sidebar-brand-text">Tipping Point 0.0.2 documentation</span>
+  <span class="sidebar-brand-text">dxpoint 0.5.2 documentation</span>
 
 </a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -224,15 +224,15 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <h1>Source code for tippingpoint.mmm</h1><div class="highlight"><pre>
+          <h1>Source code for dxpoint.multichannel</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tinygrad.tensor</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tinygrad.nn.optim</span><span class="w"> </span><span class="kn">import</span> <span class="n">Adam</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tinygrad</span><span class="w"> </span><span class="kn">import</span> <span class="n">dtypes</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">tippingpoint.math</span><span class="w"> </span><span class="kn">import</span> <span class="n">geometric_adstock</span><span class="p">,</span> <span class="n">weibull_adstock</span><span class="p">,</span> <span class="n">hill_function</span><span class="p">,</span> <span class="n">hill_first_derivative</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">tippingpoint.fitting.gradient</span><span class="w"> </span><span class="kn">import</span> <span class="n">tinygrad_geometric_adstock</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">tippingpoint.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">MarketingReturnCurve</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dxpoint.math</span><span class="w"> </span><span class="kn">import</span> <span class="n">geometric_adstock</span><span class="p">,</span> <span class="n">weibull_adstock</span><span class="p">,</span> <span class="n">hill_function</span><span class="p">,</span> <span class="n">hill_first_derivative</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dxpoint.fitting.gradient</span><span class="w"> </span><span class="kn">import</span> <span class="n">tinygrad_geometric_adstock</span><span class="p">,</span> <span class="n">_training_context</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dxpoint.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">MarketingReturnCurve</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_parse_spend_input</span><span class="p">(</span><span class="n">spend_data</span><span class="p">,</span> <span class="n">channel_names</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -275,7 +275,7 @@
 
 
 <div class="viewcode-block" id="fit_multichannel_gradient">
-<a class="viewcode-back" href="../../api.html#tippingpoint.mmm.fit_multichannel_gradient">[docs]</a>
+<a class="viewcode-back" href="../../api.html#dxpoint.multichannel.fit_multichannel_gradient">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">fit_multichannel_gradient</span><span class="p">(</span><span class="n">spend_data</span><span class="p">,</span> <span class="n">return_array</span><span class="p">,</span> <span class="n">channel_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
                               <span class="n">fit_baseline</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">adstock_types</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">adstock_bounds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">adstock_fixed_days</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">  </span><span class="sd">&quot;&quot;&quot;Fits a joint Multi-Channel Marketing Mix Model using Gradient Descent (Tinygrad Adam).&quot;&quot;&quot;</span>
@@ -361,9 +361,8 @@
 
   <span class="n">optimizer</span> <span class="o">=</span> <span class="n">Adam</span><span class="p">(</span><span class="n">optimizable_params</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">)</span>
 
-  <span class="n">Tensor</span><span class="o">.</span><span class="n">training</span> <span class="o">=</span> <span class="kc">True</span>
   <span class="n">prev_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
-  <span class="k">with</span> <span class="n">Tensor</span><span class="o">.</span><span class="n">train</span><span class="p">():</span>
+  <span class="k">with</span> <span class="n">_training_context</span><span class="p">():</span>
     <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs</span><span class="p">):</span>
       <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
       <span class="n">y_pred</span> <span class="o">=</span> <span class="n">log_baseline</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span> <span class="k">if</span> <span class="n">fit_baseline</span> <span class="k">else</span> <span class="n">Tensor</span><span class="p">([</span><span class="mf">0.0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtypes</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
@@ -397,8 +396,6 @@
           <span class="k">break</span>
         <span class="n">prev_loss</span> <span class="o">=</span> <span class="n">curr_loss</span>
 
-  <span class="n">Tensor</span><span class="o">.</span><span class="n">training</span> <span class="o">=</span> <span class="kc">False</span>
-
   <span class="n">baseline_val</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">log_baseline</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">*</span> <span class="n">max_y</span><span class="p">)</span> <span class="k">if</span> <span class="n">fit_baseline</span> <span class="k">else</span> <span class="mf">0.0</span>
   <span class="n">final_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">loss</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">*</span> <span class="p">(</span><span class="n">max_y</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
 
@@ -428,7 +425,7 @@
 
 
 <div class="viewcode-block" id="fit_multichannel_hierarchical_bayesian">
-<a class="viewcode-back" href="../../api.html#tippingpoint.mmm.fit_multichannel_hierarchical_bayesian">[docs]</a>
+<a class="viewcode-back" href="../../api.html#dxpoint.multichannel.fit_multichannel_hierarchical_bayesian">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">fit_multichannel_hierarchical_bayesian</span><span class="p">(</span><span class="n">spend_data</span><span class="p">,</span> <span class="n">return_array</span><span class="p">,</span> <span class="n">channel_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
                                            <span class="n">chains</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">burn_in</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">fit_baseline</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">hierarchical</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                                            <span class="n">adstock_types</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">adstock_bounds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">adstock_fixed_days</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -444,6 +441,20 @@
 <span class="sd">    4. Experimental lift calibration seamlessly integrated into the joint log-likelihood.</span>
 <span class="sd">    5. Convergence diagnostics including Gelman-Rubin R-hat and acceptance rates.</span>
 <span class="sd">  &quot;&quot;&quot;</span>
+  <span class="c1"># Normalize calibration experiments input (list, dict of lists, or dict of dicts)</span>
+  <span class="k">if</span> <span class="n">calibration_experiments</span><span class="p">:</span>
+    <span class="n">norm_calib</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">calibration_experiments</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+      <span class="k">for</span> <span class="n">ch</span><span class="p">,</span> <span class="n">exps</span> <span class="ow">in</span> <span class="n">calibration_experiments</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exps</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+          <span class="n">norm_calib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">exps</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">ch</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exps</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+          <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">exps</span><span class="p">:</span>
+            <span class="n">norm_calib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">ch</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">calibration_experiments</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+      <span class="n">norm_calib</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">calibration_experiments</span><span class="p">)</span>
+    <span class="n">calibration_experiments</span> <span class="o">=</span> <span class="n">norm_calib</span>
+
   <span class="n">parsed</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">geos</span> <span class="o">=</span> <span class="n">_parse_spend_input</span><span class="p">(</span><span class="n">spend_data</span><span class="p">,</span> <span class="n">channel_names</span><span class="p">)</span>
   <span class="n">is_geo</span> <span class="o">=</span> <span class="n">geos</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">geos</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
 
@@ -828,31 +839,32 @@
 <span class="n">fit_multichannel_bayesian_mcmc</span> <span class="o">=</span> <span class="n">fit_multichannel_hierarchical_bayesian</span>
 
 
-<div class="viewcode-block" id="MultiChannelMMM">
-<a class="viewcode-back" href="../../api.html#tippingpoint.mmm.MultiChannelMMM">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">MultiChannelMMM</span><span class="p">:</span>
-<span class="w">  </span><span class="sd">&quot;&quot;&quot;Meridian-Lite Hierarchical Bayesian Marketing Mix Model.</span>
+<div class="viewcode-block" id="MultiChannelModel">
+<a class="viewcode-back" href="../../api.html#dxpoint.multichannel.MultiChannelModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MultiChannelModel</span><span class="p">:</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Multi-channel joint response and saturation model.</span>
 
 <span class="sd">  Jointly estimates:</span>
 <span class="sd">    Y_t = Baseline + sum_{m=1}^M Hill_m(Adstock_m(S_{m, 1:t})) + eps_t</span>
 
 <span class="sd">  Key Capabilities:</span>
-<span class="sd">    - Hierarchical Bayesian Partial Pooling across channels &amp; geos.</span>
+<span class="sd">    - Multi-channel partial pooling across channels &amp; geos.</span>
 <span class="sd">    - Joint simultaneous estimation of Carryover Adstock (theta), Hill Saturation (alpha, K),</span>
 <span class="sd">      and Channel Return Coefficients (beta).</span>
 <span class="sd">    - Prevents cross-channel double-counting and omitted variable bias.</span>
 <span class="sd">    - Experimental calibration (lift studies, geo experiments) integration.</span>
-<span class="sd">    - Historical contribution decomposition, Share of Return, ROI with 90% credible intervals.</span>
+<span class="sd">    - Historical contribution decomposition and channel efficiency analysis.</span>
 <span class="sd">    - Direct integration with PortfolioAllocator for global budget optimization.</span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
-  <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">posterior_samples</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">posterior_samples</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">calibration_experiments</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Args:</span>
 <span class="sd">      channels (dict or list): Dict mapping channel_name -&gt; MarketingReturnCurve or list of models.</span>
 <span class="sd">      baseline (float): Shared organic / baseline non-media return.</span>
 <span class="sd">      loss (float): Final fitting loss.</span>
 <span class="sd">      posterior_samples (dict, optional): Joint MCMC posterior samples.</span>
+<span class="sd">      calibration_experiments (list or dict, optional): Incrementality experiments associated with channels.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">channels</span> <span class="o">=</span> <span class="p">{</span><span class="n">m</span><span class="o">.</span><span class="n">channel_name</span><span class="p">:</span> <span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">channels</span><span class="p">}</span>
@@ -863,13 +875,80 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">baseline</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">baseline</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">posterior_samples</span> <span class="o">=</span> <span class="n">posterior_samples</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">calibration_experiments</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">calibration_experiments</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">attach_experiments</span><span class="p">(</span><span class="n">calibration_experiments</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="s2">&quot;calibration_experiments&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">m</span><span class="o">.</span><span class="n">calibration_experiments</span><span class="p">:</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">calibration_experiments</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">calibration_experiments</span><span class="p">)</span>
 
-<div class="viewcode-block" id="MultiChannelMMM.from_historical_data">
-<a class="viewcode-back" href="../../api.html#tippingpoint.mmm.MultiChannelMMM.from_historical_data">[docs]</a>
+<div class="viewcode-block" id="MultiChannelModel.fit">
+<a class="viewcode-back" href="../../api.html#dxpoint.multichannel.MultiChannelModel.fit">[docs]</a>
   <span class="nd">@classmethod</span>
-  <span class="k">def</span><span class="w"> </span><span class="nf">from_historical_data</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">spend_data</span><span class="p">,</span> <span class="n">return_array</span><span class="p">,</span> <span class="n">channel_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
+      <span class="bp">cls</span><span class="p">,</span>
+      <span class="n">spend_data</span><span class="p">,</span>
+      <span class="n">return_array</span><span class="p">,</span>
+      <span class="n">channel_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+      <span class="n">method</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+      <span class="n">epochs</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
+      <span class="n">lr</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+      <span class="n">fit_baseline</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+      <span class="n">adstock_types</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+      <span class="n">adstock_bounds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+      <span class="n">adstock_fixed_days</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+      <span class="n">n_samples</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+      <span class="n">chains</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+      <span class="n">burn_in</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+      <span class="n">hierarchical</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+      <span class="n">calibration_experiments</span><span class="o">=</span><span class="kc">None</span>
+  <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Unified entry point for fitting multi-channel marketing mix models.&quot;&quot;&quot;</span>
+    <span class="n">method_norm</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;auto&quot;</span>
+    <span class="k">if</span> <span class="n">method_norm</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">calibration_experiments</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">method_norm</span> <span class="o">=</span> <span class="s2">&quot;bayesian&quot;</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">method_norm</span> <span class="o">=</span> <span class="s2">&quot;gradient&quot;</span>
+
+    <span class="k">if</span> <span class="n">method_norm</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;gradient&quot;</span><span class="p">,</span> <span class="s2">&quot;gradient_descent&quot;</span><span class="p">,</span> <span class="s2">&quot;mle&quot;</span><span class="p">]:</span>
+      <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">fit_gradient_descent</span><span class="p">(</span>
+          <span class="n">spend_data</span><span class="o">=</span><span class="n">spend_data</span><span class="p">,</span>
+          <span class="n">return_array</span><span class="o">=</span><span class="n">return_array</span><span class="p">,</span>
+          <span class="n">channel_names</span><span class="o">=</span><span class="n">channel_names</span><span class="p">,</span>
+          <span class="n">epochs</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span>
+          <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">,</span>
+          <span class="n">fit_baseline</span><span class="o">=</span><span class="n">fit_baseline</span><span class="p">,</span>
+          <span class="n">adstock_types</span><span class="o">=</span><span class="n">adstock_types</span><span class="p">,</span>
+          <span class="n">adstock_bounds</span><span class="o">=</span><span class="n">adstock_bounds</span><span class="p">,</span>
+          <span class="n">adstock_fixed_days</span><span class="o">=</span><span class="n">adstock_fixed_days</span>
+      <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method_norm</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;bayesian&quot;</span><span class="p">,</span> <span class="s2">&quot;hierarchical_bayesian&quot;</span><span class="p">,</span> <span class="s2">&quot;mcmc&quot;</span><span class="p">]:</span>
+      <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">fit_bayesian</span><span class="p">(</span>
+          <span class="n">spend_data</span><span class="o">=</span><span class="n">spend_data</span><span class="p">,</span>
+          <span class="n">return_array</span><span class="o">=</span><span class="n">return_array</span><span class="p">,</span>
+          <span class="n">channel_names</span><span class="o">=</span><span class="n">channel_names</span><span class="p">,</span>
+          <span class="n">n_samples</span><span class="o">=</span><span class="n">n_samples</span><span class="p">,</span>
+          <span class="n">chains</span><span class="o">=</span><span class="n">chains</span><span class="p">,</span>
+          <span class="n">burn_in</span><span class="o">=</span><span class="n">burn_in</span><span class="p">,</span>
+          <span class="n">fit_baseline</span><span class="o">=</span><span class="n">fit_baseline</span><span class="p">,</span>
+          <span class="n">hierarchical</span><span class="o">=</span><span class="n">hierarchical</span><span class="p">,</span>
+          <span class="n">adstock_types</span><span class="o">=</span><span class="n">adstock_types</span><span class="p">,</span>
+          <span class="n">adstock_bounds</span><span class="o">=</span><span class="n">adstock_bounds</span><span class="p">,</span>
+          <span class="n">adstock_fixed_days</span><span class="o">=</span><span class="n">adstock_fixed_days</span><span class="p">,</span>
+          <span class="n">calibration_experiments</span><span class="o">=</span><span class="n">calibration_experiments</span>
+      <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown multi-channel fitting method: &#39;</span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MultiChannelModel.fit_gradient_descent">
+<a class="viewcode-back" href="../../api.html#dxpoint.multichannel.MultiChannelModel.fit_gradient_descent">[docs]</a>
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">fit_gradient_descent</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">spend_data</span><span class="p">,</span> <span class="n">return_array</span><span class="p">,</span> <span class="n">channel_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
                            <span class="n">fit_baseline</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">adstock_types</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">adstock_bounds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">adstock_fixed_days</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fits a joint multi-channel MMM using Gradient Descent (MLE / Tinygrad Adam).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fits a joint multi-channel model using Gradient Descent (MLE / Tinygrad Adam).&quot;&quot;&quot;</span>
     <span class="n">models_dict</span><span class="p">,</span> <span class="n">baseline</span><span class="p">,</span> <span class="n">loss</span> <span class="o">=</span> <span class="n">fit_multichannel_gradient</span><span class="p">(</span>
       <span class="n">spend_data</span><span class="o">=</span><span class="n">spend_data</span><span class="p">,</span> <span class="n">return_array</span><span class="o">=</span><span class="n">return_array</span><span class="p">,</span> <span class="n">channel_names</span><span class="o">=</span><span class="n">channel_names</span><span class="p">,</span>
       <span class="n">epochs</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">,</span> <span class="n">fit_baseline</span><span class="o">=</span><span class="n">fit_baseline</span><span class="p">,</span>
@@ -879,13 +958,13 @@
     <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">channels</span><span class="o">=</span><span class="n">models_dict</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="n">baseline</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="n">loss</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="MultiChannelMMM.fit_bayesian">
-<a class="viewcode-back" href="../../api.html#tippingpoint.mmm.MultiChannelMMM.fit_bayesian">[docs]</a>
+<div class="viewcode-block" id="MultiChannelModel.fit_bayesian">
+<a class="viewcode-back" href="../../api.html#dxpoint.multichannel.MultiChannelModel.fit_bayesian">[docs]</a>
   <span class="nd">@classmethod</span>
   <span class="k">def</span><span class="w"> </span><span class="nf">fit_bayesian</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">spend_data</span><span class="p">,</span> <span class="n">return_array</span><span class="p">,</span> <span class="n">channel_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">chains</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">burn_in</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
                    <span class="n">fit_baseline</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">hierarchical</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">adstock_types</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">adstock_bounds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">adstock_fixed_days</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">calibration_experiments</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fits a Meridian-lite Hierarchical Bayesian Marketing Mix Model.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fits a joint multi-channel model using Hierarchical Bayesian MCMC inference.&quot;&quot;&quot;</span>
     <span class="n">models_dict</span><span class="p">,</span> <span class="n">baseline</span><span class="p">,</span> <span class="n">samples</span> <span class="o">=</span> <span class="n">fit_multichannel_hierarchical_bayesian</span><span class="p">(</span>
       <span class="n">spend_data</span><span class="o">=</span><span class="n">spend_data</span><span class="p">,</span> <span class="n">return_array</span><span class="o">=</span><span class="n">return_array</span><span class="p">,</span> <span class="n">channel_names</span><span class="o">=</span><span class="n">channel_names</span><span class="p">,</span>
       <span class="n">n_samples</span><span class="o">=</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">chains</span><span class="o">=</span><span class="n">chains</span><span class="p">,</span> <span class="n">burn_in</span><span class="o">=</span><span class="n">burn_in</span><span class="p">,</span> <span class="n">fit_baseline</span><span class="o">=</span><span class="n">fit_baseline</span><span class="p">,</span>
@@ -893,14 +972,14 @@
       <span class="n">adstock_fixed_days</span><span class="o">=</span><span class="n">adstock_fixed_days</span><span class="p">,</span>
       <span class="n">calibration_experiments</span><span class="o">=</span><span class="n">calibration_experiments</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">channels</span><span class="o">=</span><span class="n">models_dict</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="n">baseline</span><span class="p">,</span> <span class="n">posterior_samples</span><span class="o">=</span><span class="n">samples</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">channels</span><span class="o">=</span><span class="n">models_dict</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="n">baseline</span><span class="p">,</span> <span class="n">posterior_samples</span><span class="o">=</span><span class="n">samples</span><span class="p">,</span> <span class="n">calibration_experiments</span><span class="o">=</span><span class="n">calibration_experiments</span><span class="p">)</span></div>
 
 
   <span class="c1"># Alias for explicit clarity</span>
   <span class="n">fit_hierarchical_bayesian</span> <span class="o">=</span> <span class="n">fit_bayesian</span>
 
-<div class="viewcode-block" id="MultiChannelMMM.predict_total_return">
-<a class="viewcode-back" href="../../api.html#tippingpoint.mmm.MultiChannelMMM.predict_total_return">[docs]</a>
+<div class="viewcode-block" id="MultiChannelModel.predict_total_return">
+<a class="viewcode-back" href="../../api.html#dxpoint.multichannel.MultiChannelModel.predict_total_return">[docs]</a>
   <span class="k">def</span><span class="w"> </span><span class="nf">predict_total_return</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spend_dict</span><span class="p">,</span> <span class="n">use_samples</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Predicts total response (baseline + all channel responses) given a dictionary of channel spends.</span>
 
@@ -926,8 +1005,8 @@
       <span class="k">return</span> <span class="n">total</span></div>
 
 
-<div class="viewcode-block" id="MultiChannelMMM.predict_channel_contributions">
-<a class="viewcode-back" href="../../api.html#tippingpoint.mmm.MultiChannelMMM.predict_channel_contributions">[docs]</a>
+<div class="viewcode-block" id="MultiChannelModel.predict_channel_contributions">
+<a class="viewcode-back" href="../../api.html#dxpoint.multichannel.MultiChannelModel.predict_channel_contributions">[docs]</a>
   <span class="k">def</span><span class="w"> </span><span class="nf">predict_channel_contributions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spend_dict</span><span class="p">,</span> <span class="n">use_samples</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Decomposes response into individual channel incremental contributions and baseline.</span>
 
@@ -953,8 +1032,8 @@
       <span class="k">return</span> <span class="n">contributions</span></div>
 
 
-<div class="viewcode-block" id="MultiChannelMMM.decompose_historical_contributions">
-<a class="viewcode-back" href="../../api.html#tippingpoint.mmm.MultiChannelMMM.decompose_historical_contributions">[docs]</a>
+<div class="viewcode-block" id="MultiChannelModel.decompose_historical_contributions">
+<a class="viewcode-back" href="../../api.html#dxpoint.multichannel.MultiChannelModel.decompose_historical_contributions">[docs]</a>
   <span class="k">def</span><span class="w"> </span><span class="nf">decompose_historical_contributions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spend_data</span><span class="p">,</span> <span class="n">return_array</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes comprehensive historical attribution, share of spend vs return, and channel ROI.</span>
 
@@ -1018,16 +1097,63 @@
     <span class="p">}</span></div>
 
 
-<div class="viewcode-block" id="MultiChannelMMM.get_allocator">
-<a class="viewcode-back" href="../../api.html#tippingpoint.mmm.MultiChannelMMM.get_allocator">[docs]</a>
+<div class="viewcode-block" id="MultiChannelModel.get_allocator">
+<a class="viewcode-back" href="../../api.html#dxpoint.multichannel.MultiChannelModel.get_allocator">[docs]</a>
   <span class="k">def</span><span class="w"> </span><span class="nf">get_allocator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a PortfolioAllocator configured with all fitted channel models.&quot;&quot;&quot;</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">tippingpoint.portfolio</span><span class="w"> </span><span class="kn">import</span> <span class="n">PortfolioAllocator</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">dxpoint.portfolio</span><span class="w"> </span><span class="kn">import</span> <span class="n">PortfolioAllocator</span>
     <span class="k">return</span> <span class="n">PortfolioAllocator</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span></div>
 
 
-<div class="viewcode-block" id="MultiChannelMMM.summary">
-<a class="viewcode-back" href="../../api.html#tippingpoint.mmm.MultiChannelMMM.summary">[docs]</a>
+<div class="viewcode-block" id="MultiChannelModel.attach_experiments">
+<a class="viewcode-back" href="../../api.html#dxpoint.multichannel.MultiChannelModel.attach_experiments">[docs]</a>
+  <span class="k">def</span><span class="w"> </span><span class="nf">attach_experiments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">experiments</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Associates incrementality experiments in parallel across channels.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      experiments: Dict mapping {channel_name: [exps] | exp} or flat list of dicts with &#39;channel&#39; key.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.validation</span><span class="w"> </span><span class="kn">import</span> <span class="n">normalize_multichannel_experiments</span>
+    <span class="n">mapping</span> <span class="o">=</span> <span class="n">normalize_multichannel_experiments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">experiments</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">ch_name</span><span class="p">,</span> <span class="n">exp_list</span> <span class="ow">in</span> <span class="n">mapping</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+      <span class="k">if</span> <span class="n">ch_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">[</span><span class="n">ch_name</span><span class="p">]</span><span class="o">.</span><span class="n">attach_experiments</span><span class="p">(</span><span class="n">exp_list</span><span class="p">)</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">calibration_experiments</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">exp_list</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="MultiChannelModel.add_experiment">
+<a class="viewcode-back" href="../../api.html#dxpoint.multichannel.MultiChannelModel.add_experiment">[docs]</a>
+  <span class="k">def</span><span class="w"> </span><span class="nf">add_experiment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">spend</span><span class="p">,</span> <span class="n">lift</span><span class="p">,</span> <span class="n">se</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ci</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convenience method to associate an incrementality test with a specific channel.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">channel</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Channel &#39;</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">&#39; not found in model channels: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">exp</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;channel&quot;</span><span class="p">:</span> <span class="n">channel</span><span class="p">,</span> <span class="s2">&quot;spend&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">spend</span><span class="p">),</span> <span class="s2">&quot;lift&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">lift</span><span class="p">)}</span>
+    <span class="k">if</span> <span class="n">se</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">exp</span><span class="p">[</span><span class="s2">&quot;se&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">se</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ci</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">exp</span><span class="p">[</span><span class="s2">&quot;ci&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">ci</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">ci</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">exp</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">attach_experiments</span><span class="p">(</span><span class="n">exp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MultiChannelModel.validate_experiments">
+<a class="viewcode-back" href="../../api.html#dxpoint.multichannel.MultiChannelModel.validate_experiments">[docs]</a>
+  <span class="k">def</span><span class="w"> </span><span class="nf">validate_experiments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">experiments</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spend_is_raw</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates multi-channel curves against a collection of channel-specific incrementality experiments.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      experiments: List of experiment dicts, or dict keyed by channel name. If None, uses attached experiments.</span>
+<span class="sd">      spend_is_raw: If True, scales raw daily test spend by (1 - theta) to evaluate against effective adstock.</span>
+<span class="sd">      verbose: If True, prints a multi-channel validation summary to stdout.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      dict: Multi-channel validation summary with per-channel breakdown and global metrics.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.validation</span><span class="w"> </span><span class="kn">import</span> <span class="n">validate_multichannel_experiments</span>
+    <span class="k">return</span> <span class="n">validate_multichannel_experiments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">experiments</span><span class="p">,</span> <span class="n">spend_is_raw</span><span class="o">=</span><span class="n">spend_is_raw</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MultiChannelModel.summary">
+<a class="viewcode-back" href="../../api.html#dxpoint.multichannel.MultiChannelModel.summary">[docs]</a>
   <span class="k">def</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a dictionary summarizing all channel curves, baseline, and MCMC diagnostics.&quot;&quot;&quot;</span>
     <span class="n">res</span> <span class="o">=</span> <span class="p">{</span>
@@ -1039,6 +1165,11 @@
       <span class="n">res</span><span class="p">[</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior_samples</span><span class="p">[</span><span class="s1">&#39;diagnostics&#39;</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">res</span></div>
 </div>
+
+
+
+<span class="c1"># Backward compatibility alias</span>
+<span class="n">MultiChannelMMM</span> <span class="o">=</span> <span class="n">MultiChannelModel</span>
 
 </pre></div>
         </article>
@@ -1072,7 +1203,7 @@
 
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=d58853b1"></script>
+</div><script src="../../_static/documentation_options.js?v=f909c4a4"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -10,12 +10,12 @@ sys.path.insert(0, os.path.abspath('../src'))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'Tipping Point'
+project = 'dxpoint'
 copyright = '2026, Ryan Duecker'
 author = 'Ryan Duecker'
 
-version = '0.0.2'
-release = '0.0.2'
+version = '0.5.2'
+release = '0.5.2'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from dxpoint import MarketingReturnCurve, MultiChannelMMM, PortfolioAllocator
+from dxpoint import MarketingReturnCurve, MultiChannelModel, PortfolioAllocator
 from dxpoint.math import hill_function
 from dxpoint.validation import format_validation_report, format_multichannel_validation_report
 
@@ -122,12 +122,12 @@ def test_multichannel_validation_and_parallel_attachment():
     l_social = hill_function(6000.0, 2000.0, 1.5, 8000.0)
 
     # 1. Parallel validation via Dict format
-    mmm = MultiChannelMMM({"Search": m1, "Social": m2})
+    mc_model = MultiChannelModel({"Search": m1, "Social": m2})
     dict_exps = {
         "Search": [{"name": "Search_Q1", "spend": 4000.0, "lift": l_search, "se": 10.0}],
         "Social": {"name": "Social_Q2", "spend": 6000.0, "lift": l_social, "se": 20.0}
     }
-    report = mmm.validate_experiments(dict_exps, verbose=True)
+    report = mc_model.validate_experiments(dict_exps, verbose=True)
 
     assert report["num_experiments"] == 2
     assert "Search" in report["channels"]
@@ -141,13 +141,13 @@ def test_multichannel_validation_and_parallel_attachment():
     assert "Social_Q2" in mc_str
 
     # 2. Attach experiments in parallel to MMM
-    mmm.attach_experiments(dict_exps)
-    rep_attached = mmm.validate_experiments()
+    mc_model.attach_experiments(dict_exps)
+    rep_attached = mc_model.validate_experiments()
     assert rep_attached["num_experiments"] == 2
 
     # 3. Add single experiment to channel
-    mmm.add_experiment(channel="Search", spend=2000.0, lift=hill_function(2000.0, 1000.0, 2.0, 5000.0), se=8.0, name="Search_Small")
-    rep_updated = mmm.validate_experiments()
+    mc_model.add_experiment(channel="Search", spend=2000.0, lift=hill_function(2000.0, 1000.0, 2.0, 5000.0), se=8.0, name="Search_Small")
+    rep_updated = mc_model.validate_experiments()
     assert rep_updated["num_experiments"] == 3
 
 def test_portfolio_allocator_parallel_calibration():
@@ -197,10 +197,10 @@ def test_validation_error_handling():
         model.validate_experiments([{"spend": 100}])
 
     # Multi-channel missing channel key
-    mmm = MultiChannelMMM({"Ch1": model})
+    mc_model = MultiChannelModel({"Ch1": model})
     with pytest.raises(KeyError, match="'channel' key"):
-        mmm.validate_experiments([{"spend": 100, "lift": 50}])
+        mc_model.validate_experiments([{"spend": 100, "lift": 50}])
 
     # Multi-channel unknown channel
     with pytest.raises(ValueError, match="Channel 'Unknown' not found"):
-        mmm.validate_experiments([{"channel": "Unknown", "spend": 100, "lift": 50}])
+        mc_model.validate_experiments([{"channel": "Unknown", "spend": 100, "lift": 50}])

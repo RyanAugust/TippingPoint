@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html"><link rel="search" title="Search" href="../../../search.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>tippingpoint.fitting.gradient - Tipping Point 0.0.2 documentation</title>
+        <title>dxpoint.fitting.gradient - dxpoint 0.5.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -160,7 +160,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../../index.html"><div class="brand">Tipping Point 0.0.2 documentation</div></a>
+      <a href="../../../index.html"><div class="brand">dxpoint 0.5.2 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -181,7 +181,7 @@
 
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
 
-  <span class="sidebar-brand-text">Tipping Point 0.0.2 documentation</span>
+  <span class="sidebar-brand-text">dxpoint 0.5.2 documentation</span>
 
 </a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -224,14 +224,28 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <h1>Source code for tippingpoint.fitting.gradient</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+          <h1>Source code for dxpoint.fitting.gradient</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">contextmanager</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tinygrad.tensor</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tinygrad.nn.optim</span><span class="w"> </span><span class="kn">import</span> <span class="n">Adam</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tinygrad</span><span class="w"> </span><span class="kn">import</span> <span class="n">dtypes</span>
 
+<span class="nd">@contextmanager</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_training_context</span><span class="p">():</span>
+  <span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">tinygrad.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Context</span>
+    <span class="k">with</span> <span class="n">Context</span><span class="p">(</span><span class="n">TRAINING</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+      <span class="k">yield</span>
+  <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">Tensor</span><span class="p">,</span> <span class="s2">&quot;train&quot;</span><span class="p">):</span>
+      <span class="k">with</span> <span class="n">Tensor</span><span class="o">.</span><span class="n">train</span><span class="p">():</span>
+        <span class="k">yield</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">yield</span>
+
 <div class="viewcode-block" id="tinygrad_geometric_adstock">
-<a class="viewcode-back" href="../../../api.html#tippingpoint.fitting.gradient.tinygrad_geometric_adstock">[docs]</a>
+<a class="viewcode-back" href="../../../api.html#dxpoint.fitting.gradient.tinygrad_geometric_adstock">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">tinygrad_geometric_adstock</span><span class="p">(</span><span class="n">spend</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
 <span class="w">  </span><span class="sd">&quot;&quot;&quot;Applies geometric adstock decay in Tinygrad (vectorized Toeplitz weights).&quot;&quot;&quot;</span>
   <span class="n">N</span> <span class="o">=</span> <span class="n">spend</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -244,7 +258,7 @@
 
 
 <div class="viewcode-block" id="fit_mle_gradient">
-<a class="viewcode-back" href="../../../api.html#tippingpoint.fitting.gradient.fit_mle_gradient">[docs]</a>
+<a class="viewcode-back" href="../../../api.html#dxpoint.fitting.gradient.fit_mle_gradient">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">fit_mle_gradient</span><span class="p">(</span><span class="n">spend_array</span><span class="p">,</span> <span class="n">return_array</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">adstock_type</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="n">adstock_bounds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">adstock_fixed_days</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fit_baseline</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">  </span><span class="sd">&quot;&quot;&quot;Fits a Hill Curve to historical data using MLE (Adam optimizer), with optional adstock and baseline.&quot;&quot;&quot;</span>
   <span class="n">spend_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">spend_array</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
@@ -261,7 +275,6 @@
   <span class="n">return_scaled</span> <span class="o">=</span> <span class="n">return_arr</span> <span class="o">/</span> <span class="n">max_y</span>
   <span class="n">median_x_scaled</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">spend_scaled</span><span class="p">[</span><span class="n">spend_scaled</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]))</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">spend_scaled</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="k">else</span> <span class="mf">0.5</span>
 
-  <span class="n">Tensor</span><span class="o">.</span><span class="n">training</span> <span class="o">=</span> <span class="kc">True</span>
   <span class="n">x</span> <span class="o">=</span> <span class="n">Tensor</span><span class="p">(</span><span class="n">spend_scaled</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtypes</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
   <span class="n">x</span><span class="o">.</span><span class="n">requires_grad</span> <span class="o">=</span> <span class="kc">False</span>
   <span class="n">y</span> <span class="o">=</span> <span class="n">Tensor</span><span class="p">(</span><span class="n">return_scaled</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtypes</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
@@ -309,9 +322,8 @@
 
   <span class="n">optimizer</span> <span class="o">=</span> <span class="n">Adam</span><span class="p">(</span><span class="n">optimizable_params</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">)</span>
 
-  <span class="n">Tensor</span><span class="o">.</span><span class="n">training</span> <span class="o">=</span> <span class="kc">True</span>
   <span class="n">prev_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
-  <span class="k">with</span> <span class="n">Tensor</span><span class="o">.</span><span class="n">train</span><span class="p">():</span>
+  <span class="k">with</span> <span class="n">_training_context</span><span class="p">():</span>
     <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs</span><span class="p">):</span>
       <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
       <span class="n">beta</span> <span class="o">=</span> <span class="n">log_beta</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span>
@@ -343,7 +355,6 @@
         <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">prev_loss</span> <span class="o">-</span> <span class="n">curr_loss</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span><span class="p">:</span>
           <span class="k">break</span>
         <span class="n">prev_loss</span> <span class="o">=</span> <span class="n">curr_loss</span>
-  <span class="n">Tensor</span><span class="o">.</span><span class="n">training</span> <span class="o">=</span> <span class="kc">False</span>
 
   <span class="n">beta_val</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">log_beta</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">*</span> <span class="n">max_y</span><span class="p">)</span>
   <span class="n">alpha_val</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">log_alpha</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
@@ -397,7 +408,7 @@
 
     </aside>
   </div>
-</div><script src="../../../_static/documentation_options.js?v=d58853b1"></script>
+</div><script src="../../../_static/documentation_options.js?v=f909c4a4"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -24,21 +24,21 @@ def normalize_experiments_list(experiments, default_channel="Generic"):
     raise TypeError(f"experiments must be a dict or list of dicts, got {type(experiments)}")
 
 
-def normalize_multichannel_experiments(mmm_model, experiments=None):
+def normalize_multichannel_experiments(multichannel_model, experiments=None):
   """Normalizes multi-channel experiments into a structured dict of {channel_name: list[exp]}."""
   channel_exp_map = {}
 
   if experiments is None:
-    if hasattr(mmm_model, "calibration_experiments") and mmm_model.calibration_experiments:
-      return normalize_multichannel_experiments(mmm_model, mmm_model.calibration_experiments)
-    for ch_name, ch_curve in mmm_model.channels.items():
+    if hasattr(multichannel_model, "calibration_experiments") and multichannel_model.calibration_experiments:
+      return normalize_multichannel_experiments(multichannel_model, multichannel_model.calibration_experiments)
+    for ch_name, ch_curve in multichannel_model.channels.items():
       if hasattr(ch_curve, "calibration_experiments") and ch_curve.calibration_experiments:
         channel_exp_map[ch_name] = list(ch_curve.calibration_experiments)
     return channel_exp_map
 
   if isinstance(experiments, dict):
     # Check if keyed by channel name (e.g. {"YouTube": [exp1, exp2], "Search": exp3})
-    matched_keys = [k for k in experiments.keys() if k in mmm_model.channels]
+    matched_keys = [k for k in experiments.keys() if k in multichannel_model.channels]
     if matched_keys:
       for ch_name in matched_keys:
         exp_val = experiments[ch_name]
@@ -59,8 +59,8 @@ def normalize_multichannel_experiments(mmm_model, experiments=None):
     ch = exp.get("channel")
     if not ch:
       raise KeyError("Each experiment in multi-channel validation must specify a 'channel' key or be keyed by channel name.")
-    if ch not in mmm_model.channels:
-      raise ValueError(f"Channel '{ch}' not found in MMM model channels: {list(mmm_model.channels.keys())}")
+    if ch not in multichannel_model.channels:
+      raise ValueError(f"Channel '{ch}' not found in model channels: {list(multichannel_model.channels.keys())}")
     channel_exp_map.setdefault(ch, []).append(exp)
 
   return channel_exp_map
@@ -226,11 +226,11 @@ def validate_curve_experiments(model, experiments=None, spend_is_raw=True, verbo
   return result
 
 
-def validate_multichannel_experiments(mmm_model, experiments=None, spend_is_raw=True, verbose=False):
-  """Evaluates a multi-channel MMM model across experiments across different channels in parallel.
+def validate_multichannel_experiments(multichannel_model, experiments=None, spend_is_raw=True, verbose=False):
+  """Evaluates a multi-channel model across experiments across different channels in parallel.
 
   Args:
-    mmm_model: MultiChannelMMM instance or PortfolioAllocator instance.
+    multichannel_model: MultiChannelModel instance or PortfolioAllocator instance.
     experiments: List of experiment dictionaries or dict keyed by channel name.
       If None, evaluates experiments attached across channels.
     spend_is_raw: Whether spends are raw daily spend.
@@ -239,7 +239,7 @@ def validate_multichannel_experiments(mmm_model, experiments=None, spend_is_raw=
   Returns:
     dict: Multi-channel validation summary with per-channel breakdown and global metrics.
   """
-  channel_exp_map = normalize_multichannel_experiments(mmm_model, experiments)
+  channel_exp_map = normalize_multichannel_experiments(multichannel_model, experiments)
 
   if not channel_exp_map:
     raise ValueError("No experiments provided or attached across channels to validate.")
@@ -248,14 +248,14 @@ def validate_multichannel_experiments(mmm_model, experiments=None, spend_is_raw=
   all_exp_results = []
 
   for ch, exps in channel_exp_map.items():
-    if ch in mmm_model.channels:
-      ch_curve = mmm_model.channels[ch]
+    if ch in multichannel_model.channels:
+      ch_curve = multichannel_model.channels[ch]
       rep = validate_curve_experiments(ch_curve, exps, spend_is_raw=spend_is_raw, verbose=False)
       channel_reports[ch] = rep
       all_exp_results.extend(rep["experiments"])
 
   if not all_exp_results:
-    raise ValueError(f"No matching channel experiments found for channels: {list(mmm_model.channels.keys())}")
+    raise ValueError(f"No matching channel experiments found for channels: {list(multichannel_model.channels.keys())}")
 
   n_total = len(all_exp_results)
   mae = float(np.mean([r["abs_error"] for r in all_exp_results]))

@@ -1,20 +1,20 @@
 API Reference
 =============
 
-This section documents the public API of the Tipping Point module.
+This section documents the public API of the dxpoint library.
 
 Single-Channel Model Interface
 ------------------------------
 
-.. automodule:: tippingpoint.models
+.. automodule:: dxpoint.models
    :members:
    :undoc-members:
    :show-inheritance:
 
-Hierarchical Multi-Channel MMM
-------------------------------
+Multi-Channel Response Modeling
+-------------------------------
 
-.. automodule:: tippingpoint.mmm
+.. automodule:: dxpoint.multichannel
    :members:
    :undoc-members:
    :show-inheritance:
@@ -22,7 +22,31 @@ Hierarchical Multi-Channel MMM
 Portfolio Optimization
 ----------------------
 
-.. automodule:: tippingpoint.portfolio
+.. automodule:: dxpoint.portfolio
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Capacity Projection
+-------------------
+
+.. automodule:: dxpoint.capacity
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Validation & Calibration
+------------------------
+
+.. automodule:: dxpoint.validation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Evaluation & Diagnostics
+------------------------
+
+.. automodule:: dxpoint.evaluation
    :members:
    :undoc-members:
    :show-inheritance:
@@ -30,12 +54,12 @@ Portfolio Optimization
 Fitting Engines
 ---------------
 
-.. automodule:: tippingpoint.fitting.gradient
+.. automodule:: dxpoint.fitting.gradient
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: tippingpoint.fitting.bayesian
+.. automodule:: dxpoint.fitting.bayesian
    :members:
    :undoc-members:
    :show-inheritance:
@@ -43,7 +67,7 @@ Fitting Engines
 Mathematical Core
 -----------------
 
-.. automodule:: tippingpoint.math
+.. automodule:: dxpoint.math
    :members:
    :undoc-members:
    :show-inheritance:
@@ -51,7 +75,7 @@ Mathematical Core
 Visualization
 -------------
 
-.. automodule:: tippingpoint.viz
+.. automodule:: dxpoint.viz
    :members:
    :undoc-members:
    :show-inheritance:

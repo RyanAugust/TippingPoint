@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 import os
 import sys
 
-# Ensure tippingpoint is in path
+# Ensure dxpoint is in path
 sys.path.insert(0, os.path.abspath('../../src'))
-from tippingpoint import MarketingReturnCurve
-from tippingpoint.math import geometric_adstock
+from dxpoint import MarketingReturnCurve
+from dxpoint.math import geometric_adstock
 
 out_dir = 'images'
 os.makedirs(out_dir, exist_ok=True)
@@ -55,7 +55,7 @@ fig3, ax3 = plt.subplots(figsize=(8, 4), facecolor='#202124')
 ax3.axis('off')
 
 summary_text = """
-> tipp evaluate --channel "Paid Search" --spend 45000
+> dxpoint evaluate --channel "Paid Search" --spend 45000
 
 --- Budget Evaluation: Paid Search ---
 Current Spend: $45,000.00

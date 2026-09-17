@@ -606,19 +606,19 @@ def fit_multichannel_hierarchical_bayesian(spend_data, return_array, channel_nam
 fit_multichannel_bayesian_mcmc = fit_multichannel_hierarchical_bayesian
 
 
-class MultiChannelMMM:
-  """Meridian-Lite Hierarchical Bayesian Marketing Mix Model.
+class MultiChannelModel:
+  """Multi-channel joint response and saturation model.
 
   Jointly estimates:
     Y_t = Baseline + sum_{m=1}^M Hill_m(Adstock_m(S_{m, 1:t})) + eps_t
 
   Key Capabilities:
-    - Hierarchical Bayesian Partial Pooling across channels & geos.
+    - Multi-channel partial pooling across channels & geos.
     - Joint simultaneous estimation of Carryover Adstock (theta), Hill Saturation (alpha, K),
       and Channel Return Coefficients (beta).
     - Prevents cross-channel double-counting and omitted variable bias.
     - Experimental calibration (lift studies, geo experiments) integration.
-    - Historical contribution decomposition, Share of Return, ROI with 90% credible intervals.
+    - Historical contribution decomposition and channel efficiency analysis.
     - Direct integration with PortfolioAllocator for global budget optimization.
   """
 
@@ -708,7 +708,7 @@ class MultiChannelMMM:
   @classmethod
   def fit_gradient_descent(cls, spend_data, return_array, channel_names=None, epochs=5000, lr=0.05,
                            fit_baseline=True, adstock_types=None, adstock_bounds=None, adstock_fixed_days=None):
-    """Fits a joint multi-channel MMM using Gradient Descent (MLE / Tinygrad Adam)."""
+    """Fits a joint multi-channel model using Gradient Descent (MLE / Tinygrad Adam)."""
     models_dict, baseline, loss = fit_multichannel_gradient(
       spend_data=spend_data, return_array=return_array, channel_names=channel_names,
       epochs=epochs, lr=lr, fit_baseline=fit_baseline,
@@ -721,7 +721,7 @@ class MultiChannelMMM:
   def fit_bayesian(cls, spend_data, return_array, channel_names=None, n_samples=2000, chains=4, burn_in=1000,
                    fit_baseline=True, hierarchical=True, adstock_types=None, adstock_bounds=None,
                    adstock_fixed_days=None, calibration_experiments=None):
-    """Fits a Meridian-lite Hierarchical Bayesian Marketing Mix Model."""
+    """Fits a joint multi-channel model using Hierarchical Bayesian MCMC inference."""
     models_dict, baseline, samples = fit_multichannel_hierarchical_bayesian(
       spend_data=spend_data, return_array=return_array, channel_names=channel_names,
       n_samples=n_samples, chains=chains, burn_in=burn_in, fit_baseline=fit_baseline,
@@ -866,7 +866,7 @@ class MultiChannelMMM:
   def add_experiment(self, channel, spend, lift, se=None, ci=None, name=None):
     """Convenience method to associate an incrementality test with a specific channel."""
     if channel not in self.channels:
-      raise ValueError(f"Channel '{channel}' not found in MMM model channels: {list(self.channels.keys())}")
+      raise ValueError(f"Channel '{channel}' not found in model channels: {list(self.channels.keys())}")
     exp = {"channel": channel, "spend": float(spend), "lift": float(lift)}
     if se is not None: exp["se"] = float(se)
     if ci is not None: exp["ci"] = (float(ci[0]), float(ci[1]))
@@ -874,7 +874,7 @@ class MultiChannelMMM:
     return self.attach_experiments(exp)
 
   def validate_experiments(self, experiments=None, spend_is_raw=True, verbose=False):
-    """Validates multi-channel MMM curves against a collection of channel-specific incrementality experiments.
+    """Validates multi-channel curves against a collection of channel-specific incrementality experiments.
 
     Args:
       experiments: List of experiment dicts, or dict keyed by channel name. If None, uses attached experiments.
@@ -897,4 +897,8 @@ class MultiChannelMMM:
     if self.posterior_samples and 'diagnostics' in self.posterior_samples:
       res["diagnostics"] = self.posterior_samples['diagnostics']
     return res
+
+
+# Backward compatibility alias
+MultiChannelMMM = MultiChannelModel
 
