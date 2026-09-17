@@ -535,8 +535,11 @@ class MarketingReturnCurve:
     """Convenience alias for validating a single incrementality experiment."""
     return self.validate_experiments(experiment, spend_is_raw=spend_is_raw, verbose=verbose)
 
-  def plot_response_curve(self, target_mroas=1.0, current_spend=None, show_intervals=True, scatter=None, show=True):
-    fig = CurveVisualizer.plot_response_curve(self, target_mroas, current_spend, show_intervals, scatter)
+  def plot_response_curve(self, target_mroas=1.0, current_spend=None, show_intervals=True, scatter=None, show=True, include_baseline=False):
+    fig = CurveVisualizer.plot_response_curve(
+        self, target_mroas=target_mroas, current_spend=current_spend,
+        show_intervals=show_intervals, scatter=scatter, include_baseline=include_baseline
+    )
     if show:
       import matplotlib.pyplot as plt
       plt.show()
@@ -614,6 +617,7 @@ class MarketingReturnCurve:
     dashboard_path = os.path.join(os.path.dirname(__file__), "dashboard.py")
 
     # We set an environment variable so the dashboard knows to load the specific model
+    os.environ["DXPOINT_MODEL_PATH"] = tmp_path
     os.environ["TIPPINGPOINT_MODEL_PATH"] = tmp_path
 
     sys.argv = ["streamlit", "run", dashboard_path]

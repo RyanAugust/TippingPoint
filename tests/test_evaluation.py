@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-from tippingpoint import MarketingReturnCurve, evaluate_curve_fit, format_fit_report
-from tippingpoint.math import hill_function
+from dxpoint import MarketingReturnCurve, evaluate_curve_fit, format_fit_report
+from dxpoint.math import hill_function
 
 def test_evaluate_curve_fit():
   np.random.seed(42)

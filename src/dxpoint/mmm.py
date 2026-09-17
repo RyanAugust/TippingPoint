@@ -3,9 +3,9 @@ import pandas as pd
 from tinygrad.tensor import Tensor
 from tinygrad.nn.optim import Adam
 from tinygrad import dtypes
-from tippingpoint.math import geometric_adstock, weibull_adstock, hill_function, hill_first_derivative
-from tippingpoint.fitting.gradient import tinygrad_geometric_adstock, _training_context
-from tippingpoint.models import MarketingReturnCurve
+from dxpoint.math import geometric_adstock, weibull_adstock, hill_function, hill_first_derivative
+from dxpoint.fitting.gradient import tinygrad_geometric_adstock, _training_context
+from dxpoint.models import MarketingReturnCurve
 
 
 def _parse_spend_input(spend_data, channel_names=None):
@@ -846,7 +846,7 @@ class MultiChannelMMM:
 
   def get_allocator(self):
     """Returns a PortfolioAllocator configured with all fitted channel models."""
-    from tippingpoint.portfolio import PortfolioAllocator
+    from dxpoint.portfolio import PortfolioAllocator
     return PortfolioAllocator(list(self.channels.values()))
 
   def attach_experiments(self, experiments):

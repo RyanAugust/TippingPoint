@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from tippingpoint import MarketingReturnCurve
+from dxpoint import MarketingReturnCurve
 
 class TestTippingPoints:
 

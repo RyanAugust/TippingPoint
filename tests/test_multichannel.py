@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 import pytest
-from tippingpoint import MarketingReturnCurve, MultiChannelMMM
-from tippingpoint.math import hill_function
+from dxpoint import MarketingReturnCurve, MultiChannelMMM
+from dxpoint.math import hill_function
 
 @pytest.fixture
 def multichannel_data():

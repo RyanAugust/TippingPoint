@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-from tippingpoint.math import weibull_adstock
-from tippingpoint import MarketingReturnCurve
+from dxpoint.math import weibull_adstock
+from dxpoint import MarketingReturnCurve
 
 def test_weibull_adstock_shape_and_length():
     spend = np.array([100.0, 200.0, 300.0, 400.0, 500.0])

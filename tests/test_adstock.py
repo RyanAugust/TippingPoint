@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
-from tippingpoint import MarketingReturnCurve
-from tippingpoint.math import days_to_theta, geometric_adstock
+from dxpoint import MarketingReturnCurve
+from dxpoint.math import days_to_theta, geometric_adstock
 
 class TestAdstock:
 

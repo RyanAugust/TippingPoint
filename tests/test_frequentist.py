@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
-from tippingpoint import MarketingReturnCurve
-from tippingpoint.fitting.frequentist import fit_frequentist_nls
-from tippingpoint.math import hill_function
+from dxpoint import MarketingReturnCurve
+from dxpoint.fitting.frequentist import fit_frequentist_nls
+from dxpoint.math import hill_function
 
 def test_frequentist_nls_synthetic_fit():
   np.random.seed(42)

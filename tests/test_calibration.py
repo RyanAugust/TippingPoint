@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
-from tippingpoint import MarketingReturnCurve, MultiChannelMMM, PortfolioAllocator
-from tippingpoint.math import hill_function
-from tippingpoint.validation import format_validation_report, format_multichannel_validation_report
+from dxpoint import MarketingReturnCurve, MultiChannelMMM, PortfolioAllocator
+from dxpoint.math import hill_function
+from dxpoint.validation import format_validation_report, format_multichannel_validation_report
 
 def test_bayesian_with_calibration_experiment():
     np.random.seed(42)

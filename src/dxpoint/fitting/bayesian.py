@@ -1,5 +1,5 @@
 import numpy as np
-from tippingpoint.math import geometric_adstock, hill_function
+from dxpoint.math import geometric_adstock, hill_function
 
 def fit_bayesian_mcmc(spend_array, return_array, channel_name="Generic", priors=None, n_samples=2000, chains=4, burn_in=1000, adstock_type="none", adstock_bounds=None, adstock_fixed_days=None, calibration_experiments=None, fit_baseline=False):
   """Fits a Hill Curve using Bayesian MCMC (Metropolis-Hastings in transformed space) with optional adstock, baseline, and experimental calibration."""

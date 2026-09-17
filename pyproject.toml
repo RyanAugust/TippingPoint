@@ -1,13 +1,17 @@
 [project]
-name = "tippingpt"
-description = "Given impression and KPI data, determine the tipping points associated with maximizing success rate of marketing"
+name = "dxpoint"
+description = "Differential media response curve modeling and strategic inflection point optimization"
 dynamic = ["version"]
 readme = "README.md"
 keywords = [
-    "tipping point",
+    "dxpoint",
     "marketing",
-    "utility",
-    "cli"
+    "adstock",
+    "hill-function",
+    "saturation",
+    "derivative",
+    "mmm",
+    "roas"
 ]
 
 classifiers = [
@@ -36,7 +40,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
-path = "src/tippingpoint/__init__.py"
+path = "src/dxpoint/__init__.py"
 
 [project.optional-dependencies]
 dev = [
@@ -52,7 +56,9 @@ docs = [
 ]
 
 [project.scripts]
-tipp = "tippingpoint.cli:main"
+dxpoint = "dxpoint.cli:main"
+dxpt = "dxpoint.cli:main"
+tipp = "dxpoint.cli:main"
 
 [tool.hatch.metadata]
 vcs = true
@@ -65,7 +71,7 @@ exclude = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/tippingpoint"]
+packages = ["src/dxpoint"]
 exclude = [
     "/.github",
     "/tests",
@@ -134,5 +140,5 @@ exclude = ["*"]
 
 [tool.coverage.run]
 branch = true
-source = ["tippingpoint"]
+source = ["dxpoint"]
 

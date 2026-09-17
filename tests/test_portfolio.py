@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from tippingpoint import MarketingReturnCurve, PortfolioAllocator
+from dxpoint import MarketingReturnCurve, PortfolioAllocator
 
 class TestPortfolioAllocator:
 

@@ -1,4 +1,4 @@
-__name__ = "tippingpoint"
+__name__ = "dxpoint"
 __author__ = "Ryan Duecker"
 __version__ = "0.5.2"
 

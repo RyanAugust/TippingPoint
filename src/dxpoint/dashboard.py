@@ -8,7 +8,7 @@ import sys
 import tempfile
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from tippingpoint import MarketingReturnCurve, PortfolioAllocator
+from dxpoint import MarketingReturnCurve, PortfolioAllocator
 
 def fit_in_subprocess(spends, returns, epochs, lr, channel_name, adstock_type="none", adstock_bounds=None, adstock_fixed_days=None):
   """Fits the model in an isolated Python subprocess to prevent tinygrad from crashing Streamlit."""
@@ -25,7 +25,7 @@ import pickle
 import sys
 if {repr(src_dir)} not in sys.path:
   sys.path.insert(0, {repr(src_dir)})
-from tippingpoint import MarketingReturnCurve
+from dxpoint import MarketingReturnCurve
 
 with open({repr(in_path)}, 'rb') as f:
   spends, returns, epochs, lr, channel_name, adstock_type, adstock_bounds, adstock_fixed_days = pickle.load(f)
@@ -149,7 +149,7 @@ def create_plotly_plot(model, target_mroas, scatter=None):
 
 def create_allocation_mix_plot(models_dict, max_budget, channel_bounds):
   """Generates a stacked area chart showing optimal channel mix as total budget increases."""
-  from tippingpoint.portfolio import PortfolioAllocator
+  from dxpoint.portfolio import PortfolioAllocator
   allocator = PortfolioAllocator(list(models_dict.values()))
 
   # We will test 50 budget points from 0 to the target max budget
@@ -311,7 +311,7 @@ def create_portfolio_curves_plot(models_dict, allocations):
   return fig
 
 def run_dashboard():
-  st.set_page_config(page_title="Tipping Point Dashboard", layout="wide")
+  st.set_page_config(page_title="dxpoint Dashboard", layout="wide")
 
   st.title("Media Response Curve Dashboard")
   st.markdown("""
@@ -323,7 +323,7 @@ def run_dashboard():
   if "training_data" not in st.session_state:
     st.session_state.training_data = {}
 
-  external_model_path = os.environ.get("TIPPINGPOINT_MODEL_PATH")
+  external_model_path = os.environ.get("DXPOINT_MODEL_PATH") or os.environ.get("TIPPINGPOINT_MODEL_PATH")
   if external_model_path and os.path.exists(external_model_path):
     try:
       with open(external_model_path, "rb") as f:
@@ -331,7 +331,10 @@ def run_dashboard():
         if ext_model.channel_name not in st.session_state.models:
           st.session_state.models[ext_model.channel_name] = ext_model
       st.sidebar.success(f"Loaded model from script: {ext_model.channel_name}")
-      del os.environ["TIPPINGPOINT_MODEL_PATH"]
+      if "DXPOINT_MODEL_PATH" in os.environ:
+        del os.environ["DXPOINT_MODEL_PATH"]
+      if "TIPPINGPOINT_MODEL_PATH" in os.environ:
+        del os.environ["TIPPINGPOINT_MODEL_PATH"]
     except Exception as e:
       st.sidebar.error(f"Failed to load external model: {e}")
 

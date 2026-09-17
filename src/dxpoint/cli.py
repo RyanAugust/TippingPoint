@@ -4,7 +4,7 @@ import os
 import subprocess
 
 def main():
-  parser = argparse.ArgumentParser(description="Tipping Point CLI")
+  parser = argparse.ArgumentParser(description="dxpoint CLI")
   subparsers = parser.add_subparsers(dest="command")
 
   # Dashboard command

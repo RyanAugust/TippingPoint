@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-from tippingpoint import MarketingReturnCurve
-from tippingpoint.dashboard import create_plotly_plot
+from dxpoint import MarketingReturnCurve
+from dxpoint.dashboard import create_plotly_plot
 
 def test_create_plotly_plot_basic():
   model = MarketingReturnCurve(beta=20000.0, alpha=1.5, half_saturation_k=4000.0, channel_name="PlotlyChannel")

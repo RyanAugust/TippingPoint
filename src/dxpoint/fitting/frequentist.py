@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.optimize import minimize
 from scipy.stats import t as t_dist
-from tippingpoint.math import geometric_adstock, hill_function
+from dxpoint.math import geometric_adstock, hill_function
 
 def fit_frequentist_nls(
     spend_array,

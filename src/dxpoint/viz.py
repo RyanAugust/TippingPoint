@@ -14,7 +14,7 @@ class CurveVisualizer:
   G_LIGHT_GRAY = '#F8F9FA'
 
   @classmethod
-  def plot_response_curve(cls, model, target_mroas=1.0, current_spend=None, show_intervals=True, scatter=None):
+  def plot_response_curve(cls, model, target_mroas=1.0, current_spend=None, show_intervals=True, scatter=None, include_baseline=False):
     """Generates a visualization of the media response and marginal return curves."""
     min_spend = model.get_minimal_marginal_cost_point()
     max_spend = model.get_diminishing_returns_point(target_mroas)
@@ -32,17 +32,21 @@ class CurveVisualizer:
     interval_label = "Uncertainty Interval"
 
     if show_intervals and model.posterior_samples:
-      y_return, y_return_low, y_return_high = model.predict_incremental_return(x_vals, return_interval=True, confidence_level=0.90)
+      y_return, y_return_low, y_return_high = model.predict_incremental_return(
+          x_vals, return_interval=True, confidence_level=0.90, include_baseline=include_baseline
+      )
       y_mroas, y_mroas_low, y_mroas_high = model.predict_marginal_return(x_vals, return_interval=True, confidence_level=0.90)
       has_intervals = True
       interval_label = "90% Credible Interval"
     elif show_intervals and model.covariance_matrix is not None:
-      y_return, y_return_low, y_return_high = model.predict_incremental_return(x_vals, return_interval=True, confidence_level=0.95)
+      y_return, y_return_low, y_return_high = model.predict_incremental_return(
+          x_vals, return_interval=True, confidence_level=0.95, include_baseline=include_baseline
+      )
       y_mroas, y_mroas_low, y_mroas_high = model.predict_marginal_return(x_vals, return_interval=True, confidence_level=0.95)
       has_intervals = True
       interval_label = "95% Confidence Interval"
     else:
-      y_return = model.predict_incremental_return(x_vals)
+      y_return = model.predict_incremental_return(x_vals, include_baseline=include_baseline)
       y_mroas = model.predict_marginal_return(x_vals)
 
     plt.rcParams['font.family'] = 'sans-serif'
@@ -52,12 +56,14 @@ class CurveVisualizer:
     ax1.set_facecolor('white')
 
     # Primary Axis: Response Curve
-    ax1.plot(x_vals, y_return, color=cls.G_BLUE, linewidth=3.5, label="Incremental Return", zorder=3)
+    curve_label = "Total Return" if include_baseline else "Incremental Return"
+    y_axis_label = "Total Return ($)" if include_baseline else "Incremental Return ($)"
+    ax1.plot(x_vals, y_return, color=cls.G_BLUE, linewidth=3.5, label=curve_label, zorder=3)
     if has_intervals:
       ax1.fill_between(x_vals, y_return_low, y_return_high, color=cls.G_BLUE, alpha=0.15, label=interval_label, zorder=2)
 
     ax1.set_xlabel('Spend', fontsize=11, color=cls.G_GRAY, fontweight='500', labelpad=10)
-    ax1.set_ylabel('Incremental Return', color=cls.G_BLUE, fontsize=11, fontweight='500', labelpad=10)
+    ax1.set_ylabel(y_axis_label, color=cls.G_BLUE, fontsize=11, fontweight='500', labelpad=10)
     ax1.tick_params(axis='both', which='major', labelsize=10, colors=cls.G_GRAY)
 
     # Secondary Axis: Marginal Return
@@ -82,7 +88,8 @@ class CurveVisualizer:
     # Current Spend marker
     if current_spend:
       ax1.axvline(current_spend, color=cls.G_RED, linestyle='--', linewidth=1.5, alpha=0.8, label=f"Current Spend (${current_spend:,.0f})", zorder=4)
-      ax1.scatter(current_spend, model.predict_incremental_return(current_spend), color=cls.G_RED, s=60, edgecolors='white', linewidth=1.5, zorder=5)
+      curr_ret = model.predict_incremental_return(current_spend, include_baseline=include_baseline)
+      ax1.scatter(current_spend, curr_ret, color=cls.G_RED, s=60, edgecolors='white', linewidth=1.5, zorder=5)
 
     # Scatter data
     if scatter is not None:
