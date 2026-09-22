@@ -526,18 +526,33 @@ class ProjectedReturnCurve(MarketingReturnCurve):
       self,
       target_mroas: float = 1.0,
       current_spend: Optional[float] = None,
-      show: bool = True
+      show: bool = True,
+      figsize: Tuple[int, int] = (16, 7),
   ):
-    """Generates an overlaid visualization comparing the base curve vs the projected curve."""
+    """Generates an uncluttered 2-panel comparison presenting the shift from base to projected curve.
+
+    Panel 1 (Left): Saturation curve showing historical base curve vs. projected curve
+                    with highlighted incremental return unlock.
+    Panel 2 (Right): Marginal return curve showing efficiency (mROAS) comparison and
+                     hurdle rate threshold.
+
+    Emphasizes the new projected curve as the primary focus while keeping the older
+    base curve muted for reference.
+    """
     import matplotlib.pyplot as plt
     import matplotlib.ticker as ticker
 
     base_max = self.base_curve.get_diminishing_returns_point(target_mroas, warn_unreachable=False)
     proj_max = self.get_diminishing_returns_point(target_mroas, warn_unreachable=False)
+    base_min = self.base_curve.get_minimal_marginal_cost_point() or 0.0
+    proj_min = self.get_minimal_marginal_cost_point() or 0.0
 
     max_x = proj_max * 1.35 if proj_max else (base_max * 2.0 if base_max else self.K * 2.5)
     if current_spend:
-      max_x = max(max_x, current_spend * 1.3)
+      max_x = max(max_x, current_spend * 1.25)
+
+    if proj_max and max_x > 50 * proj_max:
+      max_x = proj_max * 2.5
 
     x_vals = np.linspace(0, max_x, 500)
 
@@ -548,90 +563,235 @@ class ProjectedReturnCurve(MarketingReturnCurve):
     y_proj_mroas = self.predict_marginal_return(x_vals)
 
     plt.rcParams['font.family'] = 'sans-serif'
-    plt.rcParams['font.sans-serif'] = ['Roboto', 'Open Sans', 'Arial', 'DejaVu Sans']
+    plt.rcParams['font.sans-serif'] = ['Roboto', 'Google Sans', 'Open Sans', 'Arial', 'DejaVu Sans']
 
-    fig, ax1 = plt.subplots(figsize=(13, 7.5), facecolor='white')
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize, facecolor='white')
     ax1.set_facecolor('white')
+    ax2.set_facecolor('white')
 
     # Color palette
-    BASE_COLOR = '#1A73E8'     # Google Blue
-    PROJ_COLOR = '#9334E6'     # Purple / Violet
-    TARGET_COLOR = '#EA4335'   # Coral Red
+    BASE_COLOR = '#80868B'     # Muted gray for older reference curve
+    PROJ_COLOR = '#7C3AED'     # Vibrant Violet/Purple for new projected curve focus
+    TARGET_COLOR = '#EA4335'   # Coral Red for current spend and hurdle
     GRAY = '#5F6368'
+    LIGHT_GRAY = '#F8F9FA'
 
-    # Primary Axis: Return Curves
-    ax1.plot(x_vals, y_base_return, color=BASE_COLOR, linewidth=2.5, linestyle='-',
-             label="Current Observed Return", zorder=3)
+    # Formatting helper with clean executive scaling ($M, $k, $)
+    def format_currency(x, p=None):
+      val = float(x)
+      abs_val = abs(val)
+      if abs_val >= 1e6:
+        formatted = f'{val*1e-6:.2f}'.rstrip('0').rstrip('.')
+        return f'${formatted}M'
+      elif abs_val >= 1e3:
+        formatted = f'{val*1e-3:.1f}'.rstrip('0').rstrip('.')
+        return f'${formatted}k'
+      else:
+        return f'${val:,.0f}'
+
+    def format_num(x, p=None):
+      val = float(x)
+      abs_val = abs(val)
+      if abs_val >= 1e6:
+        formatted = f'{val*1e-6:.2f}'.rstrip('0').rstrip('.')
+        return f'{formatted}M'
+      elif abs_val >= 1e3:
+        formatted = f'{val*1e-3:.1f}'.rstrip('0').rstrip('.')
+        return f'{formatted}k'
+      elif abs_val >= 1:
+        return f'{val:.2f}'
+      elif abs_val >= 0.01:
+        return f'{val:.2f}'
+      else:
+        return f'{val:.4g}'
+
+    # --------------------------------------------------------------------------
+    # PANEL 1: Pure Saturation / Return Curves (Base vs Projected)
+    # --------------------------------------------------------------------------
+    # 1. Base (Older) curve: muted, lower opacity, reference
+    ax1.plot(x_vals, y_base_return, color=BASE_COLOR, linewidth=2.0, linestyle='--',
+             alpha=0.55, label="Historical Baseline (Reference)", zorder=2)
+
+    # 2. Projected (Newer) curve: primary focus, bold, vibrant
     ax1.plot(x_vals, y_proj_return, color=PROJ_COLOR, linewidth=3.5, linestyle='-',
-             label=f"Projected Return (β x{self.multipliers.m_beta:.2f}, K x{self.multipliers.m_k:.2f})", zorder=4)
+             label=f"Projected Curve (β ×{self.multipliers.m_beta:.2f}, K ×{self.multipliers.m_k:.2f})", zorder=4)
 
-    # Shaded Headroom Delta
-    ax1.fill_between(x_vals, y_base_return, y_proj_return, color=PROJ_COLOR, alpha=0.10,
-                     label="Unlocked Incremental Return", zorder=2)
+    # 3. Unlocked Headroom Area
+    ax1.fill_between(x_vals, y_base_return, y_proj_return, color=PROJ_COLOR, alpha=0.12,
+                     label="Unlocked Return Capacity", zorder=1)
 
-    # Secondary Axis: Marginal Return
-    ax2 = ax1.twinx()
-    ax2.plot(x_vals, y_base_mroas, color=BASE_COLOR, linestyle=':', linewidth=1.5, alpha=0.6,
-             label="Base mROAS", zorder=1)
-    ax2.plot(x_vals, y_proj_mroas, color=PROJ_COLOR, linestyle='--', linewidth=2.0, alpha=0.7,
-             label="Projected mROAS", zorder=1)
-    ax2.axhline(target_mroas, color=TARGET_COLOR, linestyle='-', linewidth=1.2, alpha=0.6,
-                label=f"Target mROAS ({target_mroas:.2f})")
+    # Mark base stop scaling (reference)
+    base_ret_max = 0.0
+    if base_max and base_max > 0:
+      base_ret_max = float(self.base_curve.predict_incremental_return(base_max))
+      ax1.scatter(base_max, base_ret_max, color=BASE_COLOR, s=70, marker='o',
+                  edgecolors='#5F6368', linewidth=1.0, alpha=0.7,
+                  label=f"Base Cap ({format_currency(base_max)})", zorder=3)
 
-    # Mark diminishing returns points
-    if base_max:
-      ax1.axvline(base_max, color=BASE_COLOR, linestyle=':', linewidth=1.2, alpha=0.7)
-      ax1.scatter(base_max, self.base_curve.predict_incremental_return(base_max),
-                  color=BASE_COLOR, s=80, marker='o', edgecolors='white', linewidth=1.5,
-                  label=f"Current Stop Scaling (${base_max:,.0f})", zorder=5)
-
-    if proj_max:
-      ax1.axvline(proj_max, color=PROJ_COLOR, linestyle='--', linewidth=1.5, alpha=0.8)
-      ax1.scatter(proj_max, self.predict_incremental_return(proj_max),
-                  color=PROJ_COLOR, s=110, marker='s', edgecolors='white', linewidth=1.5,
-                  label=f"Projected Stop Scaling (${proj_max:,.0f})", zorder=5)
+    # Mark projected stop scaling (focus)
+    proj_ret_max = 0.0
+    if proj_max and proj_max > 0:
+      proj_ret_max = float(self.predict_incremental_return(proj_max))
+      ax1.scatter(proj_max, proj_ret_max, color=PROJ_COLOR, s=120, marker='o',
+                  edgecolors='#202124', linewidth=1.5,
+                  label=f"Projected Cap ({format_currency(proj_max)})", zorder=5)
+      ax1.annotate(
+          f"Projected Cap: {format_currency(proj_max)}\nReturn: {format_currency(proj_ret_max)}",
+          xy=(proj_max, proj_ret_max),
+          xytext=(0, -28), textcoords="offset points",
+          ha='center', fontsize=9, fontweight='bold', color='#202124',
+          bbox=dict(boxstyle='round,pad=0.25', facecolor='#F3E8FF', edgecolor=PROJ_COLOR, alpha=0.95),
+          arrowprops=dict(arrowstyle='->', color='#202124', lw=1)
+      )
 
     # Current spend marker if provided
+    curr_proj_ret = 0.0
     if current_spend:
-      ax1.axvline(current_spend, color=TARGET_COLOR, linestyle='-', linewidth=1.8, alpha=0.9,
-                  label=f"Current Spend (${current_spend:,.0f})", zorder=6)
+      curr_proj_ret = float(self.predict_incremental_return(current_spend))
+      ax1.axvline(current_spend, color=TARGET_COLOR, linestyle='--', linewidth=1.8, alpha=0.85,
+                  label=f"Current Spend ({format_currency(current_spend)})", zorder=4)
+      ax1.scatter(current_spend, curr_proj_ret, color=TARGET_COLOR, s=120, edgecolors='white', linewidth=2, zorder=6)
+      ax1.annotate(
+          f"Current Spend: {format_currency(current_spend)}\nProjected Return: {format_currency(curr_proj_ret)}",
+          xy=(current_spend, curr_proj_ret),
+          xytext=(15, 25), textcoords="offset points",
+          ha='left', fontsize=9, fontweight='bold', color=TARGET_COLOR,
+          bbox=dict(boxstyle='round,pad=0.3', facecolor='#FCE8E6', edgecolor=TARGET_COLOR, alpha=0.95),
+          arrowprops=dict(arrowstyle='->', color=TARGET_COLOR, lw=1.5)
+      )
 
-    # Labels and scales
-    def fmt(x, p):
-      if abs(x) >= 1e6: return f'${x*1e-6:g}M'
-      elif abs(x) >= 1e3: return f'${x*1e-3:g}k'
-      else: return f'${x:g}'
+    # Calculate y1 limits
+    finite_ret = y_proj_return[np.isfinite(y_proj_return)]
+    max_y1 = float(np.max(finite_ret)) if len(finite_ret) > 0 else 1000.0
+    if current_spend and np.isfinite(curr_proj_ret):
+      max_y1 = max(max_y1, float(curr_proj_ret))
+    if proj_max and proj_max > 0 and np.isfinite(proj_ret_max):
+      max_y1 = max(max_y1, float(proj_ret_max))
 
-    ax1.xaxis.set_major_formatter(ticker.FuncFormatter(fmt))
-    ax1.yaxis.set_major_formatter(ticker.FuncFormatter(fmt))
-    ax1.set_xlabel('Media Spend', fontsize=11, color=GRAY, fontweight='500', labelpad=10)
-    ax1.set_ylabel('Incremental Return', fontsize=11, color=PROJ_COLOR, fontweight='500', labelpad=10)
-    ax2.set_ylabel('Marginal ROAS (mROAS)', fontsize=11, color=GRAY, fontweight='500', labelpad=10)
-    ax1.set_ylim(bottom=0)
-    ax2.set_ylim(bottom=0)
-
-    # Spines & Grid
+    ax1.set_title("1. Media Saturation & Capacity Unlock", fontsize=13, fontweight='bold', color='#202124', pad=12, loc='left')
+    ax1.set_xlabel("Media Spend", fontsize=11, color=GRAY, fontweight='500', labelpad=8)
+    ax1.set_ylabel("Incremental Return ($)", fontsize=11, color='#202124', fontweight='500', labelpad=8)
+    ax1.xaxis.set_major_formatter(ticker.FuncFormatter(format_currency))
+    ax1.yaxis.set_major_formatter(ticker.FuncFormatter(format_currency))
+    ax1.set_xlim(0, max_x)
+    ax1.set_ylim(0, max_y1 * 1.18)
+    ax1.grid(True, linestyle='-', alpha=0.15, color=GRAY)
     ax1.spines['top'].set_visible(False)
     ax1.spines['right'].set_visible(False)
+    ax1.spines['left'].set_color(LIGHT_GRAY)
+    ax1.spines['bottom'].set_color(LIGHT_GRAY)
+    ax1.legend(loc='lower right', frameon=True, facecolor='white', framealpha=0.95, fontsize=9)
+
+    # --------------------------------------------------------------------------
+    # PANEL 2: Marginal Return (mROAS) Comparison
+    # --------------------------------------------------------------------------
+    # 1. Base (Older) marginal curve: muted reference
+    ax2.plot(x_vals, y_base_mroas, color=BASE_COLOR, linestyle=':', linewidth=2.0, alpha=0.55,
+             label="Base mROAS (Reference)", zorder=2)
+
+    # 2. Projected (Newer) marginal curve: primary focus
+    ax2.plot(x_vals, y_proj_mroas, color=PROJ_COLOR, linestyle='-', linewidth=3.0,
+             label="Projected mROAS (New Curve)", zorder=4)
+
+    # 3. Hurdle line without printing raw numeric value in legend
+    ax2.axhline(target_mroas, color=TARGET_COLOR, linestyle='--', linewidth=1.6, alpha=0.8,
+                label="Target Hurdle Rate", zorder=3)
+
+    # Projected Optimal Zone
+    if proj_max and proj_max > proj_min:
+      ax2.axvspan(proj_min, proj_max, color=PROJ_COLOR, alpha=0.08, label="Projected Optimal Zone", zorder=0)
+      ax2.text((proj_min + proj_max) / 2.0, 0.03, 'PROJECTED OPTIMAL ZONE',
+               transform=ax2.get_xaxis_transform(),
+               horizontalalignment='center', verticalalignment='bottom',
+               fontsize=9, color=PROJ_COLOR, fontweight='bold', alpha=0.85)
+
+    # Markers on Panel 2
+    # Base stop scaling
+    if base_max and base_max > 0:
+      ax2.scatter(base_max, target_mroas, color=BASE_COLOR, s=70, marker='o',
+                  edgecolors='#5F6368', linewidth=1.0, alpha=0.7,
+                  label=f"Base Cap ({format_currency(base_max)})", zorder=3)
+
+    # Projected stop scaling
+    if proj_max and proj_max > 0:
+      ax2.scatter(proj_max, target_mroas, color=PROJ_COLOR, s=120, marker='o',
+                  edgecolors='#202124', linewidth=1.5,
+                  label=f"Projected Cap ({format_currency(proj_max)})", zorder=5)
+      ax2.annotate(
+          f"Hurdle Floor\n{format_currency(proj_max)}",
+          xy=(proj_max, target_mroas),
+          xytext=(0, -26), textcoords="offset points",
+          ha='center', fontsize=9, fontweight='bold', color='#202124',
+          bbox=dict(boxstyle='round,pad=0.25', facecolor='#F3E8FF', edgecolor=PROJ_COLOR, alpha=0.95),
+          arrowprops=dict(arrowstyle='->', color='#202124', lw=1)
+      )
+
+    # Current spend marker on Panel 2
+    curr_proj_mroas = 0.0
+    if current_spend:
+      curr_proj_mroas = float(self.predict_marginal_return(current_spend))
+      curr_base_mroas = float(self.base_curve.predict_marginal_return(current_spend))
+      ax2.axvline(current_spend, color=TARGET_COLOR, linestyle='--', linewidth=1.8, alpha=0.85,
+                  label=f"Current Spend ({format_currency(current_spend)})", zorder=4)
+      ax2.scatter(current_spend, curr_proj_mroas, color=TARGET_COLOR, s=120, edgecolors='white', linewidth=2, zorder=6)
+      ax2.annotate(
+          f"Projected mROAS: {format_num(curr_proj_mroas)}\n(vs Base: {format_num(curr_base_mroas)})",
+          xy=(current_spend, curr_proj_mroas),
+          xytext=(15, 20), textcoords="offset points",
+          ha='left', fontsize=9, fontweight='bold', color=TARGET_COLOR,
+          bbox=dict(boxstyle='round,pad=0.3', facecolor='#FCE8E6', edgecolor=TARGET_COLOR, alpha=0.95),
+          arrowprops=dict(arrowstyle='->', color=TARGET_COLOR, lw=1.5)
+      )
+
+    # Calculate y2 ceiling for generous annotation headroom
+    finite_proj = y_proj_mroas[np.isfinite(y_proj_mroas)]
+    if len(finite_proj) > 0:
+      if self.alpha < 1.0 and len(finite_proj) > 10:
+        max_y2 = float(np.percentile(finite_proj[1:], 95)) * 1.6
+      else:
+        max_y2 = float(np.max(finite_proj))
+    else:
+      max_y2 = float(target_mroas) * 2.0 if target_mroas else 5.0
+
+    if np.isfinite(target_mroas):
+      max_y2 = max(max_y2, float(target_mroas) * 1.2)
+    if current_spend:
+      if np.isfinite(curr_proj_mroas):
+        max_y2 = max(max_y2, float(curr_proj_mroas) * 1.15)
+
+    if not np.isfinite(max_y2) or max_y2 <= 0:
+      max_y2 = 5.0
+
+    ax2.set_title("2. Marginal Return & Efficiency (mROAS)", fontsize=13, fontweight='bold', color='#202124', pad=12, loc='left')
+    ax2.set_xlabel("Media Spend", fontsize=11, color=GRAY, fontweight='500', labelpad=8)
+    ax2.set_ylabel("Marginal ROAS (mROAS)", fontsize=11, color='#202124', fontweight='500', labelpad=8)
+    ax2.xaxis.set_major_formatter(ticker.FuncFormatter(format_currency))
+    ax2.yaxis.set_major_formatter(ticker.FuncFormatter(format_num))
+    ax2.set_xlim(0, max_x)
+    ax2.set_ylim(0, max_y2 * 1.25)
+    ax2.grid(True, linestyle='-', alpha=0.15, color=GRAY)
     ax2.spines['top'].set_visible(False)
     ax2.spines['right'].set_visible(False)
-    ax2.spines['left'].set_visible(False)
-    ax1.grid(True, linestyle='-', alpha=0.1, color=GRAY)
+    ax2.spines['left'].set_color(LIGHT_GRAY)
+    ax2.spines['bottom'].set_color(LIGHT_GRAY)
+    ax2.legend(loc='upper right', frameon=True, facecolor='white', framealpha=0.95, fontsize=9)
 
-    # Combine Legends
-    lines1, labels1 = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2, loc='lower right', frameon=True,
-               facecolor='white', framealpha=0.95, fontsize=9.5)
+    # --------------------------------------------------------------------------
+    # Header & Executive Takeaway Subtitle
+    # --------------------------------------------------------------------------
+    fig.suptitle(f"Capacity Projection: {self.channel_name}", fontsize=15, fontweight='bold', color='#202124', y=0.98)
 
-    plt.title(f'Capacity Projection Analysis: {self.channel_name}', loc='left',
-              fontsize=15, fontweight='bold', pad=22, color='#202124')
-    fig.text(0.125, 0.91,
-             f"Base (β={self.base_curve.beta:,.0f}, K={self.base_curve.K:,.0f})  -->  "
-             f"Projected (β={self.beta:,.0f}, K={self.K:,.0f})  |  Synergy Damping={self.multipliers.synergy_damping:.2f}",
-             fontsize=9.5, color=GRAY)
+    mult_desc = f"Capacity Expansion: β ×{self.multipliers.m_beta:.2f} (Ceiling), K ×{self.multipliers.m_k:.2f} (Dilation) • Damping ρ={self.multipliers.synergy_damping:.2f}"
+    if base_max and proj_max and proj_max > base_max:
+      delta_spend = proj_max - base_max
+      delta_ret = proj_ret_max - base_ret_max
+      status_text = f"{mult_desc} • Unlocks +{format_currency(delta_spend)} Scaling Headroom (+{format_currency(delta_ret)} Incremental Return)"
+    else:
+      status_text = mult_desc
 
-    plt.tight_layout()
+    fig.text(0.5, 0.93, status_text, fontsize=10.5, ha='center', color=GRAY, style='italic', parse_math=False)
+
+    plt.tight_layout(rect=[0, 0, 1, 0.92])
     if show:
       plt.show()
     return fig

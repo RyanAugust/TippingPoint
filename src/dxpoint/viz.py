@@ -455,7 +455,7 @@ class CurveVisualizer:
     else:
       status_text = "Strategic response analysis showing saturation capacity, marginal efficiency, and optimal scaling thresholds"
 
-    fig.text(0.5, 0.93, status_text, fontsize=10.5, ha='center', color=cls.G_GRAY, style='italic')
+    fig.text(0.5, 0.93, status_text, fontsize=10.5, ha='center', color=cls.G_GRAY, style='italic', parse_math=False)
 
     plt.tight_layout(rect=[0, 0, 1, 0.92])
     return fig
