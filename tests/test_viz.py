@@ -67,3 +67,78 @@ def test_plot_response_curve_with_baseline():
   fig = model.plot_response_curve(target_mroas=1.0, scatter=(spend, ret), show=False, include_baseline=True)
   assert fig is not None
   plt.close(fig)
+
+
+def test_plot_executive_view_basic():
+  model = MarketingReturnCurve(beta=60000.0, alpha=1.6, half_saturation_k=15000.0, channel_name="YouTube Video")
+  fig = model.plot_executive_view(target_mroas=1.15, current_spend=12000.0, show=False)
+
+  assert fig is not None
+  assert isinstance(fig, plt.Figure)
+  assert len(fig.axes) == 2  # Two distinct views: Saturation (left) and Marginal (right)
+
+  ax1, ax2 = fig.axes
+  # Check panel titles
+  assert "Media Saturation" in ax1.get_title(loc='left')
+  assert "Marginal Return" in ax2.get_title(loc='left')
+
+  # Check legend in ax2 does not print target mROAS value like (1.15)
+  _, labels2 = ax2.get_legend_handles_labels()
+  assert "Target Hurdle Rate" in labels2
+  for label in labels2:
+    assert "(1.15)" not in label
+
+  plt.close(fig)
+
+
+def test_plot_executive_view_tiny_mroas():
+  # Test with small mROAS hurdle rate (e.g. conversions or searches per dollar)
+  model = MarketingReturnCurve(beta=5000.0, alpha=1.4, half_saturation_k=10000.0, channel_name="Performance Search")
+  tiny_target = 0.002
+  fig = model.plot_executive_view(target_mroas=tiny_target, current_spend=8000.0, show=False)
+
+  assert fig is not None
+  ax1, ax2 = fig.axes
+  _, labels2 = ax2.get_legend_handles_labels()
+
+  # Verify no raw target float appears in legend
+  assert "Target Hurdle Rate" in labels2
+  for label in labels2:
+    assert "0.002" not in label
+
+  plt.close(fig)
+
+
+def test_plot_executive_view_concave_c_curve():
+  # Alpha <= 1.0 (pure concave, no inflection warm-up point)
+  model = MarketingReturnCurve(beta=80000.0, alpha=0.85, half_saturation_k=12000.0, channel_name="Paid Search Brand")
+  fig = model.plot_executive_view(target_mroas=1.0, current_spend=15000.0, show=False)
+
+  assert fig is not None
+  assert len(fig.axes) == 2
+  plt.close(fig)
+
+
+def test_plot_executive_view_with_uncertainty():
+  n = 100
+  samples = {
+      'beta': np.random.normal(50000, 2000, n),
+      'alpha': np.random.normal(1.5, 0.08, n),
+      'K': np.random.normal(12000, 500, n),
+      'theta': np.random.uniform(0.1, 0.3, n)
+  }
+  model = MarketingReturnCurve(
+      beta=50000.0, alpha=1.5, half_saturation_k=12000.0,
+      posterior_samples=samples, channel_name="BayesianExecutive"
+  )
+  spends = np.linspace(1000, 25000, 20)
+  returns = model.predict_incremental_return(spends)
+
+  fig = model.plot_executive_view(
+      target_mroas=1.2, current_spend=14000.0,
+      show_intervals=True, scatter=(spends, returns), show=False
+  )
+  assert fig is not None
+  assert len(fig.axes) == 2
+  plt.close(fig)
+
