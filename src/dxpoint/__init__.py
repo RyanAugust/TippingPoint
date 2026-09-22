@@ -13,3 +13,4 @@ from .evaluation import format_fit_report as format_fit_report
 from .capacity import CapacityProjector as CapacityProjector
 from .capacity import ProjectedReturnCurve as ProjectedReturnCurve
 from .capacity import CapacityMultipliers as CapacityMultipliers
+from .viz import CurveVisualizer as CurveVisualizer
