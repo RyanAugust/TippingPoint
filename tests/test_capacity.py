@@ -217,10 +217,22 @@ class TestProjectedReturnCurve:
     assert result["expected_total_return"] > 0
 
   def test_plot_curve_comparison(self):
-    """Test that plot_curve_comparison generates a figure cleanly."""
+    """Test that plot_curve_comparison generates an uncluttered 2-panel figure cleanly."""
     proj_curve = self.base_model.project_capacity(m_beta=1.5, m_k=1.8)
     fig = proj_curve.plot_curve_comparison(target_mroas=1.0, current_spend=350.0, show=False)
     assert fig is not None
+    assert len(fig.axes) == 2  # 2 panels: Saturation (left) and Marginal (right)
+
+    ax1, ax2 = fig.axes
+    assert "Media Saturation" in ax1.get_title(loc='left')
+    assert "Marginal Return" in ax2.get_title(loc='left')
+
+    # Verify target hurdle rate label is clean without raw numbers in parens
+    _, labels2 = ax2.get_legend_handles_labels()
+    assert "Target Hurdle Rate" in labels2
+    for label in labels2:
+      assert "(1.0)" not in label
+
     plt.close(fig)
 
   def test_vertical_benchmarks_dict_integration(self):
