@@ -83,10 +83,24 @@ def test_plot_executive_view_basic():
   assert "Marginal Return" in ax2.get_title(loc='left')
 
   # Check legend in ax2 does not print target mROAS value like (1.15)
+  _, labels1 = ax1.get_legend_handles_labels()
   _, labels2 = ax2.get_legend_handles_labels()
   assert "Target Hurdle Rate" in labels2
   for label in labels2:
     assert "(1.15)" not in label
+
+  # Verify points already called out on the chart are not repeated in the legend
+  for forbidden in ["Peak Efficiency", "Diminishing Returns", "Current Spend"]:
+    for label in labels1:
+      assert forbidden not in label
+    for label in labels2:
+      assert forbidden not in label
+
+  # Verify core curve and zone entries remain in legends
+  assert "Incremental Return" in labels1
+  assert "Optimal Scaling Zone" in labels1
+  assert "Marginal Return (mROAS)" in labels2
+  assert "Optimal Scaling Zone" in labels2
 
   plt.close(fig)
 

@@ -168,8 +168,8 @@ class CurveVisualizer:
     Panel 1 (Left): Saturation curve showing expected return vs spend.
     Panel 2 (Right): Marginal return curve showing efficiency (mROAS) vs spend.
 
-    Clearly labels current investment, peak efficiency, diminishing returns,
-    and the optimal scaling zone without exposing raw target mROAS fractions in the legend.
+    Clearly annotates current investment, peak efficiency, diminishing returns,
+    and the optimal scaling zone directly on the chart without repeating them in the legend.
     """
     min_spend = model.get_minimal_marginal_cost_point() or 0.0
     max_spend = model.get_diminishing_returns_point(target_mroas, warn_unreachable=False)
@@ -275,8 +275,7 @@ class CurveVisualizer:
     ret_min = 0.0
     if min_spend > 0:
       ret_min = model.predict_incremental_return(min_spend, include_baseline=include_baseline)
-      ax1.scatter(min_spend, ret_min, color=cls.G_YELLOW, s=110, edgecolors='#202124', linewidth=1.5,
-                  label=f"Peak Efficiency ({format_currency(min_spend)})", zorder=6)
+      ax1.scatter(min_spend, ret_min, color=cls.G_YELLOW, s=110, edgecolors='#202124', linewidth=1.5, zorder=6)
       ax1.annotate(
           f"Peak Efficiency\n{format_currency(min_spend)}",
           xy=(min_spend, ret_min),
@@ -290,8 +289,7 @@ class CurveVisualizer:
     ret_max = 0.0
     if max_spend and max_spend > 0:
       ret_max = model.predict_incremental_return(max_spend, include_baseline=include_baseline)
-      ax1.scatter(max_spend, ret_max, color=cls.G_GREEN, s=110, edgecolors='#202124', linewidth=1.5,
-                  label=f"Diminishing Returns ({format_currency(max_spend)})", zorder=6)
+      ax1.scatter(max_spend, ret_max, color=cls.G_GREEN, s=110, edgecolors='#202124', linewidth=1.5, zorder=6)
       ax1.annotate(
           f"Diminishing Returns\n{format_currency(max_spend)}",
           xy=(max_spend, ret_max),
@@ -305,8 +303,7 @@ class CurveVisualizer:
     curr_ret = 0.0
     if current_spend:
       curr_ret = model.predict_incremental_return(current_spend, include_baseline=include_baseline)
-      ax1.axvline(current_spend, color=cls.G_RED, linestyle='--', linewidth=1.8, alpha=0.85,
-                  label=f"Current Spend ({format_currency(current_spend)})", zorder=4)
+      ax1.axvline(current_spend, color=cls.G_RED, linestyle='--', linewidth=1.8, alpha=0.85, zorder=4)
       ax1.scatter(current_spend, curr_ret, color=cls.G_RED, s=120, edgecolors='white', linewidth=2, zorder=7)
       ax1.annotate(
           f"Current Spend: {format_currency(current_spend)}\nReturn: {format_currency(curr_ret)}",
@@ -386,8 +383,7 @@ class CurveVisualizer:
       mroas_min = model.predict_marginal_return(min_spend)
       if np.isfinite(mroas_min):
         max_y2 = max(max_y2, float(mroas_min))
-      ax2.scatter(min_spend, mroas_min, color=cls.G_YELLOW, s=110, edgecolors='#202124', linewidth=1.5,
-                  label=f"Peak Efficiency ({format_currency(min_spend)})", zorder=6)
+      ax2.scatter(min_spend, mroas_min, color=cls.G_YELLOW, s=110, edgecolors='#202124', linewidth=1.5, zorder=6)
       ax2.annotate(
           f"Peak Efficiency\n{format_num(mroas_min)} mROAS",
           xy=(min_spend, mroas_min),
@@ -398,8 +394,7 @@ class CurveVisualizer:
       )
 
     if max_spend and max_spend > 0:
-      ax2.scatter(max_spend, target_mroas, color=cls.G_GREEN, s=110, edgecolors='#202124', linewidth=1.5,
-                  label=f"Diminishing Returns ({format_currency(max_spend)})", zorder=6)
+      ax2.scatter(max_spend, target_mroas, color=cls.G_GREEN, s=110, edgecolors='#202124', linewidth=1.5, zorder=6)
       ax2.annotate(
           f"Hurdle Floor\n{format_currency(max_spend)}",
           xy=(max_spend, target_mroas),
@@ -413,8 +408,7 @@ class CurveVisualizer:
       curr_mroas = model.predict_marginal_return(current_spend)
       if np.isfinite(curr_mroas):
         max_y2 = max(max_y2, float(curr_mroas) * 1.15)
-      ax2.axvline(current_spend, color=cls.G_RED, linestyle='--', linewidth=1.8, alpha=0.85,
-                  label=f"Current Spend ({format_currency(current_spend)})", zorder=4)
+      ax2.axvline(current_spend, color=cls.G_RED, linestyle='--', linewidth=1.8, alpha=0.85, zorder=4)
       ax2.scatter(current_spend, curr_mroas, color=cls.G_RED, s=120, edgecolors='white', linewidth=2, zorder=7)
       ax2.annotate(
           f"Current mROAS: {format_num(curr_mroas)}",
