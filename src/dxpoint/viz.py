@@ -281,8 +281,9 @@ class CurveVisualizer:
           xy=(min_spend, ret_min),
           xytext=(0, 22), textcoords="offset points",
           ha='center', fontsize=9, fontweight='bold', color='#202124',
-          bbox=dict(boxstyle='round,pad=0.2', facecolor='#FFF8E1', edgecolor=cls.G_YELLOW, alpha=0.9),
-          arrowprops=dict(arrowstyle='->', color='#202124', lw=1)
+          bbox=dict(boxstyle='round,pad=0.2', facecolor='#FFF8E1', edgecolor=cls.G_YELLOW, alpha=1.0, zorder=10),
+          arrowprops=dict(arrowstyle='->', color='#202124', lw=1, zorder=10),
+          zorder=10
       )
 
     # 2. Diminishing Returns / Hurdle Limit
@@ -295,8 +296,9 @@ class CurveVisualizer:
           xy=(max_spend, ret_max),
           xytext=(0, -28), textcoords="offset points",
           ha='center', fontsize=9, fontweight='bold', color='#202124',
-          bbox=dict(boxstyle='round,pad=0.2', facecolor='#E6F4EA', edgecolor=cls.G_GREEN, alpha=0.9),
-          arrowprops=dict(arrowstyle='->', color='#202124', lw=1)
+          bbox=dict(boxstyle='round,pad=0.2', facecolor='#E6F4EA', edgecolor=cls.G_GREEN, alpha=1.0, zorder=10),
+          arrowprops=dict(arrowstyle='->', color='#202124', lw=1, zorder=10),
+          zorder=10
       )
 
     # 3. Current Investment
@@ -310,8 +312,9 @@ class CurveVisualizer:
           xy=(current_spend, curr_ret),
           xytext=(15, 25), textcoords="offset points",
           ha='left', fontsize=9, fontweight='bold', color=cls.G_RED,
-          bbox=dict(boxstyle='round,pad=0.3', facecolor='#FCE8E6', edgecolor=cls.G_RED, alpha=0.95),
-          arrowprops=dict(arrowstyle='->', color=cls.G_RED, lw=1.5)
+          bbox=dict(boxstyle='round,pad=0.3', facecolor='#FCE8E6', edgecolor=cls.G_RED, alpha=1.0, zorder=10),
+          arrowprops=dict(arrowstyle='->', color=cls.G_RED, lw=1.5, zorder=10),
+          zorder=10
       )
 
     finite_ret = y_return[np.isfinite(y_return)]
@@ -389,8 +392,9 @@ class CurveVisualizer:
           xy=(min_spend, mroas_min),
           xytext=(0, 20), textcoords="offset points",
           ha='center', fontsize=9, fontweight='bold', color='#202124',
-          bbox=dict(boxstyle='round,pad=0.2', facecolor='#FFF8E1', edgecolor=cls.G_YELLOW, alpha=0.9),
-          arrowprops=dict(arrowstyle='->', color='#202124', lw=1)
+          bbox=dict(boxstyle='round,pad=0.2', facecolor='#FFF8E1', edgecolor=cls.G_YELLOW, alpha=1.0, zorder=10),
+          arrowprops=dict(arrowstyle='->', color='#202124', lw=1, zorder=10),
+          zorder=10
       )
 
     if max_spend and max_spend > 0:
@@ -400,8 +404,9 @@ class CurveVisualizer:
           xy=(max_spend, target_mroas),
           xytext=(0, -26), textcoords="offset points",
           ha='center', fontsize=9, fontweight='bold', color='#202124',
-          bbox=dict(boxstyle='round,pad=0.2', facecolor='#E6F4EA', edgecolor=cls.G_GREEN, alpha=0.9),
-          arrowprops=dict(arrowstyle='->', color='#202124', lw=1)
+          bbox=dict(boxstyle='round,pad=0.2', facecolor='#E6F4EA', edgecolor=cls.G_GREEN, alpha=1.0, zorder=10),
+          arrowprops=dict(arrowstyle='->', color='#202124', lw=1, zorder=10),
+          zorder=10
       )
 
     if current_spend:
@@ -415,8 +420,9 @@ class CurveVisualizer:
           xy=(current_spend, curr_mroas),
           xytext=(15, 20), textcoords="offset points",
           ha='left', fontsize=9, fontweight='bold', color=cls.G_RED,
-          bbox=dict(boxstyle='round,pad=0.3', facecolor='#FCE8E6', edgecolor=cls.G_RED, alpha=0.95),
-          arrowprops=dict(arrowstyle='->', color=cls.G_RED, lw=1.5)
+          bbox=dict(boxstyle='round,pad=0.3', facecolor='#FCE8E6', edgecolor=cls.G_RED, alpha=1.0, zorder=10),
+          arrowprops=dict(arrowstyle='->', color=cls.G_RED, lw=1.5, zorder=10),
+          zorder=10
       )
 
     if not np.isfinite(max_y2) or max_y2 <= 0:

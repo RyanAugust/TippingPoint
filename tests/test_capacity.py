@@ -228,10 +228,16 @@ class TestProjectedReturnCurve:
     assert "Marginal Return" in ax2.get_title(loc='left')
 
     # Verify target hurdle rate label is clean without raw numbers in parens
+    _, labels1 = ax1.get_legend_handles_labels()
     _, labels2 = ax2.get_legend_handles_labels()
     assert "Target Hurdle Rate" in labels2
     for label in labels2:
       assert "(1.0)" not in label
+
+    # Verify Current Spend and Projected Optimal Zone are omitted from legends
+    assert not any("Current Spend" in l for l in labels1)
+    assert not any("Current Spend" in l for l in labels2)
+    assert not any("Optimal Zone" in l for l in labels2)
 
     plt.close(fig)
 

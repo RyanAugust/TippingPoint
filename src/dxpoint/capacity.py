@@ -640,24 +640,25 @@ class ProjectedReturnCurve(MarketingReturnCurve):
           xy=(proj_max, proj_ret_max),
           xytext=(0, -28), textcoords="offset points",
           ha='center', fontsize=9, fontweight='bold', color='#202124',
-          bbox=dict(boxstyle='round,pad=0.25', facecolor='#F3E8FF', edgecolor=PROJ_COLOR, alpha=0.95),
-          arrowprops=dict(arrowstyle='->', color='#202124', lw=1)
+          bbox=dict(boxstyle='round,pad=0.25', facecolor='#F3E8FF', edgecolor=PROJ_COLOR, alpha=1.0, zorder=10),
+          arrowprops=dict(arrowstyle='->', color='#202124', lw=1, zorder=10),
+          zorder=10
       )
 
     # Current spend marker if provided
     curr_proj_ret = 0.0
     if current_spend:
       curr_proj_ret = float(self.predict_incremental_return(current_spend))
-      ax1.axvline(current_spend, color=TARGET_COLOR, linestyle='--', linewidth=1.8, alpha=0.85,
-                  label=f"Current Spend ({format_currency(current_spend)})", zorder=4)
+      ax1.axvline(current_spend, color=TARGET_COLOR, linestyle='--', linewidth=1.8, alpha=0.85, zorder=4)
       ax1.scatter(current_spend, curr_proj_ret, color=TARGET_COLOR, s=120, edgecolors='white', linewidth=2, zorder=6)
       ax1.annotate(
           f"Current Spend: {format_currency(current_spend)}\nProjected Return: {format_currency(curr_proj_ret)}",
           xy=(current_spend, curr_proj_ret),
           xytext=(15, 25), textcoords="offset points",
           ha='left', fontsize=9, fontweight='bold', color=TARGET_COLOR,
-          bbox=dict(boxstyle='round,pad=0.3', facecolor='#FCE8E6', edgecolor=TARGET_COLOR, alpha=0.95),
-          arrowprops=dict(arrowstyle='->', color=TARGET_COLOR, lw=1.5)
+          bbox=dict(boxstyle='round,pad=0.3', facecolor='#FCE8E6', edgecolor=TARGET_COLOR, alpha=1.0, zorder=10),
+          arrowprops=dict(arrowstyle='->', color=TARGET_COLOR, lw=1.5, zorder=10),
+          zorder=10
       )
 
     # Calculate y1 limits
@@ -697,9 +698,9 @@ class ProjectedReturnCurve(MarketingReturnCurve):
     ax2.axhline(target_mroas, color=TARGET_COLOR, linestyle='--', linewidth=1.6, alpha=0.8,
                 label="Target Hurdle Rate", zorder=3)
 
-    # Projected Optimal Zone
+    # Projected Optimal Zone (no legend entry)
     if proj_max and proj_max > proj_min:
-      ax2.axvspan(proj_min, proj_max, color=PROJ_COLOR, alpha=0.08, label="Projected Optimal Zone", zorder=0)
+      ax2.axvspan(proj_min, proj_max, color=PROJ_COLOR, alpha=0.08, zorder=0)
       ax2.text((proj_min + proj_max) / 2.0, 0.03, 'PROJECTED OPTIMAL ZONE',
                transform=ax2.get_xaxis_transform(),
                horizontalalignment='center', verticalalignment='bottom',
@@ -722,25 +723,26 @@ class ProjectedReturnCurve(MarketingReturnCurve):
           xy=(proj_max, target_mroas),
           xytext=(0, -26), textcoords="offset points",
           ha='center', fontsize=9, fontweight='bold', color='#202124',
-          bbox=dict(boxstyle='round,pad=0.25', facecolor='#F3E8FF', edgecolor=PROJ_COLOR, alpha=0.95),
-          arrowprops=dict(arrowstyle='->', color='#202124', lw=1)
+          bbox=dict(boxstyle='round,pad=0.25', facecolor='#F3E8FF', edgecolor=PROJ_COLOR, alpha=1.0, zorder=10),
+          arrowprops=dict(arrowstyle='->', color='#202124', lw=1, zorder=10),
+          zorder=10
       )
 
-    # Current spend marker on Panel 2
+    # Current spend marker on Panel 2 (no legend entry)
     curr_proj_mroas = 0.0
     if current_spend:
       curr_proj_mroas = float(self.predict_marginal_return(current_spend))
       curr_base_mroas = float(self.base_curve.predict_marginal_return(current_spend))
-      ax2.axvline(current_spend, color=TARGET_COLOR, linestyle='--', linewidth=1.8, alpha=0.85,
-                  label=f"Current Spend ({format_currency(current_spend)})", zorder=4)
+      ax2.axvline(current_spend, color=TARGET_COLOR, linestyle='--', linewidth=1.8, alpha=0.85, zorder=4)
       ax2.scatter(current_spend, curr_proj_mroas, color=TARGET_COLOR, s=120, edgecolors='white', linewidth=2, zorder=6)
       ax2.annotate(
           f"Projected mROAS: {format_num(curr_proj_mroas)}\n(vs Base: {format_num(curr_base_mroas)})",
           xy=(current_spend, curr_proj_mroas),
           xytext=(15, 20), textcoords="offset points",
           ha='left', fontsize=9, fontweight='bold', color=TARGET_COLOR,
-          bbox=dict(boxstyle='round,pad=0.3', facecolor='#FCE8E6', edgecolor=TARGET_COLOR, alpha=0.95),
-          arrowprops=dict(arrowstyle='->', color=TARGET_COLOR, lw=1.5)
+          bbox=dict(boxstyle='round,pad=0.3', facecolor='#FCE8E6', edgecolor=TARGET_COLOR, alpha=1.0, zorder=10),
+          arrowprops=dict(arrowstyle='->', color=TARGET_COLOR, lw=1.5, zorder=10),
+          zorder=10
       )
 
     # Calculate y2 ceiling for generous annotation headroom
