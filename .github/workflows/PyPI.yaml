@@ -15,7 +15,7 @@ jobs:
       id-token: write
     environment:
       name: pypi
-      url: https://pypi.org/p/tippingpt
+      url: https://pypi.org/p/dxpoint
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
