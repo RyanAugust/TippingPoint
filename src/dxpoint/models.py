@@ -545,6 +545,36 @@ class MarketingReturnCurve:
       plt.show()
     return fig
 
+  def plot_executive_view(
+      self,
+      target_mroas=1.0,
+      current_spend=None,
+      show_intervals=True,
+      scatter=None,
+      show=True,
+      include_baseline=False,
+      figsize=(16, 7),
+  ):
+    """Generates a simplified, uncluttered 2-panel presentation-ready view for executives.
+
+    Displays the saturation curve in one view and the marginal return curve in another view,
+    clearly calling out current investment, peak efficiency, diminishing returns, and the
+    optimal scaling zone without printing raw target mROAS numeric fractions in the legend.
+    """
+    fig = CurveVisualizer.plot_executive_view(
+        self,
+        target_mroas=target_mroas,
+        current_spend=current_spend,
+        show_intervals=show_intervals,
+        scatter=scatter,
+        include_baseline=include_baseline,
+        figsize=figsize,
+    )
+    if show:
+      import matplotlib.pyplot as plt
+      plt.show()
+    return fig
+
   def project_capacity(
       self,
       m_beta=None,
