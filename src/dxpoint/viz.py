@@ -279,7 +279,7 @@ class CurveVisualizer:
       ax1.annotate(
           f"Peak Efficiency\n{format_currency(min_spend)}",
           xy=(min_spend, ret_min),
-          xytext=(0, 22), textcoords="offset points",
+          xytext=(-20, 25), textcoords="offset points",
           ha='center', fontsize=9, fontweight='bold', color='#202124',
           bbox=dict(boxstyle='round,pad=0.2', facecolor='#FFF8E1', edgecolor=cls.G_YELLOW, alpha=1.0, zorder=10),
           arrowprops=dict(arrowstyle='->', color='#202124', lw=1, zorder=10),
@@ -294,7 +294,7 @@ class CurveVisualizer:
       ax1.annotate(
           f"Diminishing Returns\n{format_currency(max_spend)}",
           xy=(max_spend, ret_max),
-          xytext=(0, -28), textcoords="offset points",
+          xytext=(0, -50), textcoords="offset points",
           ha='center', fontsize=9, fontweight='bold', color='#202124',
           bbox=dict(boxstyle='round,pad=0.2', facecolor='#E6F4EA', edgecolor=cls.G_GREEN, alpha=1.0, zorder=10),
           arrowprops=dict(arrowstyle='->', color='#202124', lw=1, zorder=10),
@@ -310,7 +310,7 @@ class CurveVisualizer:
       ax1.annotate(
           f"Current Spend: {format_currency(current_spend)}\nReturn: {format_currency(curr_ret)}",
           xy=(current_spend, curr_ret),
-          xytext=(15, 25), textcoords="offset points",
+          xytext=(-100, 15), textcoords="offset points",
           ha='left', fontsize=9, fontweight='bold', color=cls.G_RED,
           bbox=dict(boxstyle='round,pad=0.3', facecolor='#FCE8E6', edgecolor=cls.G_RED, alpha=1.0, zorder=10),
           arrowprops=dict(arrowstyle='->', color=cls.G_RED, lw=1.5, zorder=10),
@@ -390,7 +390,7 @@ class CurveVisualizer:
       ax2.annotate(
           f"Peak Efficiency\n{format_num(mroas_min)} mROAS",
           xy=(min_spend, mroas_min),
-          xytext=(0, 20), textcoords="offset points",
+          xytext=(0, 30), textcoords="offset points",
           ha='center', fontsize=9, fontweight='bold', color='#202124',
           bbox=dict(boxstyle='round,pad=0.2', facecolor='#FFF8E1', edgecolor=cls.G_YELLOW, alpha=1.0, zorder=10),
           arrowprops=dict(arrowstyle='->', color='#202124', lw=1, zorder=10),
@@ -402,7 +402,7 @@ class CurveVisualizer:
       ax2.annotate(
           f"Hurdle Floor\n{format_currency(max_spend)}",
           xy=(max_spend, target_mroas),
-          xytext=(0, -26), textcoords="offset points",
+          xytext=(10, -40), textcoords="offset points",
           ha='center', fontsize=9, fontweight='bold', color='#202124',
           bbox=dict(boxstyle='round,pad=0.2', facecolor='#E6F4EA', edgecolor=cls.G_GREEN, alpha=1.0, zorder=10),
           arrowprops=dict(arrowstyle='->', color='#202124', lw=1, zorder=10),
@@ -418,7 +418,7 @@ class CurveVisualizer:
       ax2.annotate(
           f"Current mROAS: {format_num(curr_mroas)}",
           xy=(current_spend, curr_mroas),
-          xytext=(15, 20), textcoords="offset points",
+          xytext=(-100, 30), textcoords="offset points",
           ha='left', fontsize=9, fontweight='bold', color=cls.G_RED,
           bbox=dict(boxstyle='round,pad=0.3', facecolor='#FCE8E6', edgecolor=cls.G_RED, alpha=1.0, zorder=10),
           arrowprops=dict(arrowstyle='->', color=cls.G_RED, lw=1.5, zorder=10),
