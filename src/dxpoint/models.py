@@ -343,25 +343,28 @@ class MarketingReturnCurve:
     n_pts = len(spend_flat)
     G = np.zeros((n_pts, p_num))
 
-    for j, name in enumerate(param_names):
-      p_plus = dict(p_current)
-      p_minus = dict(p_current)
-      h = eps * (abs(p_current[name]) + 1e-4)
-      p_plus[name] += h
-      p_minus[name] -= h
-      val_plus = np.atleast_1d(eval_func(p_plus))
-      val_minus = np.atleast_1d(eval_func(p_minus))
-      G[:, j] = (val_plus - val_minus) / (2.0 * h)
+    with np.errstate(divide="ignore", invalid="ignore"):
+      for j, name in enumerate(param_names):
+        p_plus = dict(p_current)
+        p_minus = dict(p_current)
+        h = eps * (abs(p_current[name]) + 1e-4)
+        p_plus[name] += h
+        p_minus[name] -= h
+        val_plus = np.atleast_1d(eval_func(p_plus))
+        val_minus = np.atleast_1d(eval_func(p_minus))
+        G[:, j] = (val_plus - val_minus) / (2.0 * h)
 
-    var_pred = np.sum((G @ cov_mat) * G, axis=1)
-    se_pred = np.sqrt(np.maximum(0.0, var_pred))
+      G = np.nan_to_num(G, nan=0.0, posinf=0.0, neginf=0.0)
+      var_pred = np.sum((G @ cov_mat) * G, axis=1)
+      se_pred = np.sqrt(np.maximum(0.0, var_pred))
 
     from scipy.stats import norm
     alpha_ci = 1.0 - confidence_level
     z_crit = float(norm.ppf(1.0 - alpha_ci / 2.0))
 
-    y_low = np.atleast_1d(y_pred) - z_crit * se_pred
-    y_high = np.atleast_1d(y_pred) + z_crit * se_pred
+    with np.errstate(invalid="ignore"):
+      y_low = np.atleast_1d(y_pred) - z_crit * se_pred
+      y_high = np.atleast_1d(y_pred) + z_crit * se_pred
 
     if not is_derivative:
       y_low = np.maximum(0.0, y_low)
